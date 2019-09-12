@@ -3,7 +3,7 @@ package jboy.disassembler;
 import java.util.HashMap;
 
 /**
- * All the instructions available to the GameBoy's Z80 processor.
+ * All the instructions available to the GameBoy's LR35902 processor.
  */
 final class Instructions {
     static final HashMap<Byte, Instruction<Byte>> GB_8BIT_INSTRUCTIONS = new HashMap<>();
