@@ -9,8 +9,6 @@ import static jboy.disassembler.Instructions.GB_8BIT_INSTRUCTIONS;
  * Class for disassembling GameBoy roms.
  */
 public class Disassembler {
-    private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
-
     private byte[] bytes;
     private int pc;
     private ArrayList<String> instructions;
@@ -37,14 +35,8 @@ public class Disassembler {
                 // 16 bit instructions are at 0xCB, so we need to do something slightly different with those.
                 if((this.bytes[this.pc] & 0xFF) != 0xCB) {
                     ins8Bit = GB_8BIT_INSTRUCTIONS.get(this.bytes[this.pc]);
-                    /*this.instructions.add(
-                            this.byteToHex(ins8Bit.getOpCode())
-                            .concat("\t\t")
-                            .concat(ins8Bit.getOpName())
-                    );*/
-
                     this.instructions.add(
-                            this.byteToHex(ins8Bit.getOpCode())
+                            ins8Bit.getOpHex()
                             .concat("\t\t")
                             .concat(this.parseInstruction(ins8Bit).getInstruction())
                     );
@@ -57,7 +49,7 @@ public class Disassembler {
                     short op = (short)((bytes[this.pc] << 8) | (bytes[this.pc + 1] & 0xFF));
                     ins16Bit = GB_16BIT_INSTRUCTIONS.get(op);
                     this.instructions.add(
-                            this.shortToHex(ins16Bit.getOpCode())
+                            ins16Bit.getOpHex()
                             .concat("\t")
                             .concat(ins16Bit.getOpName())
                     );
@@ -71,33 +63,10 @@ public class Disassembler {
     }
 
     /**
-     * Converts a {@code byte} to an 8-bit hex number.
-     * @param b the {@code byte} to convert to hex.
-     * @return The hexadecimal representation of the {@code byte}.
+     * Parse instruction definition, filling in any parameters.
+     * @param instruction The {@link Instruction} to parse.
+     * @return The parsed {@link Instruction}.
      */
-    private String byteToHex(byte b) {
-        char[] hexChars = new char[2];
-
-        // Bytes are unsigned in Java, and we need the unsigned version. The bitwise-and will do that.
-        int h = b & 0xFF;
-
-        // Shift
-        hexChars[0] = HEX_ARRAY[h >>> 4];
-        hexChars[1] = HEX_ARRAY[h & 0x0F];
-
-        return new String(hexChars);
-    }
-
-    /**
-     * Converts a {@code short} to a 16-bit hex number.
-     * @param s The {@code short} to convert to hex.
-     * @return The hexadecimal representation of the {@code short}.
-     */
-    private String shortToHex(short s) {
-        int h = s & 0xFFFF;
-        return this.byteToHex((byte) (h >>> 8)) + this.byteToHex((byte) h);
-    }
-
     private Instruction<Byte> parseInstruction(Instruction<Byte> instruction) {
         byte op1;
         byte op2;
