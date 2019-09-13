@@ -10,6 +10,6 @@ This also includes a disassembler, which I'm pretty sure I don't need for a func
 #### Usage
 Right now, all that works is the disassembler. All you need to do is choose "Disassemble..." from the menu and it will ask for a ROM file.
 
-I'm pretty sure it will crash if you choose a file that's not a GameBoy ROM file since I'm not doing any checks.
+I'm pretty sure it will crash if you choose a file that's not a GameBoy ROM file since I'm not doing any checks. I also have no idea if it's even correct and valid code that comes out. I'm not even sure how to verify that it's right or wrong.
 
 No, I'm not including any ROM file in this repository. I'm sure you can find them somewhere on the internet.
