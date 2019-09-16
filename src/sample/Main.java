@@ -2,17 +2,13 @@ package sample;
 
 import javafx.application.Application;
 import javafx.concurrent.Task;
-import javafx.event.ActionEvent;
-import javafx.event.Event;
-import javafx.event.EventHandler;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import jboy.disassembler.Disassembler;
+import jboy.system.CPU;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,6 +19,7 @@ import java.util.ArrayList;
 public class Main extends Application {
     private Stage stage;
     private ListView<String> listView;
+    private CPU cpu;
 
     @Override
     public void start(Stage primaryStage) throws Exception{
@@ -40,6 +37,7 @@ public class Main extends Application {
 
         primaryStage.setScene(scene);
         primaryStage.show();
+        this.cpu = new CPU();
     }
 
     public static void main(String[] args) {
@@ -48,19 +46,57 @@ public class Main extends Application {
 
     private MenuBar createMenuBar() {
         MenuBar mbMenu = new MenuBar();
+
+        mbMenu.getMenus().add(createFileMenu());
+        mbMenu.getMenus().add(createActionsMenu());
+
+        return mbMenu;
+    }
+
+    private Menu createFileMenu() {
+        Menu mFile = new Menu("File");
+        MenuItem miLoadRom = new MenuItem("Load Rom...");
+
+        miLoadRom.setOnAction(x -> {
+            FileChooser chooser = new FileChooser();
+            File file = chooser.showOpenDialog(this.stage);
+
+            if(file != null) {
+                this.loadRom(file);
+            }
+        });
+
+        mFile.getItems().add(miLoadRom);
+
+        return mFile;
+    }
+
+    private Menu createActionsMenu() {
         Menu mActions = new Menu("Actions");
         MenuItem miDisassemble = new MenuItem("Disassemble...");
+
         miDisassemble.setOnAction(x -> {
             FileChooser chooser = new FileChooser();
             File file = chooser.showOpenDialog(this.stage);
 
-            this.disassemble(file);
+            if(file != null) {
+                this.disassemble(file);
+            }
         });
 
         mActions.getItems().add(miDisassemble);
-        mbMenu.getMenus().add(mActions);
 
-        return mbMenu;
+        return mActions;
+    }
+
+    private void loadRom(File file) {
+        try {
+            byte[] bytes = Files.readAllBytes(Paths.get(file.getPath()));
+            this.cpu = new CPU();
+            this.cpu.loadROM(bytes);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void disassemble(File file) {

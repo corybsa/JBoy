@@ -5,9 +5,9 @@ import java.util.HashMap;
 /**
  * All the instructions available to the GameBoy's LR35902 processor.
  */
-final class Instructions {
-    static final HashMap<Byte, Instruction<Byte>> GB_8BIT_INSTRUCTIONS = new HashMap<>();
-    static final HashMap<Short, Instruction<Short>> GB_16BIT_INSTRUCTIONS = new HashMap<>();
+public final class Instructions {
+    public static final HashMap<Byte, Instruction<Byte>> GB_8BIT_INSTRUCTIONS = new HashMap<>();
+    public static final HashMap<Short, Instruction<Short>> GB_16BIT_INSTRUCTIONS = new HashMap<>();
 
     static {
         /*############################################################################

@@ -1,4 +1,4 @@
-package jboy.gameboy;
+package jboy.system;
 
 /**
  * The GameBoy has 64KB of Memory.
@@ -49,15 +49,45 @@ package jboy.gameboy;
  *                        - It's here because of how the CPU works internally.
  */
 public class Memory {
-    byte[] cartridge = new byte[0x7FFF];
-    byte[] vram = new byte[0x1FFF];
-    byte[] sram = new byte[0x1FFF];
-    byte[] wram = new byte[0x1FFF];
-    byte[] eram = new byte[0x1DFF];
-    byte[] oam = new byte[0x9F];
-    byte[] fea0_feff = new byte[0x5F];
-    byte[] io = new byte[0x48];
-    byte[] ff4c_ff7f = new byte[0x33];
-    byte[] hram = new byte[0x7E];
-    byte[] ime = new byte[1];
+    private byte[] cartridge = new byte[0x7FFF];
+    private byte[] vram = new byte[0x1FFF];
+    private byte[] sram = new byte[0x1FFF];
+    private byte[] wram = new byte[0x1FFF];
+    private byte[] eram = new byte[0x1DFF];
+    private byte[] oam = new byte[0x9F];
+    private byte[] fea0_feff = new byte[0x5F];
+    private byte[] io = new byte[0x48];
+    private byte[] ff4c_ff7f = new byte[0x33];
+    private byte[] hram = new byte[0x7E];
+    private byte[] ime = new byte[1];
+
+    public void loadROM(byte[] rom) {
+        this.cartridge = rom;
+    }
+
+    public byte getByteAt(int n) {
+        if(n <= 0x7FFF) {
+            return this.cartridge[n];
+        } else if(n <= 0x9FFF) {
+            return this.vram[n];
+        } else if(n <= 0xBFFF) {
+            return this.sram[n];
+        } else if(n <= 0xDFFF) {
+            return this.wram[n];
+        } else if(n <= 0xFDFF) {
+            return this.eram[n];
+        } else if(n <= 0xFE9F) {
+            return this.oam[n];
+        } else if(n <= 0xFEFF) {
+            return this.fea0_feff[n];
+        } else if(n <= 0xFF48) {
+            return this.io[n];
+        } else if(n <= 0xFF7F) {
+            return this.ff4c_ff7f[n];
+        } else if(n <= 0xFFFE) {
+            return this.hram[n];
+        } else {
+            return this.ime[0];
+        }
+    }
 }
