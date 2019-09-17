@@ -9,6 +9,7 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import jboy.disassembler.Disassembler;
 import jboy.system.CPU;
+import jboy.system.GameBoy;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,7 +20,7 @@ import java.util.ArrayList;
 public class Main extends Application {
     private Stage stage;
     private ListView<String> listView;
-    private CPU cpu;
+    private GameBoy gameBoy;
 
     @Override
     public void start(Stage primaryStage) throws Exception{
@@ -37,7 +38,7 @@ public class Main extends Application {
 
         primaryStage.setScene(scene);
         primaryStage.show();
-        this.cpu = new CPU();
+        this.gameBoy = new GameBoy();
     }
 
     public static void main(String[] args) {
@@ -92,8 +93,7 @@ public class Main extends Application {
     private void loadRom(File file) {
         try {
             byte[] bytes = Files.readAllBytes(Paths.get(file.getPath()));
-            this.cpu = new CPU();
-            this.cpu.loadROM(bytes);
+            this.gameBoy.loadROM(bytes);
         } catch (IOException e) {
             e.printStackTrace();
         }

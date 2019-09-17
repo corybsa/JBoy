@@ -87,15 +87,14 @@ public class CPU {
     private short SP;
     private short PC;
     private Memory memory;
-    private HashMap<?, Instruction> instructions;
+    public HashMap<Byte, Instruction> instructions;
 
-    interface Command {
-        void exec(Object data);
-    }
-
-    public CPU() {
-        this.memory = new Memory();
+    public CPU(Memory memory) {
+        this.memory = memory;
         this.PC = 0x100;
+
+        this.instructions = new HashMap<>();
+        this.instructions.put((byte)0x00, new Instruction((byte)0x00, (byte)1, (byte)4, x -> this.nop((byte)(x & 0xFF))));
     }
 
     public byte getA() {
@@ -154,89 +153,27 @@ public class CPU {
         return PC;
     }
 
-    public Memory getMemory() {
-        return memory;
-    }
-
     private void incrementPC(byte n) {
         this.PC += n;
     }
 
-    public void loadROM(byte[] rom) {
-        this.memory.loadROM(rom);
-    }
-
     public void tick() {
-        Instruction instruction = Instructions.GB_8BIT_INSTRUCTIONS.get(this.memory.getByteAt(this.PC));
+//        Instruction instruction = Instructions.GB_8BIT_INSTRUCTIONS.get(this.memory.getByteAt(this.PC));
+        Instruction instruction = this.instructions.get(this.memory.getByteAt(this.PC));
         this.execute(instruction);
     }
 
     private void execute(Instruction instruction) {
-        switch(instruction.getOpType()) {
-            case MISC:
-                this.executeMisc(instruction.getOpCode());
-                break;
-            case LOAD_8BIT:
-                this.execute8BitLoad(instruction.getOpCode(), this.get8Bytes());
-                break;
-            case LOAD_16BIT:
-                this.execute16BitLoad(instruction.getOpCode(), this.get16Bytes());
-                break;
-            case MATH_8BIT:
-                break;
-            case MATH_16BIT:
-                break;
-            case JUMP:
-                break;
-            default:
-                break;
-        }
-
+        instruction.getOpType().apply((short)instruction.getOpCode());
         this.incrementPC(instruction.getOpSize());
-    }
-
-    private byte get8Bytes() {
-        return this.memory.getByteAt(this.PC + 1);
-    }
-
-    private short get16Bytes() {
-        short highByte = (short)(this.memory.getByteAt(this.PC + 2) << 8);
-        byte lowByte = this.memory.getByteAt(this.PC + 1);
-        return (short)(highByte + lowByte);
-    }
-
-    private void executeMisc(byte opCode) {
-        switch(opCode) {
-            case 0x00:
-                this.nop();
-                break;
-            case 0x02:
-                this.ld_bc_a();
-                break;
-        }
-    }
-
-    private void execute8BitLoad(byte opCode, byte param) {
-        switch(opCode) {
-            case 0x06:
-                this.ld_b_n(param);
-                break;
-        }
-    }
-
-    private void execute16BitLoad(byte opCode, short param) {
-        switch(opCode) {
-            case 0x01:
-                this.ld_bc_nn(param);
-                break;
-        }
     }
 
     /**
      * No operation.
      */
-    private void nop() {
+    private Void nop(byte x) {
         // nothing.
+        return null;
     }
 
     // LD BC,**

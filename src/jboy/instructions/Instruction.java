@@ -1,5 +1,7 @@
 package jboy.instructions;
 
+import java.util.function.Function;
+
 /**
  * Represents a CPU instruction.
  */
@@ -7,9 +9,9 @@ public class Instruction {
     private byte opCode;
     private byte opSize;
     private byte opCycles;
-    private InstructionType opType;
+    private Function<Short, Void> opType;
 
-    public Instruction(byte code, byte size, byte cycles, InstructionType type) {
+    public Instruction(byte code, byte size, byte cycles, Function<Short, Void> type) {
         this.opCode = code;
         this.opSize = size;
         this.opCycles = cycles;
@@ -28,7 +30,7 @@ public class Instruction {
         return opCycles;
     }
 
-    public InstructionType getOpType() {
+    public Function<Short, Void> getOpType() {
         return opType;
     }
 }
