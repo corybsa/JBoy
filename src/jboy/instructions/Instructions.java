@@ -14,12 +14,12 @@ public final class Instructions {
                                     8 Bit Instructions
         ############################################################################*/
         GB_8BIT_INSTRUCTIONS.put((byte)0x00, new Instruction((byte)0x00, (byte)1, (byte)4, InstructionType.MISC));
-        /*GB_8BIT_INSTRUCTIONS.put((byte)0x01, new Instruction((byte)0x01, (byte)3, (byte)12));
-        GB_8BIT_INSTRUCTIONS.put((byte)0x02, new Instruction((byte)0x02, (byte)1, (byte)8));
-        GB_8BIT_INSTRUCTIONS.put((byte)0x03, new Instruction((byte)0x03, (byte)1, (byte)8));
+        GB_8BIT_INSTRUCTIONS.put((byte)0x01, new Instruction((byte)0x01, (byte)3, (byte)12, InstructionType.LOAD_16BIT));
+        GB_8BIT_INSTRUCTIONS.put((byte)0x02, new Instruction((byte)0x02, (byte)1, (byte)8, InstructionType.MISC));
+        GB_8BIT_INSTRUCTIONS.put((byte)0x06, new Instruction((byte)0x06, (byte)2, (byte)8, InstructionType.LOAD_8BIT));
+        /*GB_8BIT_INSTRUCTIONS.put((byte)0x03, new Instruction((byte)0x03, (byte)1, (byte)8));
         GB_8BIT_INSTRUCTIONS.put((byte)0x04, new Instruction((byte)0x04, (byte)1, (byte)4));
         GB_8BIT_INSTRUCTIONS.put((byte)0x05, new Instruction((byte)0x05, (byte)1, (byte)4));
-        GB_8BIT_INSTRUCTIONS.put((byte)0x06, new Instruction((byte)0x06, (byte)2, (byte)8));
         GB_8BIT_INSTRUCTIONS.put((byte)0x07, new Instruction((byte)0x07, (byte)1, (byte)4));
         GB_8BIT_INSTRUCTIONS.put((byte)0x08, new Instruction((byte)0x08, (byte)3, (byte)20));
         GB_8BIT_INSTRUCTIONS.put((byte)0x09, new Instruction((byte)0x09, (byte)1, (byte)8));
