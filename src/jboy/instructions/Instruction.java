@@ -9,13 +9,13 @@ public class Instruction {
     private byte opCode;
     private byte opSize;
     private byte opCycles;
-    private Function<Short, Void> opType;
+    private Function<byte[], Void> operation;
 
-    public Instruction(byte code, byte size, byte cycles, Function<Short, Void> type) {
+    public Instruction(byte code, byte size, byte cycles, Function<byte[], Void> operation) {
         this.opCode = code;
         this.opSize = size;
         this.opCycles = cycles;
-        this.opType = type;
+        this.operation = operation;
     }
 
     public byte getOpCode() {
@@ -30,7 +30,7 @@ public class Instruction {
         return opCycles;
     }
 
-    public Function<Short, Void> getOpType() {
-        return opType;
+    public Function<byte[], Void> getOperation() {
+        return operation;
     }
 }

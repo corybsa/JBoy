@@ -94,7 +94,9 @@ public class CPU {
         this.PC = 0x100;
 
         this.instructions = new HashMap<>();
-        this.instructions.put((byte)0x00, new Instruction((byte)0x00, (byte)1, (byte)4, x -> this.nop((byte)(x & 0xFF))));
+        this.instructions.put((byte)0x00, new Instruction((byte)0x00, (byte)1, (byte)4, this::nop));
+        this.instructions.put((byte)0x01, new Instruction((byte)0x01, (byte)3, (byte)12, this::ld_bc_nn));
+        this.instructions.put((byte)0x02, new Instruction((byte)0x02, (byte)1, (byte)8, this::ld_bc_a));
     }
 
     public byte getA() {
@@ -164,72 +166,143 @@ public class CPU {
     }
 
     private void execute(Instruction instruction) {
-        instruction.getOpType().apply((short)instruction.getOpCode());
+        switch(instruction.getOpSize()) {
+            case 1:
+                instruction.getOperation().apply(null);
+                break;
+            case 2:
+                instruction.getOperation().apply(this.get8Bytes());
+                break;
+            case 3:
+                instruction.getOperation().apply(this.get16Bytes());
+                break;
+        }
+
         this.incrementPC(instruction.getOpSize());
     }
 
+    private byte[] get8Bytes() {
+        return new byte[] { this.memory.getByteAt(this.PC + 1) };
+    }
+
+    private byte[] get16Bytes() {
+        return new byte[] { this.memory.getByteAt(this.PC + 2), this.memory.getByteAt(this.PC + 1) };
+
+        /*short highByte = (short)(this.memory.getByteAt(this.PC + 2) << 8);
+        byte lowByte = this.memory.getByteAt(this.PC + 1);
+        return (short)(highByte + lowByte);*/
+    }
+
+    private short addBytes(byte highByte, byte lowByte) {
+        return (short)((highByte << 8) + lowByte);
+    }
+
     /**
-     * No operation.
+     * OP code 0x00 - No operation.
+     * @param ops unused
      */
-    private Void nop(byte x) {
+    private Void nop(byte[] ops) {
         // nothing.
         return null;
     }
 
-    // LD BC,**
-    public void ld_bc_nn(short param) {
-        this.BC = param;
+    /**
+     * OP code 0x01 - Load {@code ops} into BC.
+     * @param ops the two immediate 8 byte chunks.
+     */
+    private Void ld_bc_nn(byte[] ops) {
+        this.BC = this.addBytes(ops[0], ops[1]);
+        return null;
     }
 
-    public void ld_bc_a() {
+    /**
+     * OP code 0x02 - Load A into BC.
+     * @param ops unused
+     */
+    private Void ld_bc_a(byte[] ops) {
         this.BC = this.A;
+        return null;
     }
 
     /**
-     * Load {@code n} into B.
-     * @param n An 8-bit immediate value.
+     * OP code 0x03 - Increment B.
+     * @param ops unused
      */
-    public void ld_b_n(byte n) {
-        this.B = n;
+    private Void inc_b(byte[] ops) {
+        this.B += 1;
+        return null;
     }
 
     /**
-     * Load {@code n} into C.
-     * @param n An 8-bit immediate value.
+     * OP code 0x04 - Increment C.
+     * @param ops unused
      */
-    public void ld_c_n(byte n) {
-        this.C = n;
+    private Void inc_c(byte[] ops) {
+        this.C += 1;
+        return null;
     }
 
     /**
-     * Load {@code n} into D.
-     * @param n An 8-bit immediate value.
+     * OP code 0x05 - Decrement B.
+     * @param ops
+     * @return
      */
-    public void ld_d_n(byte n) {
-        this.D = n;
+    private Void dec_b(byte[] ops) {
+        this.B -= 1;
+        return null;
     }
 
     /**
-     * Load {@code n} into E.
-     * @param n An 8-bit immediate value.
+     * OP code 0x06 - Load {@code ops} into B.
+     * @param ops An 8-bit immediate value.
      */
-    public void ld_e_n(byte n) {
-        this.E = n;
+    private Void ld_b_n(byte[] ops) {
+        this.B = ops[0];
+        return null;
     }
 
     /**
-     * Load {@code n} into H.
-     * @param n An 8-bit immediate value.
+     * OP code 0x0E - Load {@code n} into C.
+     * @param ops An 8-bit immediate value.
      */
-    public void ld_h_n(byte n) {
-        this.H = n;
+    private Void ld_c_n(byte[] ops) {
+        this.C = ops[0];
+        return null;
     }
 
     /**
-     * Load {@code n} into L.
-     * @param n An 8-bit immediate value.
+     * OP code 0x16 - Load {@code n} into D.
+     * @param ops An 8-bit immediate value.
      */
-    public void ld_l_n(byte n) {
-        this.L = n;
+    private Void ld_d_n(byte[] ops) {
+        this.D = ops[0];
+        return null;
+    }
+
+    /**
+     * OP code 0x1E - Load {@code n} into E.
+     * @param ops An 8-bit immediate value.
+     */
+    private Void ld_e_n(byte[] ops) {
+        this.E = ops[0];
+        return null;
+    }
+
+    /**
+     * OP code 0x26 - Load {@code n} into H.
+     * @param ops An 8-bit immediate value.
+     */
+    private Void ld_h_n(byte[] ops) {
+        this.H = ops[0];
+        return null;
+    }
+
+    /**
+     * OP code 0x2E - Load {@code n} into L.
+     * @param ops An 8-bit immediate value.
+     */
+    private Void ld_l_n(byte[] ops) {
+        this.L = ops[0];
+        return null;
     }
 }
