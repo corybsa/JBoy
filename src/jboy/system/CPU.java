@@ -207,7 +207,7 @@ public class CPU {
     }
 
     /**
-     * OP code 0x01 - Load {@code ops} into BC.
+     * OP code 0x01 - Load immediate 2 bytes into BC.
      * @param ops the two immediate 8 byte chunks.
      */
     private Void ld_bc_nn(byte[] ops) {
@@ -244,8 +244,7 @@ public class CPU {
 
     /**
      * OP code 0x05 - Decrement B.
-     * @param ops
-     * @return
+     * @param ops unused
      */
     private Void dec_b(byte[] ops) {
         this.B -= 1;
@@ -253,8 +252,8 @@ public class CPU {
     }
 
     /**
-     * OP code 0x06 - Load {@code ops} into B.
-     * @param ops An 8-bit immediate value.
+     * OP code 0x06 - Load immediate byte into B.
+     * @param ops An 8 bit immediate value.
      */
     private Void ld_b_n(byte[] ops) {
         this.B = ops[0];
@@ -262,8 +261,8 @@ public class CPU {
     }
 
     /**
-     * OP code 0x0E - Load {@code n} into C.
-     * @param ops An 8-bit immediate value.
+     * OP code 0x0E - Load immediate byte into C.
+     * @param ops An 8 bit immediate value.
      */
     private Void ld_c_n(byte[] ops) {
         this.C = ops[0];
@@ -271,8 +270,8 @@ public class CPU {
     }
 
     /**
-     * OP code 0x16 - Load {@code n} into D.
-     * @param ops An 8-bit immediate value.
+     * OP code 0x16 - Load immediate byte into D.
+     * @param ops An 8 bit immediate value.
      */
     private Void ld_d_n(byte[] ops) {
         this.D = ops[0];
@@ -280,8 +279,8 @@ public class CPU {
     }
 
     /**
-     * OP code 0x1E - Load {@code n} into E.
-     * @param ops An 8-bit immediate value.
+     * OP code 0x1E - Load immediate byte into E.
+     * @param ops An 8 bit immediate value.
      */
     private Void ld_e_n(byte[] ops) {
         this.E = ops[0];
@@ -289,8 +288,8 @@ public class CPU {
     }
 
     /**
-     * OP code 0x26 - Load {@code n} into H.
-     * @param ops An 8-bit immediate value.
+     * OP code 0x26 - Load immediate byte into H.
+     * @param ops An 8 bit immediate value.
      */
     private Void ld_h_n(byte[] ops) {
         this.H = ops[0];
@@ -298,8 +297,8 @@ public class CPU {
     }
 
     /**
-     * OP code 0x2E - Load {@code n} into L.
-     * @param ops An 8-bit immediate value.
+     * OP code 0x2E - Load immediate byte into L.
+     * @param ops An 8 bit immediate value.
      */
     private Void ld_l_n(byte[] ops) {
         this.L = ops[0];
