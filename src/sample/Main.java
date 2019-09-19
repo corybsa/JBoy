@@ -93,7 +93,13 @@ public class Main extends Application {
     private void loadRom(File file) {
         try {
             byte[] bytes = Files.readAllBytes(Paths.get(file.getPath()));
-            this.gameBoy.loadROM(bytes);
+            int[] rom = new int[bytes.length];
+
+            for(int i = 0; i < bytes.length; i++) {
+                rom[i] = bytes[i] & 0xFF;
+            }
+
+            this.gameBoy.loadROM(rom);
         } catch (IOException e) {
             e.printStackTrace();
         }

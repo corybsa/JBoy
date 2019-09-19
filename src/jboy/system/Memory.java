@@ -49,23 +49,23 @@ package jboy.system;
  *                        - It's here because of how the CPU works internally.
  */
 public class Memory {
-    private byte[] cartridge = new byte[0x7FFF];
-    private byte[] vram = new byte[0x1FFF];
-    private byte[] sram = new byte[0x1FFF];
-    private byte[] wram = new byte[0x1FFF];
-    private byte[] eram = new byte[0x1DFF];
-    private byte[] oam = new byte[0x9F];
-    private byte[] fea0_feff = new byte[0x5F];
-    private byte[] io = new byte[0x48];
-    private byte[] ff4c_ff7f = new byte[0x33];
-    private byte[] hram = new byte[0x7E];
-    private byte[] ime = new byte[1];
+    private int[] cartridge = new int[0x7FFF];
+    private int[] vram = new int[0x1FFF];
+    private int[] sram = new int[0x1FFF];
+    private int[] wram = new int[0x1FFF];
+    private int[] eram = new int[0x1DFF];
+    private int[] oam = new int[0x9F];
+    private int[] fea0_feff = new int[0x5F];
+    private int[] io = new int[0x48];
+    private int[] ff4c_ff7f = new int[0x33];
+    private int[] hram = new int[0x7E];
+    private int[] ime = new int[1];
 
-    public void loadROM(byte[] rom) {
+    public void loadROM(int[] rom) {
         this.cartridge = rom;
     }
 
-    public byte getByteAt(int n) {
+    public int getByteAt(int n) {
         if(n <= 0x7FFF) {
             return this.cartridge[n];
         } else if(n <= 0x9FFF) {
@@ -88,6 +88,32 @@ public class Memory {
             return this.hram[n];
         } else {
             return this.ime[0];
+        }
+    }
+
+    public void setByteAt(int address, int value) {
+        if(address <= 0x7FFF) {
+            this.cartridge[address] = value;
+        } else if(address <= 0x9FFF) {
+            this.vram[address] = value;
+        } else if(address <= 0xBFFF) {
+            this.sram[address] = value;
+        } else if(address <= 0xDFFF) {
+            this.wram[address] = value;
+        } else if(address <= 0xFDFF) {
+            this.eram[address] = value;
+        } else if(address <= 0xFE9F) {
+            this.oam[address] = value;
+        } else if(address <= 0xFEFF) {
+            this.fea0_feff[address] = value;
+        } else if(address <= 0xFF48) {
+            this.io[address] = value;
+        } else if(address <= 0xFF7F) {
+            this.ff4c_ff7f[address] = value;
+        } else if(address <= 0xFFFE) {
+            this.hram[address] = value;
+        } else {
+            this.ime[0] = value;
         }
     }
 }

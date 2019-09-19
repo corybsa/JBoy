@@ -40,10 +40,10 @@ import java.util.HashMap;
  *     <li>
  *         The F register consists of the following:
  *         <ul>
- *             <li>Zero flag (Z): This bit is set when the result of a math operation is zero or two values match when using the CP instruction.</li>
- *             <li>Subtract flag (N): This bit is set if a subtraction was performed in the last math instruction.</li>
- *             <li>Half carry flag (H): This bit is set if a carry occurred from the lower nibble in the last math operation.</li>
- *             <li>Carry flag (C): This bit is set if a carry occurred from the last math operation of if register A is the smaller value when executing the CP instruction.</li>
+ *             <li>Zero flag (Z, 7th bit): This bit is set when the result of a math operation is zero or two values match when using the CP instruction.</li>
+ *             <li>Subtract flag (N, 6th bit): This bit is set if a subtraction was performed in the last math instruction.</li>
+ *             <li>Half carry flag (H, 5th bit): This bit is set if a carry occurred from the lower nibble in the last math operation.</li>
+ *             <li>Carry flag (C, 4th bit): This bit is set if a carry occurred from the last math operation of if register A is the smaller value when executing the CP instruction.</li>
  *         </ul>
  *     </li>
  *     <li>
@@ -72,95 +72,111 @@ import java.util.HashMap;
  * </ul>
  */
 public class CPU {
-    private byte A;
-    private byte B;
-    private byte C;
-    private byte D;
-    private byte E;
-    private byte F;
-    private byte H;
-    private byte L;
-    private short AF;
-    private short BC;
-    private short DE;
-    private short HL;
-    private short SP;
-    private short PC;
+    public static final int FLAG_ZERO = 0x80;
+    public static final int FLAG_SUB = 0x40;
+    public static final int FLAG_HALF = 0x20;
+    public static final int FLAG_CARRY = 0x10;
+
+    private int A;
+    private int B;
+    private int C;
+    private int D;
+    private int E;
+    private int F;
+    private int H;
+    private int L;
+    private int AF;
+    private int BC;
+    private int DE;
+    private int HL;
+    private int SP;
+    private int PC;
     private Memory memory;
-    public HashMap<Byte, Instruction> instructions;
+    public HashMap<Integer, Instruction> instructions;
 
     public CPU(Memory memory) {
         this.memory = memory;
         this.PC = 0x100;
+        this.SP = 0xFFFE;
 
         this.instructions = new HashMap<>();
-        this.instructions.put((byte)0x00, new Instruction((byte)0x00, (byte)1, (byte)4, this::nop));
-        this.instructions.put((byte)0x01, new Instruction((byte)0x01, (byte)3, (byte)12, this::ld_bc_nn));
-        this.instructions.put((byte)0x02, new Instruction((byte)0x02, (byte)1, (byte)8, this::ld_bc_a));
+        this.instructions.put(0x00, new Instruction(0x00, 1, 4, this::nop));
+        this.instructions.put(0x01, new Instruction(0x01, 3, 12, this::ld_bc_nn));
+        this.instructions.put(0x02, new Instruction(0x02, 1, 8, this::ld_bc_a));
+        this.instructions.put(0x03, new Instruction(0x03, 1, 8, this::inc_bc));
+        this.instructions.put(0x04, new Instruction(0x04, 1, 4, this::inc_c));
+        this.instructions.put(0x05, new Instruction(0x05, 1, 4, this::dec_b));
+        this.instructions.put(0x06, new Instruction(0x06, 2, 8, this::ld_b_n));
+        this.instructions.put(0x07, new Instruction(0x07, 1, 4, this::rlca));
+        this.instructions.put(0x0A, new Instruction(0x0A, 1, 8, this::ld_a_bc));
+        this.instructions.put(0x3E, new Instruction(0x3E, 2, 1, this::ld_a_n));
     }
 
-    public byte getA() {
-        return A;
+    public int getA() {
+        return this.A;
     }
 
-    public byte getB() {
-        return B;
+    public int getB() {
+        return this.B;
     }
 
-    public byte getC() {
-        return C;
+    public int getC() {
+        return this.C;
     }
 
-    public byte getD() {
-        return D;
+    public int getD() {
+        return this.D;
     }
 
-    public byte getE() {
-        return E;
+    public int getE() {
+        return this.E;
     }
 
-    public byte getF() {
-        return F;
+    public int getF() {
+        return this.F;
     }
 
-    public byte getH() {
-        return H;
+    public int getH() {
+        return this.H;
     }
 
-    public byte getL() {
-        return L;
+    public int getL() {
+        return this.L;
     }
 
-    public short getAF() {
-        return AF;
+    public int getAF() {
+        return this.AF;
     }
 
-    public short getBC() {
-        return BC;
+    public int getBC() {
+        return this.BC;
     }
 
-    public short getDE() {
-        return DE;
+    public int getDE() {
+        return this.DE;
     }
 
-    public short getHL() {
-        return HL;
+    public int getHL() {
+        return this.HL;
     }
 
-    public short getSP() {
-        return SP;
+    public int getSP() {
+        return this.SP;
     }
 
-    public short getPC() {
-        return PC;
+    public int getPC() {
+        return this.PC;
     }
 
-    private void incrementPC(byte n) {
+    public void setPC(int n) {
+        this.PC = n;
+    }
+
+    private void incrementPC(int n) {
         this.PC += n;
     }
 
     public void tick() {
-//        Instruction instruction = Instructions.GB_8BIT_INSTRUCTIONS.get(this.memory.getByteAt(this.PC));
         Instruction instruction = this.instructions.get(this.memory.getByteAt(this.PC));
         this.execute(instruction);
     }
@@ -181,27 +197,31 @@ public class CPU {
         this.incrementPC(instruction.getOpSize());
     }
 
-    private byte[] get8Bytes() {
-        return new byte[] { this.memory.getByteAt(this.PC + 1) };
+    private int[] get8Bytes() {
+        return new int[] { this.memory.getByteAt(this.PC + 1) };
     }
 
-    private byte[] get16Bytes() {
-        return new byte[] { this.memory.getByteAt(this.PC + 2), this.memory.getByteAt(this.PC + 1) };
-
-        /*short highByte = (short)(this.memory.getByteAt(this.PC + 2) << 8);
-        byte lowByte = this.memory.getByteAt(this.PC + 1);
-        return (short)(highByte + lowByte);*/
+    private int[] get16Bytes() {
+        return new int[] { this.memory.getByteAt(this.PC + 2), this.memory.getByteAt(this.PC + 1) };
     }
 
-    private short addBytes(byte highByte, byte lowByte) {
-        return (short)((highByte << 8) + lowByte);
+    private int addBytes(int highByte, int lowByte) {
+        return (highByte << 8) + lowByte;
+    }
+
+    public void setFlags(int flags) {
+        this.F = this.F | flags;
+    }
+
+    public void resetFlags(int flags) {
+        this.F = this.F & ~flags;
     }
 
     /**
      * OP code 0x00 - No operation.
      * @param ops unused
      */
-    private Void nop(byte[] ops) {
+    private Void nop(int[] ops) {
         // nothing.
         return null;
     }
@@ -210,26 +230,26 @@ public class CPU {
      * OP code 0x01 - Load immediate 2 bytes into BC.
      * @param ops the two immediate 8 byte chunks.
      */
-    private Void ld_bc_nn(byte[] ops) {
+    private Void ld_bc_nn(int[] ops) {
         this.BC = this.addBytes(ops[0], ops[1]);
         return null;
     }
 
     /**
-     * OP code 0x02 - Load A into BC.
+     * OP code 0x02 - Load value of A into memory address at BC.
      * @param ops unused
      */
-    private Void ld_bc_a(byte[] ops) {
-        this.BC = this.A;
+    private Void ld_bc_a(int[] ops) {
+        this.memory.setByteAt(this.BC, this.A);
         return null;
     }
 
     /**
-     * OP code 0x03 - Increment B.
+     * OP code 0x03 - Increment BC.
      * @param ops unused
      */
-    private Void inc_b(byte[] ops) {
-        this.B += 1;
+    private Void inc_bc(int[] ops) {
+        this.BC += 1;
         return null;
     }
 
@@ -237,7 +257,7 @@ public class CPU {
      * OP code 0x04 - Increment C.
      * @param ops unused
      */
-    private Void inc_c(byte[] ops) {
+    private Void inc_c(int[] ops) {
         this.C += 1;
         return null;
     }
@@ -246,7 +266,7 @@ public class CPU {
      * OP code 0x05 - Decrement B.
      * @param ops unused
      */
-    private Void dec_b(byte[] ops) {
+    private Void dec_b(int[] ops) {
         this.B -= 1;
         return null;
     }
@@ -255,8 +275,36 @@ public class CPU {
      * OP code 0x06 - Load immediate byte into B.
      * @param ops An 8 bit immediate value.
      */
-    private Void ld_b_n(byte[] ops) {
+    private Void ld_b_n(int[] ops) {
         this.B = ops[0];
+        return null;
+    }
+
+    /**
+     * OP code 0x07 - Shift A left by 1 bit. Carry flag is set to the 7th bit of A.
+     * @param ops unused
+     */
+    private Void rlca(int[] ops) {
+        int carry = (this.A & 0x80) >> 7;
+
+        if(carry == 1) {
+            this.setFlags(FLAG_CARRY);
+        }
+
+        // shift bit left by 1 and only keep the value below 256
+        this.A = (this.A << 1) & 0xFF;
+
+        // set the 0th bit to whatever was at the 7th bit.
+        this.A = this.A | carry;
+        return null;
+    }
+
+    /**
+     * OP code 0x0A - Load value at memory address BC into A.
+     * @param ops unused.
+     */
+    private Void ld_a_bc(int[] ops) {
+        this.A = this.memory.getByteAt(this.BC);
         return null;
     }
 
@@ -264,7 +312,7 @@ public class CPU {
      * OP code 0x0E - Load immediate byte into C.
      * @param ops An 8 bit immediate value.
      */
-    private Void ld_c_n(byte[] ops) {
+    private Void ld_c_n(int[] ops) {
         this.C = ops[0];
         return null;
     }
@@ -273,7 +321,7 @@ public class CPU {
      * OP code 0x16 - Load immediate byte into D.
      * @param ops An 8 bit immediate value.
      */
-    private Void ld_d_n(byte[] ops) {
+    private Void ld_d_n(int[] ops) {
         this.D = ops[0];
         return null;
     }
@@ -282,7 +330,7 @@ public class CPU {
      * OP code 0x1E - Load immediate byte into E.
      * @param ops An 8 bit immediate value.
      */
-    private Void ld_e_n(byte[] ops) {
+    private Void ld_e_n(int[] ops) {
         this.E = ops[0];
         return null;
     }
@@ -291,7 +339,7 @@ public class CPU {
      * OP code 0x26 - Load immediate byte into H.
      * @param ops An 8 bit immediate value.
      */
-    private Void ld_h_n(byte[] ops) {
+    private Void ld_h_n(int[] ops) {
         this.H = ops[0];
         return null;
     }
@@ -300,8 +348,17 @@ public class CPU {
      * OP code 0x2E - Load immediate byte into L.
      * @param ops An 8 bit immediate value.
      */
-    private Void ld_l_n(byte[] ops) {
+    private Void ld_l_n(int[] ops) {
         this.L = ops[0];
+        return null;
+    }
+
+    /**
+     * OP code 0x3E - Load immediate byte into A.
+     * @param ops An 8 bit immediate value.
+     */
+    private Void ld_a_n(int[] ops) {
+        this.A = ops[0];
         return null;
     }
 }

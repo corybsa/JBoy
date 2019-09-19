@@ -6,31 +6,31 @@ import java.util.function.Function;
  * Represents a CPU instruction.
  */
 public class Instruction {
-    private byte opCode;
-    private byte opSize;
-    private byte opCycles;
-    private Function<byte[], Void> operation;
+    private int opCode;
+    private int opSize;
+    private int opCycles;
+    private Function<int[], Void> operation;
 
-    public Instruction(byte code, byte size, byte cycles, Function<byte[], Void> operation) {
+    public Instruction(int code, int size, int cycles, Function<int[], Void> operation) {
         this.opCode = code;
         this.opSize = size;
         this.opCycles = cycles;
         this.operation = operation;
     }
 
-    public byte getOpCode() {
+    public int getOpCode() {
         return opCode;
     }
 
-    public byte getOpSize() {
+    public int getOpSize() {
         return opSize;
     }
 
-    public byte getOpCycles() {
+    public int getOpCycles() {
         return opCycles;
     }
 
-    public Function<byte[], Void> getOperation() {
+    public Function<int[], Void> getOperation() {
         return operation;
     }
 }

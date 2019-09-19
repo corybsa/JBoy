@@ -9,7 +9,7 @@ public class GameBoy {
         this.cpu = new CPU(this.memory);
     }
 
-    public void loadROM(byte[] rom) {
+    public void loadROM(int[] rom) {
         this.memory.loadROM(rom);
     }
 }
