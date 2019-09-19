@@ -1,4 +1,4 @@
-package jboy.instructions;
+package jboy.system;
 
 import java.util.function.Function;
 
