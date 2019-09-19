@@ -748,7 +748,7 @@ public class CPU {
     }
 
     /**
-     * OP code 0x00 - No operation.
+     * OP codes 0x00, 0xD3, 0xDB, 0xDD, 0xE3, 0xE4, 0xEB, 0xEC, 0xED, 0xF4, 0xFC, 0xFD - No operation.
      * @param ops unused
      */
     private Void nop(int[] ops) {
