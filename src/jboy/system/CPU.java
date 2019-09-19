@@ -55,7 +55,7 @@ import java.util.HashMap;
  *             <li>The instructions POP, RET and RETI all take information off of the stack.</li>
  *             <li>Interrupts put a return address on the stack and remove it at the completion as well.</li>
  *             <li>
- *                 As information is put onto the stack, the stack grows DOWNWARD in RAM. As a result SP should always be initialized at the highest location of RAM space that has been allocated for use byu the stack.
+ *                 As information is put onto the stack, the stack grows DOWNWARD in RAM. As a result SP should always be initialized at the highest location of RAM space that has been allocated for use by the stack.
  *                 <ul>
  *                     <li>
  *                         For example, if a programmer wants to locate the SP at the top of low RAM space (0xC000 - 0xDFFF) he would set SP to 0xE000 using LD SP,$E000.
@@ -69,9 +69,16 @@ import java.util.HashMap;
  * </ul>
  */
 public class CPU {
+    // Value of the Zero flag is 10000000
     public static final int FLAG_ZERO = 0x80;
+
+    // Value of the Subtract flag is 01000000
     public static final int FLAG_SUB = 0x40;
+
+    // Value of the Half Carry flag is 00100000
     public static final int FLAG_HALF = 0x20;
+
+    // Value of the Carry flag is 00010000
     public static final int FLAG_CARRY = 0x10;
 
     private int A;
@@ -706,43 +713,71 @@ public class CPU {
         this.PC += n;
     }
 
+    /**
+     * Tick one clock cycle
+     */
     public void tick() {
         Instruction instruction = this.instructions.get(this.memory.getByteAt(this.PC));
         this.execute(instruction);
     }
 
+    /**
+     * Execute the {@link Instruction instruction}.
+     * @param instruction The instruction to execute.
+     */
     private void execute(Instruction instruction) {
         switch(instruction.getOpSize()) {
             case 1:
                 instruction.getOperation().apply(null);
                 break;
             case 2:
-                instruction.getOperation().apply(this.get8Bytes());
+                instruction.getOperation().apply(this.getNextByte());
                 break;
             case 3:
-                instruction.getOperation().apply(this.get16Bytes());
+                instruction.getOperation().apply(this.getNext2Bytes());
                 break;
         }
 
         this.incrementPC(instruction.getOpSize());
     }
 
-    private int[] get8Bytes() {
+    /**
+     * Get the next byte from memory.
+     * @return The next byte in memory as an array.
+     */
+    private int[] getNextByte() {
         return new int[] { this.memory.getByteAt(this.PC + 1) };
     }
 
-    private int[] get16Bytes() {
+    /**
+     * Get the next 2 bytes from memory. The GameBoy is Little Endian so the high byte and the low byte
+     * are the second and first bytes from the current location, respectivly.
+     * @return The next byte in memory as an array.
+     */
+    private int[] getNext2Bytes() {
         return new int[] { this.memory.getByteAt(this.PC + 2), this.memory.getByteAt(this.PC + 1) };
     }
 
+    /**
+     * Concatenates two bytes. Example, 0xC0 + 0xDE = 0xC0DE
+     * @return The sum of the bytes.
+     */
     private int addBytes(int highByte, int lowByte) {
         return (highByte << 8) + lowByte;
     }
 
+    /**
+     * Sets flags in the F register. If multiple flags should be set, then they should be bitwise or'd together.
+     * Example: if Z and H should be set, then they should be passed in to this method like this: Z | H
+     */
     public void setFlags(int flags) {
         this.F = this.F | flags;
     }
 
+    /**
+     * Resets flags in the F register. If multiple flags should be reset, then they should be bitwise or'd together.
+     * Example: if Z and H should be reset, then they should be passed in to this method like this: Z | H
+     */
     public void resetFlags(int flags) {
         this.F = this.F & ~flags;
     }
