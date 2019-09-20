@@ -38,9 +38,9 @@ import java.util.HashMap;
  *         The F register consists of the following:
  *         <ul>
  *             <li>Zero flag (Z, 7th bit): This bit is set when the result of a math operation is zero or two values match when using the CP instruction.</li>
- *             <li>Subtract flag (N, 6th bit): This bit is set if a subtraction was performed in the last math instruction.</li>
+ *             <li>Subtract flag (N, 6th bit): This bit is set if a subtraction was performed in the last math instruction regardless of result..</li>
  *             <li>Half carry flag (H, 5th bit): This bit is set if a carry occurred from the lower nibble in the last math operation.</li>
- *             <li>Carry flag (C, 4th bit): This bit is set if a carry occurred from the last math operation of if register A is the smaller value when executing the CP instruction.</li>
+ *             <li>Carry flag (C, 4th bit): This bit is set when an operation results in carrying from or borrowing to the 7th bit.</li>
  *         </ul>
  *     </li>
  *     <li>
@@ -68,17 +68,17 @@ import java.util.HashMap;
  *     </li>
  * </ul>
  */
-public class CPU {
-    // Value of the Zero flag is 10000000
+public class CPU implements Registers {
+    // Value of the Zero flag is 0b10000000
     public static final int FLAG_ZERO = 0x80;
 
-    // Value of the Subtract flag is 01000000
+    // Value of the Subtract flag is 0b01000000
     public static final int FLAG_SUB = 0x40;
 
-    // Value of the Half Carry flag is 00100000
+    // Value of the Half Carry flag is 0b00100000
     public static final int FLAG_HALF = 0x20;
 
-    // Value of the Carry flag is 00010000
+    // Value of the Carry flag is 0b00010000
     public static final int FLAG_CARRY = 0x10;
 
     private int A;
@@ -96,7 +96,7 @@ public class CPU {
     private int SP;
     private int PC;
     private Memory memory;
-    public HashMap<Integer, Instruction> instructions;
+    private HashMap<Integer, Instruction> instructions;
 
     public CPU(Memory memory) {
         this.memory = memory;
@@ -783,6 +783,65 @@ public class CPU {
     }
 
     /**
+     * Increments a {@code value} by 1 and sets the necessary flags.
+     * @param value The value to increment.
+     * @return The incremented value.
+     */
+    private int increment(int value) {
+        // FLAG_HALF - set if there was a carry from the 3rd bit to the 4th bit, otherwise reset
+        if((value & 0x0F) == 0x0F) {
+            this.setFlags(FLAG_HALF);
+        } else {
+            this.resetFlags(FLAG_HALF);
+        }
+
+        // increment value by 1 and get the first 8 bits
+        value = (value + 1) & 0xFF;
+
+        // FLAG_SUB - reset
+        this.resetFlags(FLAG_SUB);
+
+        // FLAG_ZERO - set if result is 0, otherwise reset
+        if(value == 0) {
+            this.setFlags(FLAG_ZERO);
+        } else {
+            this.resetFlags(FLAG_ZERO);
+        }
+
+        return value;
+    }
+
+    /**
+     * Decrements a {@code value} by 1 and sets the necessary flags.
+     * @param value The value to decrement.
+     * @return The decremented value.
+     */
+    private int decrement(int value) {
+        // TODO: Not sure if this is right.
+        // FLAG_HALF - set if there was a carry from the 0th bit to the 7th bit, otherwise reset
+        if((value & 0x0F) == 0) {
+            this.setFlags(FLAG_HALF);
+        } else {
+            this.resetFlags(FLAG_HALF);
+        }
+
+        // decrement value by 1 and get the first 8 bits
+        value = (value - 1) & 0xFF;
+
+        // FLAG_SUB - set
+        this.setFlags(FLAG_SUB);
+
+        // FLAG_ZERO - set if result is 0, otherwise reset
+        if(value == 0) {
+            this.setFlags(FLAG_ZERO);
+        } else {
+            this.resetFlags(FLAG_ZERO);
+        }
+
+        return value;
+    }
+
+    /**
      * OP codes 0x00, 0xD3, 0xDB, 0xDD, 0xE3, 0xE4, 0xEB, 0xEC, 0xED, 0xF4, 0xFC, 0xFD - No operation.
      * @param ops unused
      */
@@ -814,7 +873,8 @@ public class CPU {
      * @param ops unused
      */
     private Void inc_bc(int[] ops) {
-        this.BC += 1;
+        // increment BC by 1 and get the first 8 bits
+        this.BC = (this.BC + 1) & 0xFF;
         return null;
     }
 
@@ -823,8 +883,7 @@ public class CPU {
      * @param ops unused
      */
     private Void inc_b(int[] ops) {
-        // TODO: Flags are affected by this operation. Need to figure that out.
-        this.B += 1;
+        this.B = this.increment(this.B);
         return null;
     }
 
@@ -833,8 +892,7 @@ public class CPU {
      * @param ops unused
      */
     private Void dec_b(int[] ops) {
-        // TODO: Flags are affected by this operation. Need to figure that out.
-        this.B -= 1;
+        this.B = this.decrement(this.B);
         return null;
     }
 
@@ -858,7 +916,7 @@ public class CPU {
             this.setFlags(FLAG_CARRY);
         }
 
-        // shift bit left by 1 and only keep the value below 256
+        // shift bit left by 1 and get the first 8 bits
         this.A = (this.A << 1) & 0xFF;
 
         // set the 0th bit to whatever was at the 7th bit.
@@ -910,8 +968,7 @@ public class CPU {
      * @param ops unused.
      */
     private Void inc_c(int[] ops) {
-        // TODO: Flags are affected by this operation. Need to figure that out.
-        this.C += 1;
+        this.C = this.increment(this.C);
         return null;
     }
 
@@ -920,8 +977,7 @@ public class CPU {
      * @param ops unused.
      */
     private Void dec_c(int[] ops) {
-        // TODO: Flags are affected by this operation. Need to figure that out.
-        this.C -= 1;
+        this.C = this.decrement(this.C);
         return null;
     }
 
@@ -935,7 +991,7 @@ public class CPU {
     }
 
     /**
-     * OP code 0x0F - Shift A right by 1 bit. Carry flag is set to the 7th bit of A..
+     * OP code 0x0F - Shift A right by 1 bit. Carry flag is set to the 7th bit of A.
      * @param ops unused.
      */
     private Void rrca(int[] ops) {
@@ -943,14 +999,17 @@ public class CPU {
 
         if(carry == 1) {
             this.setFlags(FLAG_CARRY);
+        } else {
+            this.resetFlags(FLAG_CARRY);
         }
 
         // shift bit right by 1 and only keep the value below 256
         this.A = (this.A >> 1) & 0xFF;
 
         // set the 7th bit to whatever was at the 0th bit.
-        // TODO: This isn't right
-        this.A = this.A & (carry << 8);
+        // TODO: This might be right
+        // https://www.geeksforgeeks.org/modify-bit-given-position/
+         this.A = (((this.A >> 1) & (~0x80)) | ((carry << 7) & 0x80));
 
         this.resetFlags(FLAG_ZERO | FLAG_SUB | FLAG_HALF);
         return null;
@@ -962,6 +1021,7 @@ public class CPU {
      */
     private Void stop(int[] ops) {
         // i guess do nothing????
+        // TODO: figure out what to do with this.
         return null;
     }
 
