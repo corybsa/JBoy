@@ -109,20 +109,20 @@ public class CPU {
         this.instructions.put(0x01, new Instruction(0x01, 3, 12, this::ld_bc_xx));
         this.instructions.put(0x02, new Instruction(0x02, 1, 8, this::ld_bcp_a));
         this.instructions.put(0x03, new Instruction(0x03, 1, 8, this::inc_bc));
-        this.instructions.put(0x04, new Instruction(0x04, 1, 4, this::inc_c));
+        this.instructions.put(0x04, new Instruction(0x04, 1, 4, this::inc_b));
         this.instructions.put(0x05, new Instruction(0x05, 1, 4, this::dec_b));
         this.instructions.put(0x06, new Instruction(0x06, 2, 8, this::ld_b_x));
         this.instructions.put(0x07, new Instruction(0x07, 1, 4, this::rlca));
-//        this.instructions.put(0x08, new Instruction(0x08, 3, 20, this::ld_xxp_sp));
-//        this.instructions.put(0x09, new Instruction(0x09, 1, 8, this::add_hl_bc));
+        this.instructions.put(0x08, new Instruction(0x08, 3, 20, this::ld_xxp_sp));
+        this.instructions.put(0x09, new Instruction(0x09, 1, 8, this::add_hl_bc));
         this.instructions.put(0x0A, new Instruction(0x0A, 1, 8, this::ld_a_bcp));
-//        this.instructions.put(0x0B, new Instruction(0x0B, 1, 8, this::dec_bc));
+        this.instructions.put(0x0B, new Instruction(0x0B, 1, 8, this::dec_bc));
         this.instructions.put(0x0C, new Instruction(0x0C, 1, 4, this::inc_c));
-//        this.instructions.put(0x0D, new Instruction(0x0D, 1, 4, this::dec_c));
+        this.instructions.put(0x0D, new Instruction(0x0D, 1, 4, this::dec_c));
         this.instructions.put(0x0E, new Instruction(0x0E, 2, 8, this::ld_c_x));
 //        this.instructions.put(0x0F, new Instruction(0x0F, 1, 4, this::rrca));
 
-//        this.instructions.put(0x10, new Instruction(0x10, 2, 4, this::stop));
+        this.instructions.put(0x10, new Instruction(0x10, 2, 4, this::stop));
 //        this.instructions.put(0x11, new Instruction(0x11, 3, 12, this::ld_de_xx));
 //        this.instructions.put(0x12, new Instruction(0x12, 1, 8, this::ld_dep_a));
 //        this.instructions.put(0x13, new Instruction(0x13, 1, 8, this::inc_de));
@@ -759,10 +759,10 @@ public class CPU {
     }
 
     /**
-     * Concatenates two bytes. Example, 0xC0 + 0xDE = 0xC0DE
+     * Combines two bytes. Example, 0xC0 + 0xDE = 0xC0DE
      * @return The sum of the bytes.
      */
-    private int addBytes(int highByte, int lowByte) {
+    private int combineBytes(int highByte, int lowByte) {
         return (highByte << 8) + lowByte;
     }
 
@@ -796,7 +796,7 @@ public class CPU {
      * @param ops the two immediate 8 byte chunks.
      */
     private Void ld_bc_xx(int[] ops) {
-        this.BC = this.addBytes(ops[0], ops[1]);
+        this.BC = this.combineBytes(ops[0], ops[1]);
         return null;
     }
 
@@ -819,11 +819,12 @@ public class CPU {
     }
 
     /**
-     * OP code 0x04 - Increment C.
+     * OP code 0x04 - Increment B.
      * @param ops unused
      */
-    private Void inc_c(int[] ops) {
-        this.C += 1;
+    private Void inc_b(int[] ops) {
+        // TODO: Flags are affected by this operation. Need to figure that out.
+        this.B += 1;
         return null;
     }
 
@@ -832,6 +833,7 @@ public class CPU {
      * @param ops unused
      */
     private Void dec_b(int[] ops) {
+        // TODO: Flags are affected by this operation. Need to figure that out.
         this.B -= 1;
         return null;
     }
@@ -861,6 +863,27 @@ public class CPU {
 
         // set the 0th bit to whatever was at the 7th bit.
         this.A = this.A | carry;
+
+        this.resetFlags(FLAG_ZERO | FLAG_SUB | FLAG_HALF);
+        return null;
+    }
+
+    /**
+     * OP code 0x08 - Load value of SP into address at xx.
+     * @param ops the two immediate 8 byte chunks.
+     */
+    private Void ld_xxp_sp(int[] ops) {
+        this.memory.setByteAt(this.combineBytes(ops[1], ops[0]), this.SP);
+        return null;
+    }
+
+    /**
+     * OP code 0x09 - Add the value of BC to HL.
+     * @param ops unused
+     */
+    private Void add_hl_bc(int[] ops) {
+        // TODO: Flags are affected by this operation. Need to figure that out.
+        this.HL += this.BC;
         return null;
     }
 
@@ -874,11 +897,71 @@ public class CPU {
     }
 
     /**
+     * OP code 0x0B - Decrement the value of BC.
+     * @param ops unused.
+     */
+    private Void dec_bc(int[] ops) {
+        this.BC -= 1;
+        return null;
+    }
+
+    /**
+     * OP code 0x0C - Increment the value of C.
+     * @param ops unused.
+     */
+    private Void inc_c(int[] ops) {
+        // TODO: Flags are affected by this operation. Need to figure that out.
+        this.C += 1;
+        return null;
+    }
+
+    /**
+     * OP code 0x0C - Decrement the value of C.
+     * @param ops unused.
+     */
+    private Void dec_c(int[] ops) {
+        // TODO: Flags are affected by this operation. Need to figure that out.
+        this.C -= 1;
+        return null;
+    }
+
+    /**
      * OP code 0x0E - Load immediate byte into C.
      * @param ops An 8 bit immediate value.
      */
     private Void ld_c_x(int[] ops) {
         this.C = ops[0];
+        return null;
+    }
+
+    /**
+     * OP code 0x0F - Shift A right by 1 bit. Carry flag is set to the 7th bit of A..
+     * @param ops unused.
+     */
+    private Void rrca(int[] ops) {
+        int carry = (this.A & 0x01);
+
+        if(carry == 1) {
+            this.setFlags(FLAG_CARRY);
+        }
+
+        // shift bit right by 1 and only keep the value below 256
+        this.A = (this.A >> 1) & 0xFF;
+
+        // set the 7th bit to whatever was at the 0th bit.
+        // TODO: This isn't right
+        this.A = this.A & (carry << 8);
+
+        this.resetFlags(FLAG_ZERO | FLAG_SUB | FLAG_HALF);
+        return null;
+    }
+
+    /**
+     * OP code 0x10 - Enter CPU very low power mode. Also used to switch between double and normal speed CPU modes in GBC.
+     * @param ops unused.
+     */
+    private Void stop(int[] ops) {
+        // i guess do nothing????
         return null;
     }
 
