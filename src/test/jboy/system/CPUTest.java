@@ -33,7 +33,7 @@ class CPUTest {
     }
 
     @Test
-    void testSetFlags() {
+    void setFlagsTest() {
         cpu.setFlags(CPU.FLAG_ZERO);
         assertEquals(0b10000000, cpu.getF(), "Only ZERO flag should be set.");
 
@@ -48,7 +48,7 @@ class CPUTest {
     }
 
     @Test
-    void testResetFlags() {
+    void resetFlagsTest() {
         cpu.setFlags(0b11110000);
         assertEquals(0b11110000, cpu.getF(), "All flags should be set.");
 
@@ -66,7 +66,7 @@ class CPUTest {
     }
 
     @Test
-    void testComplexFlagLogic() {
+    void complexFlagLogicTest() {
         cpu.setFlags(CPU.FLAG_ZERO | CPU.FLAG_CARRY);
         assertEquals(0b10010000, cpu.getF(), "ZERO and CARRY flags should be set.");
 
@@ -82,7 +82,7 @@ class CPUTest {
 
     // op code 0x00
     @Test
-    void testNOP() {
+    void nop_test() {
         rom[0x100] = 0x00; // nop
 
         memory.loadROM(rom);
@@ -93,7 +93,7 @@ class CPUTest {
 
     // op code 0x01
     @Test
-    void test_LD_BC_NN() {
+    void ld_bc_xx_test() {
         rom[0x100] = 0x01; // ld bc,0x895F
         rom[0x101] = 0x5F;
         rom[0x102] = 0x89;
@@ -101,13 +101,13 @@ class CPUTest {
         memory.loadROM(rom);
 
         cpu.tick();
-        assertEquals(0x895F, cpu.getBC(), "The BC register should be equal to 0x895F");
+        assertEquals(0x895F, cpu.getBC(), "The BC register should equal 0x895F");
         assertEquals(0x103, cpu.getPC(), "PC should equal 0x103");
     }
 
     // op code 0x02
     @Test
-    void test_LD_BC_A() {
+    void ld_bc_a_test() {
         rom[0x100] = 0x01; // ld bc,0x7F50
         rom[0x101] = 0x50;
         rom[0x102] = 0x7F;
@@ -118,32 +118,121 @@ class CPUTest {
         memory.loadROM(rom);
 
         cpu.tick();
-        assertEquals(0x7F50, cpu.getBC(), "The BC register should be equal to 0x7F50.");
+        assertEquals(0x7F50, cpu.getBC(), "The BC register should equal 0x7F50.");
 
         cpu.tick();
         assertEquals(0x50, cpu.getA(), "The A register should equal 0x50.");
 
         cpu.tick();
-        assertEquals(0x50, memory.getByteAt(cpu.getBC()), "The BC register should be equal to 0x50");
+        assertEquals(0x50, memory.getByteAt(cpu.getBC()), "The BC register should equal 0x50");
         assertEquals(0x106, cpu.getPC(), "PC should equal 0x106");
+    }
+
+    // op code 0x03
+    @Test
+    void inc_bc_test() {
+        rom[0x100] = 0x03;
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        assertEquals(0x01, cpu.getBC(), "The BC register should equal 0x01.");
+    }
+
+    // op code 0x04
+    @Test
+    void inc_b_test() {
+        rom[0x100] = 0x06; // ld b,0x00
+        rom[0x101] = 0x00;
+        rom[0x102] = 0x04; // inc b
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0x01, cpu.getB(), "The B register should equal 0x01");
+        assertEquals(0x00, cpu.getF(), "No flags should be set.");
+
+        cpu.setPC(0x100);
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
+
+        rom[0x100] = 0x06; // ld b,0x0F
+        rom[0x101] = 0x0F;
+        rom[0x102] = 0x04; // inc b
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0x10, cpu.getB(), "The B register should equal 0x10");
+        assertEquals(CPU.FLAG_HALF, cpu.getF(), "The HALF_CARRY flag should be set.");
+
+        cpu.setPC(0x100);
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
+
+        rom[0x100] = 0x06; // ld b,0xFF
+        rom[0x101] = 0xFF;
+        rom[0x102] = 0x04; // inc b
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0x00, cpu.getB(), "The B register should equal 0x00");
+        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.getF(), "The ZERO and HALF_CARRY flags should be set.");
+    }
+
+    // op code 0x05
+    @Test
+    void dec_b_test() {
+        rom[0x100] = 0x06; // ld b,0x01
+        rom[0x101] = 0x01;
+        rom[0x102] = 0x05; // dec b
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0x00, cpu.getB(), "The B register should equal 0x01");
+        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_SUB, cpu.getF(), "No ZERO and SUB flags should be set.");
+
+        cpu.setPC(0x100);
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
+
+        rom[0x100] = 0x06; // ld b,0x0F
+        rom[0x101] = 0x0F;
+        rom[0x102] = 0x05; // dec b
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0x10, cpu.getB(), "The B register should equal 0x10");
+        assertEquals(CPU.FLAG_HALF, cpu.getF(), "The HALF_CARRY flag should be set.");
+
+        cpu.setPC(0x100);
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
+
+        rom[0x100] = 0x06; // ld b,0xFF
+        rom[0x101] = 0xFF;
+        rom[0x102] = 0x05; // dec b
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0x00, cpu.getB(), "The B register should equal 0x00");
+        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.getF(), "The ZERO and HALF_CARRY flags should be set.");
     }
 
     // op code 0x06
     @Test
-    void test_LD_B_N() {
+    void ld_b_x_test() {
         rom[0x100] = 0x06; // ld b,0xF3
         rom[0x101] = 0xF3;
 
         memory.loadROM(rom);
 
         cpu.tick();
-        assertEquals(0xF3, cpu.getB(), "B should equal 0xF3");
+        assertEquals(0xF3, cpu.getB(), "The B register should equal 0xF3");
         assertEquals(0x102, cpu.getPC(), "PC should equal 0x102");
     }
 
     // op code 0x07
     @Test
-    void test_RLCA() {
+    void rlca_test() {
         rom[0x100] = 0x3E; // ld a,0xAA
         rom[0x101] = 0xAA;
         rom[0x102] = 0x07; // rcla
@@ -159,7 +248,7 @@ class CPUTest {
 
     // op code 0x0A
     @Test
-    void test_LD_A_BC() {
+    void ld_a_bc_test() {
         // this is the value that BC will point to.
         rom[0x7F00] = 0x12;
 
@@ -178,7 +267,7 @@ class CPUTest {
 
     // op code 0x3E
     @Test
-    void test_LD_A_N() {
+    void ld_a_x_test() {
         rom[0x100] = 0x3E; // ld a,0xA9
         rom[0x101] = 0xA9;
 
