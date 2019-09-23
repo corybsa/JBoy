@@ -788,7 +788,7 @@ public class CPU implements Registers {
      * @return The incremented value.
      */
     private int increment(int value) {
-        // FLAG_HALF - set if there was a carry from the 3rd bit to the 4th bit, otherwise reset
+        // FLAG_HALF - set if there was a carry from the 3rd bit to the 4th bit, otherwise reset.
         if((value & 0x0F) == 0x0F) {
             this.setFlags(FLAG_HALF);
         } else {
@@ -817,16 +817,19 @@ public class CPU implements Registers {
      * @return The decremented value.
      */
     private int decrement(int value) {
-        // TODO: Not sure if this is right.
-        // FLAG_HALF - set if there was a carry from the 0th bit to the 7th bit, otherwise reset
-        if((value & 0x0F) == 0) {
+        // decrement value by 1 and get the first 8 bits
+        int result = (value - 1) & 0xFF;
+
+        // FLAG_HALF - set if there was a carry (borrow) from the 4th bit to the 3rd bit, otherwise reset.
+        // invert value's bits, xor with (value - 1) then find out what the 4th bit is with (& 0x10).
+        // If it equals zero, then there was a carry.
+        if((((~value) ^ (result)) & 0x10) == 0) {
             this.setFlags(FLAG_HALF);
         } else {
             this.resetFlags(FLAG_HALF);
         }
 
-        // decrement value by 1 and get the first 8 bits
-        value = (value - 1) & 0xFF;
+        value = result;
 
         // FLAG_SUB - set
         this.setFlags(FLAG_SUB);
