@@ -1,7 +1,6 @@
 package test.jboy.system;
 
 import jboy.system.CPU;
-import jboy.system.Memory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,24 +10,19 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class CPUTest {
     static private CPU cpu;
-    static private Memory memory;
-    static private int[] rom;
 
     @BeforeAll
     static void testBeforeAll() {
-        memory = new Memory();
-        cpu = new CPU(memory);
+        cpu = new CPU(null);
     }
 
     @BeforeEach
     void setUp() {
         cpu.setPC(0x100);
-        rom = new int[0x7FFF];
     }
 
     @AfterEach
     void tearDown() {
-        rom = null;
         cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
     }
 
