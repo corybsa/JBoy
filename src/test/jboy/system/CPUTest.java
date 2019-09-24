@@ -265,6 +265,14 @@ class CPUTest {
         assertEquals(0x103, cpu.getPC(), "PC should equal 0x104");
     }
 
+    // op code 0x08
+    @Test
+    void ld_xxp_sp_test() {}
+
+    // op code 0x09
+    @Test
+    void add_hl_bc_test() {}
+
     // op code 0x0A
     @Test
     void ld_a_bc_test() {
@@ -283,6 +291,27 @@ class CPUTest {
         assertEquals(0x12, cpu.getA(), "The A register should equal 0x12");
         assertEquals(0x104, cpu.getPC(), "PC should equal 0x103");
     }
+
+    // op code 0x0B
+    @Test
+    void dec_bc_test() {}
+
+    // op code 0x0C
+    @Test
+    void inc_c_test() {}
+
+    // op code 0x0D
+    @Test
+    void dec_c_test() {}
+
+    // op code 0x0E
+    @Test
+    void ld_c_x_test() {}
+
+    // op code 0x0F
+    @Test
+    void rrca_test() {}
+
 
     // op code 0x3E
     @Test
