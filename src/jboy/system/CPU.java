@@ -230,7 +230,7 @@ public class CPU implements Registers {
 //        this.instructions.put(0x73, new Instruction(0x73, 1, 1, this::ld_hlp_e));
 //        this.instructions.put(0x74, new Instruction(0x74, 1, 1, this::ld_hlp_h));
 //        this.instructions.put(0x75, new Instruction(0x75, 1, 1, this::ld_hlp_l));
-//        this.instructions.put(0x76, new Instruction(0x76, 1, 1, this::ld_hlp_hlp));
+//        this.instructions.put(0x76, new Instruction(0x76, 1, 1, this::halt));
 //        this.instructions.put(0x77, new Instruction(0x77, 1, 1, this::ld_hlp_a));
 //        this.instructions.put(0x78, new Instruction(0x78, 1, 1, this::ld_a_b));
 //        this.instructions.put(0x79, new Instruction(0x79, 1, 1, this::ld_a_c));
@@ -1012,19 +1012,27 @@ public class CPU implements Registers {
         // set the 7th bit to whatever was at the 0th bit.
         // TODO: This might be right
         // https://www.geeksforgeeks.org/modify-bit-given-position/
-         this.A = (((this.A >> 1) & (~0x80)) | ((carry << 7) & 0x80));
+        this.A = (((this.A >> 1) & (~0x80)) | ((carry << 7) & 0x80));
 
         this.resetFlags(FLAG_ZERO | FLAG_SUB | FLAG_HALF);
         return null;
     }
 
     /**
-     * OP code 0x10 - Enter CPU very low power mode. Also used to switch between double and normal speed CPU modes in GBC.
+     * OP code 0x10 - Enter CPU very low power mode.
+     * - Execution of a STOP instruction stops both the system clock and oscillator circuit.
+     * - STOP mode is entered, and the LCD controller also stops.
+     * - However, the status of internal RAM register ports remains unchanged.
+     * - STOP mode can be canceled by a reset signal.
+     * - If the RESET terminal goes LOW in STOP mode, it becomes that of a normal reset status.
+     * - The following conditions should be met before a STOP instruction is executed and STOP mode is entered:
+     *   > All interrupt-enable (IE) flags are reset.
+     *   > Input to P10 - P13 is LOW for all.
      * @param ops unused.
      */
     private Void stop(int[] ops) {
-        // i guess do nothing????
         // TODO: figure out what to do with this.
+        // I guess reset the IE flag, but how do I implement STOP in the CPU?
         return null;
     }
 
