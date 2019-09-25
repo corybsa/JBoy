@@ -7,6 +7,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 public class CPUInstructions0xCB40_0xCB4F {
     static private CPU cpu;
     static private Memory memory;
@@ -32,35 +34,227 @@ public class CPUInstructions0xCB40_0xCB4F {
 
     // op code 0xCB40
     @Test
-    void bit_0_b_test() {}
+    void bit_0_b_test() {
+        rom[0x100] = 0x06; // ld b,0x01
+        rom[0x101] = 0x01;
+        rom[0x102] = 0xCB; // bit 0,b
+        rom[0x103] = 0x40;
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(CPU.FLAG_HALF, cpu.getF(), "The HALF_CARRY flag should be set.");
+        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+
+        cpu.setPC(0x100);
+
+        rom[0x100] = 0x06; // ld b,0x04
+        rom[0x101] = 0x04;
+        rom[0x102] = 0xCB; // bit 0,b
+        rom[0x103] = 0x40;
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.getF(), "The ZERO and HALF_CARRY flag should be set.");
+        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+    }
 
     // op code 0xCB41
     @Test
-    void bit_0_c_test() {}
+    void bit_0_c_test() {
+        rom[0x100] = 0x0E; // ld c,0x01
+        rom[0x101] = 0x01;
+        rom[0x102] = 0xCB; // bit 0,c
+        rom[0x103] = 0x41;
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(CPU.FLAG_HALF, cpu.getF(), "The HALF_CARRY flag should be set.");
+        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+
+        cpu.setPC(0x100);
+
+        rom[0x100] = 0x0E; // ld c,0x04
+        rom[0x101] = 0x04;
+        rom[0x102] = 0xCB; // bit 0,c
+        rom[0x103] = 0x41;
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.getF(), "The ZERO and HALF_CARRY flag should be set.");
+        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+    }
 
     // op code 0xCB42
     @Test
-    void bit_0_d_test() {}
+    void bit_0_d_test() {
+        rom[0x100] = 0x16; // ld d,0x01
+        rom[0x101] = 0x01;
+        rom[0x102] = 0xCB; // bit 0,d
+        rom[0x103] = 0x42;
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(CPU.FLAG_HALF, cpu.getF(), "The HALF_CARRY flag should be set.");
+        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+
+        cpu.setPC(0x100);
+
+        rom[0x100] = 0x16; // ld d,0x04
+        rom[0x101] = 0x04;
+        rom[0x102] = 0xCB; // bit 0,d
+        rom[0x103] = 0x42;
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.getF(), "The ZERO and HALF_CARRY flag should be set.");
+        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+    }
 
     // op code 0xCB43
     @Test
-    void bit_0_e_test() {}
+    void bit_0_e_test() {
+        rom[0x100] = 0x1E; // ld e,0x01
+        rom[0x101] = 0x01;
+        rom[0x102] = 0xCB; // bit 0,e
+        rom[0x103] = 0x43;
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(CPU.FLAG_HALF, cpu.getF(), "The HALF_CARRY flag should be set.");
+        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+
+        cpu.setPC(0x100);
+
+        rom[0x100] = 0x1E; // ld e,0x04
+        rom[0x101] = 0x04;
+        rom[0x102] = 0xCB; // bit 0,e
+        rom[0x103] = 0x43;
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.getF(), "The ZERO and HALF_CARRY flag should be set.");
+        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+    }
 
     // op code 0xCB44
     @Test
-    void bit_0_h_test() {}
+    void bit_0_h_test() {
+        rom[0x100] = 0x26; // ld h,0x01
+        rom[0x101] = 0x01;
+        rom[0x102] = 0xCB; // bit 0,h
+        rom[0x103] = 0x44;
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(CPU.FLAG_HALF, cpu.getF(), "The HALF_CARRY flag should be set.");
+        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+
+        cpu.setPC(0x100);
+
+        rom[0x100] = 0x26; // ld h,0x04
+        rom[0x101] = 0x04;
+        rom[0x102] = 0xCB; // bit 0,h
+        rom[0x103] = 0x44;
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.getF(), "The ZERO and HALF_CARRY flag should be set.");
+        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+    }
 
     // op code 0xCB45
     @Test
-    void bit_0_l_test() {}
+    void bit_0_l_test() {
+        rom[0x100] = 0x2E; // ld l,0x01
+        rom[0x101] = 0x01;
+        rom[0x102] = 0xCB; // bit 0,l
+        rom[0x103] = 0x45;
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(CPU.FLAG_HALF, cpu.getF(), "The HALF_CARRY flag should be set.");
+        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+
+        cpu.setPC(0x100);
+
+        rom[0x100] = 0x2E; // ld l,0x04
+        rom[0x101] = 0x04;
+        rom[0x102] = 0xCB; // bit 0,l
+        rom[0x103] = 0x45;
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.getF(), "The ZERO and HALF_CARRY flag should be set.");
+        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+    }
 
     // op code 0xCB46
     @Test
-    void bit_0_hlp_test() {}
+    void bit_0_hlp_test() {
+        rom[0x7000] = 0x01; // This is the value that HL will point to.
+
+        rom[0x100] = 0x21; // ld hl,0x7000
+        rom[0x101] = 0x00;
+        rom[0x102] = 0x70;
+        rom[0x103] = 0xCB; // bit 0,(hl)
+        rom[0x104] = 0x46;
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(CPU.FLAG_HALF, cpu.getF(), "The HALF_CARRY flag should be set.");
+        assertEquals(0x105, cpu.getPC(), "PC should equal 0x105.");
+
+        cpu.setPC(0x100);
+
+        rom[0x7000] = 0x04; // This is the value that HL will point to.
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.getF(), "The ZERO and HALF_CARRY flag should be set.");
+        assertEquals(0x105, cpu.getPC(), "PC should equal 0x105.");
+    }
 
     // op code 0xCB47
     @Test
-    void bit_0_a_test() {}
+    void bit_0_a_test() {
+        rom[0x100] = 0x3E; // ld a,0x01
+        rom[0x101] = 0x01;
+        rom[0x102] = 0xCB; // bit 0,a
+        rom[0x103] = 0x47;
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(CPU.FLAG_HALF, cpu.getF(), "The HALF_CARRY flag should be set.");
+        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+
+        cpu.setPC(0x100);
+
+        rom[0x100] = 0x3E; // ld a,0x04
+        rom[0x101] = 0x04;
+        rom[0x102] = 0xCB; // bit 0,a
+        rom[0x103] = 0x47;
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.getF(), "The ZERO and HALF_CARRY flag should be set.");
+        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+    }
 
     // op code 0xCB48
     @Test

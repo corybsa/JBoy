@@ -136,7 +136,7 @@ public class CPU implements Registers {
 //        this.instructions.put(0x1B, new Instruction(0x1B, 1, 4, this::dec_de));
 //        this.instructions.put(0x1C, new Instruction(0x1C, 1, 4, this::inc_e));
 //        this.instructions.put(0x1D, new Instruction(0x1D, 1, 4, this::dec_e));
-//        this.instructions.put(0x1E, new Instruction(0x1E, 2, 8, this::ld_e_n));
+//        this.instructions.put(0x1E, new Instruction(0x1E, 2, 8, this::ld_e_x));
 //        this.instructions.put(0x1F, new Instruction(0x1F, 1, 4, this::rra));
 
 //        this.instructions.put(0x20, new Instruction(0x20, 2, 1, this::jr_nz_x));
@@ -717,8 +717,25 @@ public class CPU implements Registers {
      * Tick one clock cycle
      */
     public void tick() {
-        Instruction instruction = this.instructions.get(this.memory.getByteAt(this.PC));
+        Instruction instruction = this.getInstruction(this.memory.getByteAt(this.PC));
         this.execute(instruction);
+    }
+
+    /**
+     * Fetches the current instruction.
+     * @param opCode The op code to fetch.
+     * @return The instruction to be executed.
+     */
+    private Instruction getInstruction(int opCode) {
+        // Check if the op code is an 8-bit operation.
+        if(opCode != 0xCB) {
+            return this.instructions.get(opCode);
+        } else {
+            // The code is a 16-bit operation, so we need to combine the current op code and the next one in memory
+            // to get the full op code.
+            int code = this.combineBytes(opCode, this.memory.getByteAt(this.PC + 1));
+            return this.instructions.get(code);
+        }
     }
 
     /**
