@@ -315,7 +315,7 @@ public class CPUInstructions0xCB50_0xCB5F {
     // op code 0xCB5A
     @Test
     void bit_3_d_test() {
-        rom[0x100] = 0x16; // ld d,0x012
+        rom[0x100] = 0x16; // ld d,0x08
         rom[0x101] = 0x08;
         rom[0x102] = 0xCB; // bit 3,d
         rom[0x103] = 0x5A;
