@@ -219,9 +219,9 @@ class CPUInstructions0x00_0x0F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x0A, cpu.getA(), "The A register should equal 0x0A.");
+        assertEquals(0x0B, cpu.getA(), "The A register should equal 0x0B.");
         assertEquals(CPU.FLAG_CARRY, cpu.getF(), "The CARRY flag should be set.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x104.");
+        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
     }
 
     // op code 0x08
