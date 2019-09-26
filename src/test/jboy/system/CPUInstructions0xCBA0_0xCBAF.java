@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class CPUInstructions0xCBA0_0xCBAF {
+class CPUInstructions0xCBA0_0xCBAF {
     static private CPU cpu;
     static private Memory memory;
     static private int[] rom;
