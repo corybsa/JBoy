@@ -48,6 +48,7 @@ class CPUInstructions0xCB60_0xCB6F {
         assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
 
         cpu.setPC(0x100);
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
 
         rom[0x100] = 0x06; // ld b,0x00
         rom[0x101] = 0x00;
@@ -76,6 +77,7 @@ class CPUInstructions0xCB60_0xCB6F {
         assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
 
         cpu.setPC(0x100);
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
 
         rom[0x100] = 0x0E; // ld c,0x00
         rom[0x101] = 0x00;
@@ -104,6 +106,7 @@ class CPUInstructions0xCB60_0xCB6F {
         assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
 
         cpu.setPC(0x100);
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
 
         rom[0x100] = 0x16; // ld d,0x00
         rom[0x101] = 0x00;
@@ -132,6 +135,7 @@ class CPUInstructions0xCB60_0xCB6F {
         assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
 
         cpu.setPC(0x100);
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
 
         rom[0x100] = 0x1E; // ld e,0x00
         rom[0x101] = 0x00;
@@ -160,6 +164,7 @@ class CPUInstructions0xCB60_0xCB6F {
         assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
 
         cpu.setPC(0x100);
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
 
         rom[0x100] = 0x26; // ld h,0x00
         rom[0x101] = 0x00;
@@ -188,6 +193,7 @@ class CPUInstructions0xCB60_0xCB6F {
         assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
 
         cpu.setPC(0x100);
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
 
         rom[0x100] = 0x2E; // ld l,0x00
         rom[0x101] = 0x00;
@@ -219,6 +225,7 @@ class CPUInstructions0xCB60_0xCB6F {
         assertEquals(0x105, cpu.getPC(), "PC should equal 0x105.");
 
         cpu.setPC(0x100);
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
 
         rom[0x7000] = 0x00; // This is the value that HL will point to.
 
@@ -244,6 +251,7 @@ class CPUInstructions0xCB60_0xCB6F {
         assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
 
         cpu.setPC(0x100);
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
 
         rom[0x100] = 0x3E; // ld a,0x00
         rom[0x101] = 0x00;
@@ -272,6 +280,7 @@ class CPUInstructions0xCB60_0xCB6F {
         assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
 
         cpu.setPC(0x100);
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
 
         rom[0x100] = 0x06; // ld b,0x00
         rom[0x101] = 0x00;
@@ -300,6 +309,7 @@ class CPUInstructions0xCB60_0xCB6F {
         assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
 
         cpu.setPC(0x100);
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
 
         rom[0x100] = 0x0E; // ld c,0x00
         rom[0x101] = 0x00;
@@ -328,6 +338,7 @@ class CPUInstructions0xCB60_0xCB6F {
         assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
 
         cpu.setPC(0x100);
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
 
         rom[0x100] = 0x16; // ld d,0x00
         rom[0x101] = 0x00;
@@ -356,6 +367,7 @@ class CPUInstructions0xCB60_0xCB6F {
         assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
 
         cpu.setPC(0x100);
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
 
         rom[0x100] = 0x1E; // ld e,0x00
         rom[0x101] = 0x00;
@@ -384,6 +396,7 @@ class CPUInstructions0xCB60_0xCB6F {
         assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
 
         cpu.setPC(0x100);
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
 
         rom[0x100] = 0x26; // ld h,0x00
         rom[0x101] = 0x00;
@@ -412,6 +425,7 @@ class CPUInstructions0xCB60_0xCB6F {
         assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
 
         cpu.setPC(0x100);
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
 
         rom[0x100] = 0x2E; // ld l,0x00
         rom[0x101] = 0x00;
@@ -443,6 +457,7 @@ class CPUInstructions0xCB60_0xCB6F {
         assertEquals(0x105, cpu.getPC(), "PC should equal 0x105.");
 
         cpu.setPC(0x100);
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
 
         rom[0x7000] = 0x00; // This is the value that HL will point to.
 
@@ -468,6 +483,7 @@ class CPUInstructions0xCB60_0xCB6F {
         assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
 
         cpu.setPC(0x100);
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
 
         rom[0x100] = 0x3E; // ld a,0x00
         rom[0x101] = 0x00;
