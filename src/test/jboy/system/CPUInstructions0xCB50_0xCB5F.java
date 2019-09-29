@@ -209,11 +209,11 @@ class CPUInstructions0xCB50_0xCB5F {
     // op code 0xCB56
     @Test
     void bit_2_hlp_test() {
-        rom[0x7000] = 0x04; // This is the value that HL will point to.
+        rom[0xC000] = 0x04; // This is the value that HL will point to.
 
-        rom[0x100] = 0x21; // ld hl,0x7000
+        rom[0x100] = 0x21; // ld hl,0xC000
         rom[0x101] = 0x00;
-        rom[0x102] = 0x70;
+        rom[0x102] = 0xC0;
         rom[0x103] = 0xCB; // bit 2,(hl)
         rom[0x104] = 0x56;
 
@@ -227,7 +227,7 @@ class CPUInstructions0xCB50_0xCB5F {
         cpu.setPC(0x100);
         cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
 
-        rom[0x7000] = 0x00; // This is the value that HL will point to.
+        rom[0xC000] = 0x00; // This is the value that HL will point to.
 
         cpu.tick();
         cpu.tick();
@@ -441,11 +441,11 @@ class CPUInstructions0xCB50_0xCB5F {
     // op code 0xCB5E
     @Test
     void bit_3_hlp_test() {
-        rom[0x7000] = 0x08; // This is the value that HL will point to.
+        rom[0xC000] = 0x08; // This is the value that HL will point to.
 
-        rom[0x100] = 0x21; // ld hl,0x7000
+        rom[0x100] = 0x21; // ld hl,0xC000
         rom[0x101] = 0x00;
-        rom[0x102] = 0x70;
+        rom[0x102] = 0xC0;
         rom[0x103] = 0xCB; // bit 3,(hl)
         rom[0x104] = 0x5E;
 
@@ -459,7 +459,7 @@ class CPUInstructions0xCB50_0xCB5F {
         cpu.setPC(0x100);
         cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
 
-        rom[0x7000] = 0x00; // This is the value that HL will point to.
+        rom[0xC000] = 0x00; // This is the value that HL will point to.
 
         cpu.tick();
         cpu.tick();

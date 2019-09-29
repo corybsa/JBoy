@@ -92,9 +92,9 @@ public class Memory {
     }
 
     public void setByteAt(int address, int value) {
-        if(address <= 0x7FFF) {
-            this.cartridge[address] = value;
-        } else if(address <= 0x9FFF) {
+        // can't modify the ROM (0x0000 through 0x7FFF)
+
+        if(address >= 0x8000 && address <= 0x9FFF) {
             this.vram[address] = value;
         } else if(address <= 0xBFFF) {
             this.sram[address] = value;

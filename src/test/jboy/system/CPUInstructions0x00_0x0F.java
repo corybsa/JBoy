@@ -266,11 +266,11 @@ class CPUInstructions0x00_0x0F {
     // op code 0x0A
     @Test
     void ld_a_bc_test() {
-        rom[0x7F00] = 0x12; // this is the value that BC will point to.
+        rom[0xC000] = 0x12; // this is the value that BC will point to.
 
-        rom[0x100] = 0x01; // ld bc,0x7F00
+        rom[0x100] = 0x01; // ld bc,0xC000
         rom[0x101] = 0x00;
-        rom[0x102] = 0x7F;
+        rom[0x102] = 0xC0;
         rom[0x103] = 0x0A; // ld a,(bc)
 
         memory.loadROM(rom);

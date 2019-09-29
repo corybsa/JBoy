@@ -52,11 +52,34 @@ class CPUInstructions0x10_0x1F {
 
     // op code 0x12
     @Test
-    void ld_dep_a_test() {}
+    void ld_dep_a_test() {
+        rom[0x100] = 0x3E; //ld a,0xFF
+        rom[0x101] = 0xFF;
+        rom[0x102] = 0x12; // ld (de),a
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0xFF, memory.getByteAt(cpu.getDE()), "The value pointed to by DE should be 0xFF.");
+        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+    }
 
     // op code 0x13
     @Test
-    void inc_de_test() {}
+    void inc_de_test() {
+        rom[0x100] = 0x11; // ld de,0x7000
+        rom[0x101] = 0x00;
+        rom[0x102] = 0x70;
+        rom[0x103] = 0x13; // inc de
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0x7001, cpu.getDE(), "The DE register should equal 0x7001.");
+        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+    }
 
     // op code 0x14
     @Test
@@ -176,23 +199,85 @@ class CPUInstructions0x10_0x1F {
 
     // op code 0x17
     @Test
-    void rla_test() {}
+    void rla_test() {
+        rom[0x100] = 0x3E; // ld a,0x95
+        rom[0x101] = 0x95;
+        rom[0x102] = 0x17; // rla
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0x2B, cpu.getA(), "The A register should equal 0x2B.");
+        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+    }
 
     // op code 0x18
     @Test
-    void jr_x_test() {}
+    void jr_x_test() {
+        rom[0x100] = 0x18; // jr 0x05;
+        rom[0x101] = 0x05;
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        assertEquals(0x106, cpu.getPC(), "PC should equal 0x106.");
+    }
 
     // op code 0x19
     @Test
-    void add_hl_de_test() {}
+    void add_hl_de_test() {
+        rom[0x100] = 0x11; // ld de,0x0605
+        rom[0x101] = 0x05;
+        rom[0x102] = 0x06;
+        rom[0x103] = 0x21; // ld hl,0x8A23
+        rom[0x104] = 0x23;
+        rom[0x105] = 0x8A;
+        rom[0x106] = 0x19; // add hl,de
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0x0605, cpu.getHL(), "The HL register should equal 0x0605.");
+        assertEquals(CPU.FLAG_HALF, cpu.getF(), "The HALF_CARRY flag should be set.");
+        assertEquals(0x107, cpu.getPC(), "PC should equal 0x107.");
+    }
 
     // op code 0x1A
     @Test
-    void ld_a_dep_test() {}
+    void ld_a_dep_test() {
+        rom[0xC000] = 0xFF; // This is the value that DE will point to.
+
+        rom[0x100] = 0x11; // ld de,0xC000
+        rom[0x101] = 0x00;
+        rom[0x102] = 0xC0;
+        rom[0x103] = 0x1A; // ld a,(de)
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0xFF, cpu.getA(), "The A register should equal 0xFF.");
+        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+    }
 
     // op code 0x1B
     @Test
-    void dec_de_test() {}
+    void dec_de_test() {
+        rom[0x100] = 0x11; // ld de,0x0605
+        rom[0x101] = 0x05;
+        rom[0x102] = 0x06;
+        rom[0x103] = 0x1B; // dec de
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0x0604, cpu.getDE(), "The DE register should equal 0x0604.");
+        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+    }
 
     // op code 0x1C
     @Test
@@ -312,5 +397,24 @@ class CPUInstructions0x10_0x1F {
 
     // op code 0x1F
     @Test
-    void rra_test() {}
+    void rra_test() {
+        rom[0x100] = 0x3E; // ld a,0x81
+        rom[0x101] = 0x81;
+        rom[0x102] = 0x1F; // rra
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0x40, cpu.getA(), "The A register should equal 0x40.");
+        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+
+        cpu.setFlags(CPU.FLAG_CARRY);
+        cpu.setPC(0x100);
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0xC0, cpu.getA(), "The A register should equal 0xC0.");
+        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+    }
 }

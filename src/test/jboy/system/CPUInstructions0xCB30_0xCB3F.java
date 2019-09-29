@@ -221,11 +221,11 @@ class CPUInstructions0xCB30_0xCB3F {
     // op code 0xCB36
     @Test
     void swap_hlp_test() {
-        rom[0x7000] = 0x00; // This is the value that HL will point to.
+        rom[0xC000] = 0x00; // This is the value that HL will point to.
 
-        rom[0x100] = 0x21; // ld hl,0x7000
+        rom[0x100] = 0x21; // ld hl,0xC000
         rom[0x101] = 0x00;
-        rom[0x102] = 0x70;
+        rom[0x102] = 0xC0;
         rom[0x103] = 0xCB; // swap (hl)
         rom[0x104] = 0x36;
 
@@ -240,7 +240,7 @@ class CPUInstructions0xCB30_0xCB3F {
         cpu.setPC(0x100);
         cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
 
-        rom[0x7000] = 0xF0; // This is the value that HL will point to.
+        rom[0xC000] = 0xF0; // This is the value that HL will point to.
 
         cpu.tick();
         cpu.tick();
@@ -469,11 +469,11 @@ class CPUInstructions0xCB30_0xCB3F {
     // op code 0xCB3E
     @Test
     void srl_hlp_test() {
-        rom[0x7000] = 0x01; // This is the value that HL will point to.
+        rom[0xC000] = 0x01; // This is the value that HL will point to.
 
-        rom[0x100] = 0x21; // ld hl,0x7000
+        rom[0x100] = 0x21; // ld hl,0xC000
         rom[0x101] = 0x00;
-        rom[0x102] = 0x70;
+        rom[0x102] = 0xC0;
         rom[0x103] = 0xCB; // srl (hl)
         rom[0x104] = 0x3E;
 
@@ -488,7 +488,7 @@ class CPUInstructions0xCB30_0xCB3F {
         cpu.setPC(0x100);
         cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
 
-        rom[0x7000] = 0xFF; // This is the value that HL will point to.
+        rom[0xC000] = 0xFF; // This is the value that HL will point to.
 
         cpu.tick();
         cpu.tick();

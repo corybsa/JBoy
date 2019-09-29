@@ -131,11 +131,11 @@ class CPUInstructions0xCBA0_0xCBAF {
     // op code 0xCBA6
     @Test
     void res_4_hlp_test() {
-        rom[0x7000] = 0xFF; // This is the value that HL will point to.
+        rom[0xC000] = 0xFF; // This is the value that HL will point to.
 
-        rom[0x100] = 0x21; // ld hl,0x7000
+        rom[0x100] = 0x21; // ld hl,0xC000
         rom[0x101] = 0x00;
-        rom[0x102] = 0x70;
+        rom[0x102] = 0xC0;
         rom[0x103] = 0xCB; // res 4,(hl)
         rom[0x104] = 0xA6;
 
@@ -262,11 +262,11 @@ class CPUInstructions0xCBA0_0xCBAF {
     // op code 0xCBAE
     @Test
     void res_5_hlp_test() {
-        rom[0x7000] = 0xFF; // This is the value that HL will point to.
+        rom[0xC000] = 0xFF; // This is the value that HL will point to.
 
-        rom[0x100] = 0x21; // ld hl,0x7000
+        rom[0x100] = 0x21; // ld hl,0xC000
         rom[0x101] = 0x00;
-        rom[0x102] = 0x70;
+        rom[0x102] = 0xC0;
         rom[0x103] = 0xCB; // res 5,(hl)
         rom[0x104] = 0xAE;
 

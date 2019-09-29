@@ -100,8 +100,12 @@ public class CPU implements Registers {
 
     public CPU(Memory memory) {
         this.memory = memory;
-        this.PC = 0x100;
+        this.AF = 0x01B0;
+        this.BC = 0x0013;
+        this.DE = 0x00D8;
+        this.HL = 0x014D;
         this.SP = 0xFFFE;
+        this.PC = 0x100;
 
         // TODO: Implement the commented out instructions.
         this.instructions = new HashMap<>();
@@ -120,7 +124,7 @@ public class CPU implements Registers {
         this.instructions.put(0x0C, new Instruction(0x0C, 1, 4, this::inc_c));
         this.instructions.put(0x0D, new Instruction(0x0D, 1, 4, this::dec_c));
         this.instructions.put(0x0E, new Instruction(0x0E, 2, 8, this::ld_c_x));
-//        this.instructions.put(0x0F, new Instruction(0x0F, 1, 4, this::rrca));
+        this.instructions.put(0x0F, new Instruction(0x0F, 1, 4, this::rrca));
 
         this.instructions.put(0x10, new Instruction(0x10, 2, 4, this::stop));
 //        this.instructions.put(0x11, new Instruction(0x11, 3, 12, this::ld_de_xx));
@@ -130,13 +134,13 @@ public class CPU implements Registers {
 //        this.instructions.put(0x15, new Instruction(0x15, 1, 4, this::dec_d));
         this.instructions.put(0x16, new Instruction(0x16, 2, 8, this::ld_d_x));
 //        this.instructions.put(0x17, new Instruction(0x17, 1, 4, this::rla));
-//        this.instructions.put(0x18, new Instruction(0x18, 2, 12, this::jr_x));
+        this.instructions.put(0x18, new Instruction(0x18, 2, 12, this::jr_x));
 //        this.instructions.put(0x19, new Instruction(0x19, 1, 8, this::add_hl_de));
 //        this.instructions.put(0x1A, new Instruction(0x1A, 1, 8, this::ld_a_dep));
 //        this.instructions.put(0x1B, new Instruction(0x1B, 1, 4, this::dec_de));
 //        this.instructions.put(0x1C, new Instruction(0x1C, 1, 4, this::inc_e));
 //        this.instructions.put(0x1D, new Instruction(0x1D, 1, 4, this::dec_e));
-//        this.instructions.put(0x1E, new Instruction(0x1E, 2, 8, this::ld_e_x));
+        this.instructions.put(0x1E, new Instruction(0x1E, 2, 8, this::ld_e_x));
 //        this.instructions.put(0x1F, new Instruction(0x1F, 1, 4, this::rra));
 
 //        this.instructions.put(0x20, new Instruction(0x20, 2, 1, this::jr_nz_x));
@@ -1059,6 +1063,16 @@ public class CPU implements Registers {
      */
     private Void ld_d_x(int[] ops) {
         this.D = ops[0];
+        return null;
+    }
+
+    /**
+     * OP code 0x18 - Increments PC by the amount of the next byte (between -128 and 127)
+     * @param ops An 8 bit immediate value.
+     */
+    private Void jr_x(int[] ops) {
+        this.incrementPC((byte)ops[0]);
+
         return null;
     }
 

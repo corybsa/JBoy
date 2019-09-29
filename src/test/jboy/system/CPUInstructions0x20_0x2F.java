@@ -7,6 +7,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 class CPUInstructions0x20_0x2F {
     static private CPU cpu;
     static private Memory memory;
@@ -68,7 +70,21 @@ class CPUInstructions0x20_0x2F {
 
     // op code 0x29
     @Test
-    void add_hl_hl_test() {}
+    void add_hl_hl_test() {
+        rom[0x101] = 0x21; // ld hl,0x8A23
+        rom[0x102] = 0x23;
+        rom[0x103] = 0x8A;
+        rom[0x104] = 0x29; // add hl,hl
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0x1446, cpu.getHL(), "The HL register should equal 0x0605.");
+        assertEquals(CPU.FLAG_HALF | CPU.FLAG_CARRY, cpu.getF(), "The HALF_CARRY and CARRY flag should be set.");
+        assertEquals(0x105, cpu.getPC(), "PC should equal 0x105.");
+    }
 
     // op code 0x2A
     @Test
