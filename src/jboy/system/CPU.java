@@ -150,7 +150,7 @@ public class CPU implements Registers {
 //        this.instructions.put(0x24, new Instruction(0x24, 1, 1, this::inc_h));
 //        this.instructions.put(0x25, new Instruction(0x25, 1, 1, this::dec_h));
         this.instructions.put(0x26, new Instruction(0x26, 2, 1, this::ld_h_x));
-//        this.instructions.put(0x27, new Instruction(0x27, 1, 1, this::daa));
+        this.instructions.put(0x27, new Instruction(0x27, 1, 1, this::daa));
 //        this.instructions.put(0x28, new Instruction(0x28, 2, 1, this::jr_z_x));
 //        this.instructions.put(0x29, new Instruction(0x29, 1, 1, this::add_hl_hl));
 //        this.instructions.put(0x2A, new Instruction(0x2A, 1, 1, this::ldi_a_hlp));
@@ -803,6 +803,10 @@ public class CPU implements Registers {
         this.F = this.F & ~flags;
     }
 
+    public boolean areFlagsSet(int flags) {
+        return (this.F & flags) != 0;
+    }
+
     /**
      * Increments a {@code value} by 1 and sets the necessary flags.
      * @param value The value to increment.
@@ -1091,6 +1095,44 @@ public class CPU implements Registers {
      */
     private Void ld_h_x(int[] ops) {
         this.H = ops[0];
+        return null;
+    }
+
+    /**
+     * OP code 0x27 - When performing addition and subtraction, binary coded decimal (BCD) representation is
+     * used to set the contents of register A to a BCD number.
+     * @param ops unused
+     */
+    private Void daa(int[] ops) {
+        // after an addition, adjust A if a HALF_CARRY or CARRY occurred or if the result is out of bounds.
+        if(!this.areFlagsSet(CPU.FLAG_ZERO)) {
+            if(this.areFlagsSet(CPU.FLAG_CARRY) || this.A > 0x99) {
+                this.A = (this.A + 0x60) & 0xFF;
+                this.setFlags(CPU.FLAG_CARRY);
+            }
+
+            if(this.areFlagsSet(CPU.FLAG_HALF) || (this.A & 0x0F) > 0x09) {
+                this.A = (this.A + 0x06) & 0xFF;
+            }
+        } else {
+            // after a subtraction, only adjust if a HALF_CARRY or CARRY occurred.
+            if(this.areFlagsSet(CPU.FLAG_CARRY)) {
+                this.A -= 0x60;
+            }
+
+            if(this.areFlagsSet(CPU.FLAG_HALF)) {
+                this.A -= 0x06;
+            }
+        }
+
+        // set zero flag if A register is zero.
+        if(this.A == 0) {
+            this.setFlags(CPU.FLAG_ZERO);
+        }
+
+        // half carry always reset.
+        this.setFlags(CPU.FLAG_HALF);
+
         return null;
     }
 

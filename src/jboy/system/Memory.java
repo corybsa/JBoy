@@ -65,27 +65,27 @@ public class Memory {
         this.cartridge = rom;
     }
 
-    public int getByteAt(int n) {
-        if(n <= 0x7FFF) {
-            return this.cartridge[n];
-        } else if(n <= 0x9FFF) {
-            return this.vram[n];
-        } else if(n <= 0xBFFF) {
-            return this.sram[n];
-        } else if(n <= 0xDFFF) {
-            return this.wram[n];
-        } else if(n <= 0xFDFF) {
-            return this.eram[n];
-        } else if(n <= 0xFE9F) {
-            return this.oam[n];
-        } else if(n <= 0xFEFF) {
-            return this.fea0_feff[n];
-        } else if(n <= 0xFF48) {
-            return this.io[n];
-        } else if(n <= 0xFF7F) {
-            return this.ff4c_ff7f[n];
-        } else if(n <= 0xFFFE) {
-            return this.hram[n];
+    public int getByteAt(int address) {
+        if(address <= 0x7FFF) {
+            return this.cartridge[address];
+        } else if(address <= 0x9FFF) {
+            return this.vram[address];
+        } else if(address <= 0xBFFF) {
+            return this.sram[address];
+        } else if(address <= 0xDFFF) {
+            return this.wram[address];
+        } else if(address <= 0xFDFF) {
+            return this.eram[address];
+        } else if(address <= 0xFE9F) {
+            return this.oam[address];
+        } else if(address <= 0xFEFF) {
+            return this.fea0_feff[address];
+        } else if(address <= 0xFF48) {
+            return this.io[address];
+        } else if(address <= 0xFF7F) {
+            return this.ff4c_ff7f[address];
+        } else if(address <= 0xFFFE) {
+            return this.hram[address];
         } else {
             return this.ime[0];
         }
