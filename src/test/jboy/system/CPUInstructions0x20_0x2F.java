@@ -41,13 +41,13 @@ class CPUInstructions0x20_0x2F {
         memory.loadROM(rom);
 
         cpu.tick();
-        assertEquals(0x102, cpu.getPC(), "PC should equal 0x102.");
+        assertEquals(0x106, cpu.getPC(), "PC should equal 0x106.");
 
         cpu.setPC(0x100);
         cpu.setFlags(CPU.FLAG_ZERO);
 
         cpu.tick();
-        assertEquals(0x106, cpu.getPC(), "PC should equal 0x106.");
+        assertEquals(0x102, cpu.getPC(), "PC should equal 0x102.");
     }
 
     // op code 0x21
@@ -253,7 +253,21 @@ class CPUInstructions0x20_0x2F {
 
     // op code 0x28
     @Test
-    void jr_z_x_test() {}
+    void jr_z_x_test() {
+        rom[0x100] = 0x28; // jr z,0x05
+        rom[0x101] = 0x05;
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        assertEquals(0x102, cpu.getPC(), "PC should equal 0x102.");
+
+        cpu.setPC(0x100);
+        cpu.setFlags(CPU.FLAG_ZERO);
+
+        cpu.tick();
+        assertEquals(0x106, cpu.getPC(), "PC should equal 0x106.");
+    }
 
     // op code 0x29
     @Test
