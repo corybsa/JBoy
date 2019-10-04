@@ -221,7 +221,7 @@ class CPUInstructions0xCB20_0xCB2F {
     // op code 0xCB26
     @Test
     void sla_hlp_test() {
-        rom[0xC000] = 0x80; // This is the value that HL will point to.
+        memory.setByteAt(0xC000, 0x80); // This is the value that HL will point to.
 
         rom[0x100] = 0x21; // ld hl,0xC000
         rom[0x101] = 0x00;
@@ -240,7 +240,7 @@ class CPUInstructions0xCB20_0xCB2F {
         cpu.setPC(0x100);
         cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
 
-        rom[0xC000] = 0xFF; // This is the value that HL will point to.
+        memory.setByteAt(0xC000, 0xFF); // This is the value that HL will point to.
 
         cpu.tick();
         cpu.tick();
@@ -469,7 +469,7 @@ class CPUInstructions0xCB20_0xCB2F {
     // op code 0xCB2E
     @Test
     void sra_hlp_test() {
-        rom[0xC000] = 0x8A; // This is the value that HL will point to.
+        memory.setByteAt(0xC000, 0x8A); // This is the value that HL will point to.
 
         rom[0x100] = 0x21; // ld hl,0xC000
         rom[0x101] = 0x00;
@@ -488,7 +488,7 @@ class CPUInstructions0xCB20_0xCB2F {
         cpu.setPC(0x100);
         cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
 
-        rom[0xC000] = 0x01; // This is the value that HL will point to.
+        memory.setByteAt(0xC000, 0x01); // This is the value that HL will point to.
 
         cpu.tick();
         cpu.tick();

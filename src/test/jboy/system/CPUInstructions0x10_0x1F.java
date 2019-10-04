@@ -248,7 +248,7 @@ class CPUInstructions0x10_0x1F {
     // op code 0x1A
     @Test
     void ld_a_dep_test() {
-        rom[0xC000] = 0xFF; // This is the value that DE will point to.
+        memory.setByteAt(0xC000, 0xFF); // This is the value that DE will point to.
 
         rom[0x100] = 0x11; // ld de,0xC000
         rom[0x101] = 0x00;

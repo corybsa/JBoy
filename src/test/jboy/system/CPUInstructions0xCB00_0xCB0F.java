@@ -233,7 +233,7 @@ class CPUInstructions0xCB00_0xCB0F {
     // op code 0xCB06
     @Test
     void rlc_hlp_test() {
-        rom[0xC000] = 0x85; // This is the value that HL will point to.
+        memory.setByteAt(0xC000, 0x85); // This is the value that HL will point to.
 
         rom[0x100] = 0x21; // ld hl,0xC000
         rom[0x101] = 0x00;
@@ -252,7 +252,7 @@ class CPUInstructions0xCB00_0xCB0F {
         cpu.setPC(0x100);
         cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
 
-        rom[0xC000] = 0x00; // This is the value that HL will point to.
+        memory.setByteAt(0xC000, 0x00); // This is the value that HL will point to.
 
         memory.loadROM(rom);
 
@@ -497,7 +497,7 @@ class CPUInstructions0xCB00_0xCB0F {
     // op code 0xCB0E
     @Test
     void rrc_hlp_test() {
-        rom[0xC000] = 0x01; // This is the value that HL will point to.
+        memory.setByteAt(0xC000, 0x01); // This is the value that HL will point to.
 
         rom[0x100] = 0x21; // ld hl,0xC000
         rom[0x101] = 0x00;
@@ -516,7 +516,7 @@ class CPUInstructions0xCB00_0xCB0F {
         cpu.setPC(0x100);
         cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
 
-        rom[0xC000] = 0x00; // This is the value that HL will point to.
+        memory.setByteAt(0xC000, 0x00); // This is the value that HL will point to.
 
         memory.loadROM(rom);
 

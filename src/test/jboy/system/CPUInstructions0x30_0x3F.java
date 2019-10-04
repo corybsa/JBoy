@@ -34,59 +34,332 @@ class CPUInstructions0x30_0x3F {
 
     // op code 0x30
     @Test
-    void jr_nc_x_test() {}
+    void jr_nc_x_test() {
+        rom[0x100] = 0x30; // jr nc,0x05
+        rom[0x101] = 0x05;
+
+        memory.loadROM(rom);
+
+        cpu.resetFlags(CPU.FLAG_CARRY);
+        cpu.tick();
+        assertEquals(0x106, cpu.getPC(), "PC should equal 0x106.");
+
+        cpu.setPC(0x100);
+        cpu.setFlags(CPU.FLAG_CARRY);
+
+        cpu.tick();
+        assertEquals(0x102, cpu.getPC(), "PC should equal 0x102.");
+    }
 
     // op code 0x31
     @Test
-    void ld_sp_xx_test() {}
+    void ld_sp_xx_test() {
+        rom[0x100] = 0x31; // ld sp,0xC0DE
+        rom[0x101] = 0xDE;
+        rom[0x102] = 0xC0;
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        assertEquals(0xC0DE, cpu.getSP(), "The SP register should equal 0xC0DE.");
+        assertEquals(0x103, cpu.getPC(), "The PC should equal 0x103.");
+    }
 
     // op code 0x32
     @Test
-    void ldd_hlp_a_test() {}
+    void ldd_hlp_a_test() {
+        memory.setByteAt(0xC001, 0x00); // The memory address that HL points to.
+
+        rom[0x100] = 0x3E; // ld a,0x50
+        rom[0x101] = 0x50;
+        rom[0x102] = 0x21; // ld hl,0xC001
+        rom[0x103] = 0x01;
+        rom[0x104] = 0xC0;
+        rom[0x105] = 0x32; // ld (hl-),a
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0x50, memory.getByteAt(0xC001), "The address 0xC001 should contain the value 0x50.");
+        assertEquals(0xC000, cpu.getHL(), "The HL register should equal 0xC000.");
+        assertEquals(0x106, cpu.getPC(), "The PC should equal 0x106.");
+    }
 
     // op code 0x33
     @Test
-    void inc_sp_test() {}
+    void inc_sp_test() {
+        rom[0x100] = 0x31; // ld sp,0x0001
+        rom[0x101] = 0x01;
+        rom[0x102] = 0x00;
+        rom[0x103] = 0x33; // inc sp
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0x0002, cpu.getSP(), "The SP register should equal 0x0002.");
+        assertEquals(0x104, cpu.getPC(), "The PC should equal 0x104.");
+    }
 
     // op code 0x34
     @Test
-    void inc_hlp_test() {}
+    void inc_hlp_test() {
+        memory.setByteAt(0xC000, 0x00); // The value HL will point to.
+
+        rom[0x100] = 0x21; // ld hl,0xC000
+        rom[0x102] = 0x00;
+        rom[0x103] = 0xC0;
+        rom[0x104] = 0x34; // inc (hl)
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0x01, cpu.getHL(), "The address should contain 0x01.");
+        assertEquals(0x105, cpu.getPC(), "PC should equal 0x105.");
+    }
 
     // op code 0x35
     @Test
-    void dec_hlp_test() {}
+    void dec_hlp_test() {
+        memory.setByteAt(0xC000, 0x01); // The value HL will point to.
+
+        rom[0x100] = 0x21; // ld hl,0xC000
+        rom[0x102] = 0x00;
+        rom[0x103] = 0xC0;
+        rom[0x104] = 0x35; // dec (hl)
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0x00, memory.getByteAt(0xC000), "The address should contain 0x00.");
+        assertEquals(0x105, cpu.getPC(), "PC should equal 0x105.");
+    }
 
     // op code 0x36
     @Test
-    void ld_hlp_x_test() {}
+    void ld_hlp_x_test() {
+        rom[0x100] = 0x21; // ld hl,0xC000
+        rom[0x102] = 0x00;
+        rom[0x103] = 0xC0;
+        rom[0x104] = 0x36; // ld (hl),0x50
+        rom[0x105] = 0x50;
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0x50, memory.getByteAt(0xC000), "The address should contain 0x50.");
+        assertEquals(0x106, cpu.getPC(), "PC should equal 0x106.");
+    }
 
     // op code 0x37
     @Test
-    void scf_test() {}
+    void scf_test() {
+        rom[0x100] = 0x37; // scf
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        assertEquals(CPU.FLAG_CARRY, cpu.getF(), "The CARRY flag should be set.");
+    }
 
     // op code 0x38
     @Test
-    void jr_c_x_test() {}
+    void jr_c_x_test() {
+        rom[0x100] = 0x38; // jr c,0x05
+        rom[0x101] = 0x05;
+
+        memory.loadROM(rom);
+
+        cpu.resetFlags(CPU.FLAG_CARRY);
+        cpu.tick();
+        assertEquals(0x102, cpu.getPC(), "PC should equal 0x102.");
+
+        cpu.setPC(0x100);
+        cpu.setFlags(CPU.FLAG_CARRY);
+
+        cpu.tick();
+        assertEquals(0x106, cpu.getPC(), "PC should equal 0x106.");
+    }
 
     // op code 0x39
     @Test
-    void add_hl_sp_test() {}
+    void add_hl_sp_test() {
+        rom[0x100] = 0x31; // ld sp,0x0605
+        rom[0x101] = 0x05;
+        rom[0x102] = 0x06;
+        rom[0x103] = 0x21; // ld hl,0x8A23
+        rom[0x104] = 0x23;
+        rom[0x105] = 0x8A;
+        rom[0x106] = 0x39; // add hl,sp
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0x9028, cpu.getHL(), "The HL register should equal 0x9028.");
+        assertEquals(CPU.FLAG_HALF, cpu.getF(), "The HALF_CARRY flag should be set.");
+        assertEquals(0x107, cpu.getPC(), "PC should equal 0x107.");
+
+        cpu.setPC(0x100);
+        rom[0x100] = 0x31; // ld sp,0x0605
+        rom[0x101] = 0x05;
+        rom[0x102] = 0x06;
+        rom[0x103] = 0x21; // ld hl,0x0605
+        rom[0x104] = 0x05;
+        rom[0x105] = 0x06;
+        rom[0x106] = 0x39; // add hl,sp
+
+        cpu.tick();
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0x1446, cpu.getHL(), "The HL register should equal 0x1446.");
+        assertEquals(CPU.FLAG_HALF | CPU.FLAG_CARRY, cpu.getF(), "The HALF_CARRY and CARRY flag should be set.");
+        assertEquals(0x107, cpu.getPC(), "PC should equal 0x107.");
+    }
 
     // op code 0x3A
     @Test
-    void ldd_a_hlp_test() {}
+    void ldd_a_hlp_test() {
+        memory.setByteAt(0xC000, 0x3C);
+
+        rom[0x100] = 0x21; // ld hl,0xC000
+        rom[0x101] = 0x00;
+        rom[0x102] = 0xC0;
+        rom[0x103] = 0x3A; // ld a,(hl-)
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0x3C, cpu.getA(), "The A register should equal 0x3C.");
+        assertEquals(0xC001, cpu.getHL(), "The HL register should equal 0xC001.");
+        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+    }
 
     // op code 0x3B
     @Test
-    void dec_sp_test() {}
+    void dec_sp_test() {
+        rom[0x100] = 0x31; // ld sp,0x0001
+        rom[0x101] = 0x01;
+        rom[0x102] = 0x00;
+        rom[0x103] = 0x3B; // dec sp
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0x0000, cpu.getSP(), "The SP register should equal 0x0000.");
+        assertEquals(0x104, cpu.getPC(), "The PC should equal 0x104.");
+    }
 
     // op code 0x3C
     @Test
-    void inc_a_test() {}
+    void inc_a_test() {
+        rom[0x100] = 0x3E; // ld a,0x00
+        rom[0x101] = 0x00;
+        rom[0x102] = 0x3C; // inc a
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0x01, cpu.getA(), "The A register should equal 0x01.");
+        assertEquals(0x00, cpu.getF(), "No flags should be set.");
+        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+
+        cpu.setPC(0x100);
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
+
+        rom[0x100] = 0x3E; // ld a,0x0F
+        rom[0x101] = 0x0F;
+        rom[0x102] = 0x3C; // inc a
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0x10, cpu.getA(), "The A register should equal 0x10.");
+        assertEquals(CPU.FLAG_HALF, cpu.getF(), "The HALF_CARRY flag should be set.");
+        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+
+        cpu.setPC(0x100);
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
+
+        rom[0x100] = 0x3E; // ld a,0xFF
+        rom[0x101] = 0xFF;
+        rom[0x102] = 0x3C; // inc a
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0x00, cpu.getA(), "The A register should equal 0x00.");
+        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.getF(), "The ZERO and HALF_CARRY flags should be set.");
+        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+    }
 
     // op code 0x3D
     @Test
-    void dec_a_test() {}
+    void dec_a_test() {
+        rom[0x100] = 0x3E; // ld a,0xFF
+        rom[0x101] = 0xFF;
+        rom[0x102] = 0x3D; // dec a
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0xFE, cpu.getA(), "The A register should equal 0xFE.");
+        assertEquals(CPU.FLAG_SUB, cpu.getF(), "The SUB flag should be set.");
+        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+
+        // Test a decrement that results in zero.
+        cpu.setPC(0x100);
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
+        rom[0x100] = 0x3E; // ld a,0x01
+        rom[0x101] = 0x01;
+        rom[0x102] = 0x3D; // dec a
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0x00, cpu.getA(), "The A register should equal 0x00.");
+        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_SUB, cpu.getF(), "ZERO and SUB flags should be set.");
+        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+
+        // Test a half carry.
+        cpu.setPC(0x100);
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
+        rom[0x100] = 0x3E; // ld a,0x10
+        rom[0x101] = 0x10;
+        rom[0x102] = 0x3D; // dec a
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0x0F, cpu.getA(), "The A register should equal 0x0F.");
+        assertEquals(CPU.FLAG_SUB | CPU.FLAG_HALF, cpu.getF(), "The SUB and HALF_CARRY flags should be set.");
+        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+
+        // Test decrementing zero.
+        cpu.setPC(0x100);
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
+        rom[0x100] = 0x3E; // ld a,0x00
+        rom[0x101] = 0x00;
+        rom[0x102] = 0x3D; // dec a
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0xFF, cpu.getA(), "The A register should equal 0xFF.");
+        assertEquals(CPU.FLAG_SUB | CPU.FLAG_HALF, cpu.getF(), "The SUB and HALF_CARRY flags should be set.");
+        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+    }
 
     // op code 0x3E
     @Test
@@ -103,5 +376,20 @@ class CPUInstructions0x30_0x3F {
 
     // op code 0x3F
     @Test
-    void ccf_test() {}
+    void ccf_test() {
+        rom[0x100] = 0x3F; // ccf
+
+        memory.loadROM(rom);
+
+        cpu.resetFlags(CPU.FLAG_CARRY);
+        cpu.tick();
+        assertEquals(CPU.FLAG_CARRY, cpu.getF(), "The CARRY flag should be set.");
+        assertEquals(0x101, cpu.getPC(), "The PC should equal 0x101.");
+
+        cpu.setFlags(CPU.FLAG_CARRY);
+        cpu.setPC(0x100);
+        cpu.tick();
+        assertEquals(0x00, cpu.getF(), "No flags should be set.");
+        assertEquals(0x101, cpu.getPC(), "The PC should equal 0x101.");
+    }
 }

@@ -40,6 +40,7 @@ class CPUInstructions0x20_0x2F {
 
         memory.loadROM(rom);
 
+        cpu.resetFlags(CPU.FLAG_ZERO);
         cpu.tick();
         assertEquals(0x106, cpu.getPC(), "PC should equal 0x106.");
 
@@ -67,7 +68,7 @@ class CPUInstructions0x20_0x2F {
     // op code 0x22
     @Test
     void ldi_hlp_a_test() {
-        rom[0xC000] = 0x00; // The address that HL points to.
+        memory.setByteAt(0xC000, 0x00); // The address that HL points to.
 
         rom[0x100] = 0x3E; // ld a,0x56;
         rom[0x101] = 0x56;
@@ -259,6 +260,7 @@ class CPUInstructions0x20_0x2F {
 
         memory.loadROM(rom);
 
+        cpu.resetFlags(CPU.FLAG_ZERO);
         cpu.tick();
         assertEquals(0x102, cpu.getPC(), "PC should equal 0x102.");
 
@@ -290,7 +292,7 @@ class CPUInstructions0x20_0x2F {
     // op code 0x2A
     @Test
     void ldi_a_hlp_test() {
-        rom[0xC000] = 0x56; // The address that HL points to.
+        memory.setByteAt(0xC000, 0x56); // The address that HL points to.
 
         rom[0x100] = 0x21; // ld hl,0xC000;
         rom[0x101] = 0x00;

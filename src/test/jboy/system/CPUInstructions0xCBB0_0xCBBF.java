@@ -131,7 +131,7 @@ class CPUInstructions0xCBB0_0xCBBF {
     // op code 0xCBB6
     @Test
     void res_6_hlp_test() {
-        rom[0xC000] = 0xFF; // This is the value that HL will point to.
+        memory.setByteAt(0xC000, 0xFF); // This is the value that HL will point to.
 
         rom[0x100] = 0x21; // ld hl,0xC000
         rom[0x101] = 0x00;
@@ -262,7 +262,7 @@ class CPUInstructions0xCBB0_0xCBBF {
     // op code 0xCBBE
     @Test
     void res_7_hlp_test() {
-        rom[0xC000] = 0xFF; // This is the value that HL will point to.
+        memory.setByteAt(0xC000, 0xFF); // This is the value that HL will point to.
 
         rom[0x100] = 0x21; // ld hl,0xC000
         rom[0x101] = 0x00;

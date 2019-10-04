@@ -83,13 +83,16 @@ class CPUInstructions0x00_0x0F {
     // op code 0x03
     @Test
     void inc_bc_test() {
-        rom[0x100] = 0x03; // inc bc
+        rom[0x100] = 0x01; // ld bc,0x0001
+        rom[0x101] = 0x01;
+        rom[0x102] = 0x00;
+        rom[0x103] = 0x03; // inc bc
 
         memory.loadROM(rom);
 
         cpu.tick();
-        assertEquals(0x01, cpu.getBC(), "The BC register should equal 0x01.");
-        assertEquals(0x101, cpu.getPC(), "PC should equal 0x101.");
+        assertEquals(0x0002, cpu.getBC(), "The BC register should equal 0x0002.");
+        assertEquals(0x104, cpu.getPC(), "PC should equal 0x101.");
     }
 
     // op code 0x04
@@ -266,7 +269,7 @@ class CPUInstructions0x00_0x0F {
     // op code 0x0A
     @Test
     void ld_a_bc_test() {
-        rom[0xC000] = 0x12; // this is the value that BC will point to.
+        memory.setByteAt(0xC000, 0x12); // this is the value that BC will point to.
 
         rom[0x100] = 0x01; // ld bc,0xC000
         rom[0x101] = 0x00;
@@ -284,13 +287,16 @@ class CPUInstructions0x00_0x0F {
     // op code 0x0B
     @Test
     void dec_bc_test() {
-        rom[0x100] = 0x0B; // dec bc
+        rom[0x100] = 0x01; // ld bc,0x0001
+        rom[0x101] = 0x01;
+        rom[0x102] = 0x00;
+        rom[0x103] = 0x0B; // dec bc
 
         memory.loadROM(rom);
 
         cpu.tick();
-        assertEquals(0x01, cpu.getBC(), "The BC register should equal 0x01");
-        assertEquals(0x101, cpu.getPC(), "PC should equal 0x101.");
+        assertEquals(0x0000, cpu.getBC(), "The BC register should equal 0x0000");
+        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
     }
 
     // op code 0x0C
@@ -424,7 +430,7 @@ class CPUInstructions0x00_0x0F {
 
         cpu.setPC(0x100);
 
-        rom[0x100] = 0x3E; // ld a,0x3B
+        rom[0x100] = 0x3E; // ld a,0xAA
         rom[0x101] = 0xAA;
         rom[0x102] = 0x0F; // rrca
 
