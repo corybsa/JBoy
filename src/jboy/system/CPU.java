@@ -346,7 +346,7 @@ public class CPU implements Registers {
 //        this.instructions.put(0xDE, new Instruction(0xDE, 2, 1, this::sbc_a_x));
 //        this.instructions.put(0xDF, new Instruction(0xDF, 1, 1, this::rst_18));
 
-//        this.instructions.put(0xE0, new Instruction(0xE0, 2, 1, this::ldh_xp_a));
+//        this.instructions.put(0xE0, new Instruction(0xE0, 2, 1, this::ld_xp_a));
 //        this.instructions.put(0xE1, new Instruction(0xE1, 1, 1, this::pop_hl));
 //        this.instructions.put(0xE2, new Instruction(0xE2, 2, 1, this::ld_cp_a));
         this.instructions.put(0xE3, new Instruction(0xE3, 1, 4, this::nop));
@@ -363,7 +363,7 @@ public class CPU implements Registers {
 //        this.instructions.put(0xEE, new Instruction(0xEE, 2, 1, this::xor_x));
 //        this.instructions.put(0xEF, new Instruction(0xEF, 1, 1, this::rst_28));
 
-//        this.instructions.put(0xF0, new Instruction(0xF0, 2, 1, this::ldh_a_xp));
+//        this.instructions.put(0xF0, new Instruction(0xF0, 2, 1, this::ld_a_xp));
 //        this.instructions.put(0xF1, new Instruction(0xF1, 1, 1, this::pop_af));
 //        this.instructions.put(0xF2, new Instruction(0xF2, 2, 1, this::ld_a_cp));
 //        this.instructions.put(0xF3, new Instruction(0xF3, 1, 1, this::di));
