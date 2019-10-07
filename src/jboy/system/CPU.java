@@ -326,7 +326,7 @@ public class CPU implements Registers {
 //        this.instructions.put(0xCA, new Instruction(0xCA, 3, 1, this::jp_z_xx));
 //        this.instructions.put(0xCC, new Instruction(0xCC, 3, 1, this::call_z_xx));
 //        this.instructions.put(0xCD, new Instruction(0xCD, 3, 1, this::call_xx));
-//        this.instructions.put(0xCE, new Instruction(0xCE, 2, 1, this::adc_a_n));
+//        this.instructions.put(0xCE, new Instruction(0xCE, 2, 1, this::adc_a_x));
 //        this.instructions.put(0xCF, new Instruction(0xCF, 1, 1, this::rst_08));
 //
 //        this.instructions.put(0xD0, new Instruction(0xD0, 1, 1, this::ret_nc));

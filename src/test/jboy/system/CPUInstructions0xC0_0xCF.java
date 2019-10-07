@@ -84,7 +84,7 @@ class CPUInstructions0xC0_0xCF {
 
     // op code 0xCE
     @Test
-    void adc_a_n_test() {}
+    void adc_a_x_test() {}
 
     // op code 0xCF
     @Test
