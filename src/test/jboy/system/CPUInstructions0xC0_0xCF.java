@@ -7,6 +7,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 class CPUInstructions0xC0_0xCF {
     static private CPU cpu;
     static private Memory memory;
@@ -40,11 +42,35 @@ class CPUInstructions0xC0_0xCF {
 
     // op code 0xC2
     @Test
-    void jp_nz_xx_test() {}
+    void jp_nz_xx_test() {
+        cpu.resetFlags(CPU.FLAG_ZERO);
+        rom[0x100] = 0xC2; // jp nz,0x8000
+        rom[0x101] = 0x00;
+        rom[0x102] = 0x80;
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        assertEquals(0x103, cpu.getPC(), "The PC should equal 0x103.");
+
+        cpu.setFlags(CPU.FLAG_ZERO);
+        cpu.setPC(0x100);
+        cpu.tick();
+        assertEquals(0x8000, cpu.getPC(), "The PC should equal 0x8000.");
+    }
 
     // op code 0xC3
     @Test
-    void jp_xx_test() {}
+    void jp_xx_test() {
+        rom[0x100] = 0xC3; // jp 0x8000
+        rom[0x101] = 0x00;
+        rom[0x102] = 0x80;
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        assertEquals(0x8000, cpu.getPC(), "The PC should equal 0x8000.");
+    }
 
     // op code 0xC4
     @Test
@@ -56,7 +82,20 @@ class CPUInstructions0xC0_0xCF {
 
     // op code 0xC6
     @Test
-    void add_a_x_test() {}
+    void add_a_x_test() {
+        rom[0x100] = 0x3E; // ld a,0x3A
+        rom[0x101] = 0x3A;
+        rom[0x102] = 0xC6; // add a,0xC6
+        rom[0x103] = 0xC6;
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0x00, cpu.getA(), "The A register should equal 0x00.");
+        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF | CPU.FLAG_CARRY, cpu.getF(), "The ZERO, HALF_CARRY and CARRY flags should be set.");
+        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+    }
 
     // op code 0xC7
     @Test
@@ -72,7 +111,22 @@ class CPUInstructions0xC0_0xCF {
 
     // op code 0xCA
     @Test
-    void jp_z_xx_test() {}
+    void jp_z_xx_test() {
+        cpu.resetFlags(CPU.FLAG_ZERO);
+        rom[0x100] = 0xCA; // jp z,0x8000
+        rom[0x101] = 0x00;
+        rom[0x102] = 0x80;
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        assertEquals(0x8000, cpu.getPC(), "The PC should equal 0x8000.");
+
+        cpu.setFlags(CPU.FLAG_ZERO);
+        cpu.setPC(0x100);
+        cpu.tick();
+        assertEquals(0x103, cpu.getPC(), "The PC should equal 0x103.");
+    }
 
     // op code 0xCC
     @Test
@@ -84,7 +138,21 @@ class CPUInstructions0xC0_0xCF {
 
     // op code 0xCE
     @Test
-    void adc_a_x_test() {}
+    void adc_a_x_test() {
+        cpu.setFlags(CPU.FLAG_CARRY);
+
+        rom[0x100] = 0x3E; // ld a,0xE1
+        rom[0x101] = 0xE1;
+        rom[0x102] = 0x8D; // adc a,0x1E
+        rom[0x103] = 0x1E;
+
+        memory.loadROM(rom);
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0x00, cpu.getA(), "The A register should equal 0x00.");
+        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF | CPU.FLAG_CARRY, cpu.getF(), "The ZERO, HALF_CARRY and CARRY flags should be set.");
+        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+    }
 
     // op code 0xCF
     @Test

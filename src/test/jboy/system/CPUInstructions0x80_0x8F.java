@@ -48,7 +48,7 @@ class CPUInstructions0x80_0x8F {
         cpu.tick();
         assertEquals(0x00, cpu.getA(), "The A register should equal 0x00.");
         assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF | CPU.FLAG_CARRY, cpu.getF(), "The ZERO, HALF_CARRY and CARRY flags should be set.");
-        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+        assertEquals(0x105, cpu.getPC(), "PC should equal 0x105.");
     }
 
     // op code 0x81
@@ -67,7 +67,7 @@ class CPUInstructions0x80_0x8F {
         cpu.tick();
         assertEquals(0x00, cpu.getA(), "The A register should equal 0x00.");
         assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF | CPU.FLAG_CARRY, cpu.getF(), "The ZERO, HALF_CARRY and CARRY flags should be set.");
-        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+        assertEquals(0x105, cpu.getPC(), "PC should equal 0x105.");
     }
 
     // op code 0x82
@@ -86,7 +86,7 @@ class CPUInstructions0x80_0x8F {
         cpu.tick();
         assertEquals(0x00, cpu.getA(), "The A register should equal 0x00.");
         assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF | CPU.FLAG_CARRY, cpu.getF(), "The ZERO, HALF_CARRY and CARRY flags should be set.");
-        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+        assertEquals(0x105, cpu.getPC(), "PC should equal 0x105.");
     }
 
     // op code 0x83
@@ -105,7 +105,7 @@ class CPUInstructions0x80_0x8F {
         cpu.tick();
         assertEquals(0x00, cpu.getA(), "The A register should equal 0x00.");
         assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF | CPU.FLAG_CARRY, cpu.getF(), "The ZERO, HALF_CARRY and CARRY flags should be set.");
-        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+        assertEquals(0x105, cpu.getPC(), "PC should equal 0x105.");
     }
 
     // op code 0x84
@@ -124,7 +124,7 @@ class CPUInstructions0x80_0x8F {
         cpu.tick();
         assertEquals(0x00, cpu.getA(), "The A register should equal 0x00.");
         assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF | CPU.FLAG_CARRY, cpu.getF(), "The ZERO, HALF_CARRY and CARRY flags should be set.");
-        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+        assertEquals(0x105, cpu.getPC(), "PC should equal 0x105.");
     }
 
     // op code 0x85
@@ -143,7 +143,7 @@ class CPUInstructions0x80_0x8F {
         cpu.tick();
         assertEquals(0x00, cpu.getA(), "The A register should equal 0x00.");
         assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF | CPU.FLAG_CARRY, cpu.getF(), "The ZERO, HALF_CARRY and CARRY flags should be set.");
-        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+        assertEquals(0x105, cpu.getPC(), "PC should equal 0x105.");
     }
 
     // op code 0x86
@@ -173,7 +173,7 @@ class CPUInstructions0x80_0x8F {
     void add_a_a_test() {
         rom[0x100] = 0x3E; // ld a,0x80
         rom[0x101] = 0x80;
-        rom[0x104] = 0x87; // add a,a
+        rom[0x102] = 0x87; // add a,a
 
         memory.loadROM(rom);
 
@@ -182,7 +182,7 @@ class CPUInstructions0x80_0x8F {
         cpu.tick();
         assertEquals(0x00, cpu.getA(), "The A register should equal 0x00.");
         assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF | CPU.FLAG_CARRY, cpu.getF(), "The ZERO, HALF_CARRY and CARRY flags should be set.");
-        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
     }
 
     // op code 0x88
@@ -334,7 +334,7 @@ class CPUInstructions0x80_0x8F {
 
         rom[0x100] = 0x3E; // ld a,0x80
         rom[0x101] = 0x80;
-        rom[0x104] = 0x8F; // adc a,a
+        rom[0x102] = 0x8F; // adc a,a
 
         memory.loadROM(rom);
         cpu.tick();
@@ -342,6 +342,6 @@ class CPUInstructions0x80_0x8F {
         cpu.tick();
         assertEquals(0x00, cpu.getA(), "The A register should equal 0x00.");
         assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF | CPU.FLAG_CARRY, cpu.getF(), "The ZERO, HALF_CARRY and CARRY flags should be set.");
-        assertEquals(0x105, cpu.getPC(), "PC should equal 0x105.");
+        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
     }
 }
