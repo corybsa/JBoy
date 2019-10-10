@@ -150,15 +150,48 @@ class CPUInstructions0xE0_0xEF {
 
     // op code 0xE8
     @Test
-    void add_sp_x_test() {}
+    void add_sp_x_test() {
+        cpu.setSP(0xFFF0);
+
+        rom[0x100] = 0xE8; // add sp,0x05
+        rom[0x101] = 0x05;
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        assertEquals(0xFFF5, cpu.getSP(), "The SP should equal 0xFFF5.");
+        assertEquals(0x102, cpu.getPC(), "PC should equal 0x102.");
+    }
 
     // op code 0xE9
     @Test
-    void jp_hlp_test() {}
+    void jp_hlp_test() {
+        rom[0x100] = 0x21; // ld hl,0x200
+        rom[0x101] = 0x00;
+        rom[0x102] = 0x02;
+        rom[0x103] = 0xE9; // jp (hl)
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0x200, cpu.getPC(), "PC should equal 0x200.");
+    }
 
     // op code 0xEA
     @Test
-    void ld_xxp_a_test() {}
+    void ld_xxp_a_test() {
+        rom[0x100] = 0x3E; // ld a,0x50
+        rom[0x101] = 0x50;
+        rom[0x102] = 0xEA; // ld (0xC000),a
+        rom[0x103] = 0x00;
+        rom[0x104] = 0xC0;
+
+        memory.loadROM(rom);
+
+        cpu.tick();
+        cpu.tick();
+        assertEquals(0x50, memory.getByteAt(0xC000), "The value at address 0xC000 should equal 0x50.");
+        assertEquals(0x105, cpu.getPC(), "PC should equal 0x105.");
+    }
 
     // op code 0xEE
     @Test

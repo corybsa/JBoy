@@ -58,7 +58,7 @@ import java.util.HashMap;
  *                 As information is put onto the stack, the stack grows DOWNWARD in RAM. As a result SP should always be initialized at the highest location of RAM space that has been allocated for use by the stack.
  *                 <ul>
  *                     <li>
- *                         For example, if a programmer wants to locate the SP at the top of low RAM space (0xC000 - 0xDFFF) he would set SP to 0xE000 using LD SP,$E000.
+ *                         For example, if a programmer wants to locate the SP at the top of low RAM space (0xC000 - 0xDFFF) he would set SP to 0xE000 using LD SP,0xE000.
  *                         (The SP automatically decrements before it puts something onto the stack, so it is perfectly acceptable to assign it a value which points to a memory address which is one location past the end of available RAM.)
  *                     </li>
  *                     <li>The SP is initialized to 0xFFFE on power up, but a programmer should not rely on this setting and should explicitly set its value.</li>
@@ -375,7 +375,7 @@ public class CPU implements Registers {
 //        this.instructions.put(0xF7, new Instruction(0xF7, 0, 1, this::rst_30));
 //        this.instructions.put(0xF8, new Instruction(0xF8, 1, 1, this::ld_hl_sp_x));
 //        this.instructions.put(0xF9, new Instruction(0xF9, 0, 1, this::ld_sp_hl));
-//        this.instructions.put(0xFA, new Instruction(0xFA, 2, 1, this::ld_a_xx));
+//        this.instructions.put(0xFA, new Instruction(0xFA, 2, 1, this::ld_a_xxp));
 //        this.instructions.put(0xFB, new Instruction(0xFB, 0, 1, this::ei));
         this.instructions.put(0xFC, new Instruction(0xFC, 0, 4, this::nop));
         this.instructions.put(0xFD, new Instruction(0xFD, 0, 4, this::nop));

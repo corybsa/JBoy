@@ -55,14 +55,14 @@ class CPUInstructions0x30_0x3F {
     // op code 0x31
     @Test
     void ld_sp_xx_test() {
-        rom[0x100] = 0x31; // ld sp,0xC0DE
-        rom[0x101] = 0xDE;
-        rom[0x102] = 0xC0;
+        rom[0x100] = 0x31; // ld sp,0xFFF0
+        rom[0x101] = 0xF0;
+        rom[0x102] = 0xFF;
 
         memory.loadROM(rom);
 
         cpu.tick();
-        assertEquals(0xC0DE, cpu.getSP(), "The SP register should equal 0xC0DE.");
+        assertEquals(0xFFF0, cpu.getSP(), "The SP register should equal 0xC0DE.");
         assertEquals(0x103, cpu.getPC(), "The PC should equal 0x103.");
     }
 
