@@ -68,7 +68,7 @@ import java.util.HashMap;
  *     </li>
  * </ul>
  */
-public class CPU implements Registers {
+public class CPU {
     // Value of the Zero flag is 0b10000000
     public static final int FLAG_ZERO = 0x80;
 
@@ -89,570 +89,21 @@ public class CPU implements Registers {
     private int F;
     private int H;
     private int L;
-    // TODO: use bit shifting to combine the 8-bit registers to make the 16-bit registers and access them with accessor methods.
-    private int AF;
-    private int BC;
-    private int DE;
-    private int HL;
-    // end
     private int SP;
     private int PC;
-    private Memory memory;
-    private HashMap<Integer, Instruction> instructions;
+
+    private final Memory memory;
+    private final HashMap<Integer, Instruction> instructions;
 
     public CPU(Memory memory) {
+        this.instructions = new Instructions(this);
         this.memory = memory;
-        this.AF = 0x01B0;
-        this.BC = 0x0013;
-        this.DE = 0x00D8;
-        this.HL = 0x014D;
-        this.SP = 0xFFFE;
-        this.PC = 0x100;
-
-        // TODO: Implement the commented out instructions.
-        this.instructions = new HashMap<>();
-        this.instructions.put(0x00, new Instruction(0x00, 0, 4, this::nop));
-        this.instructions.put(0x01, new Instruction(0x01, 2, 12, this::ld_bc_xx));
-        this.instructions.put(0x02, new Instruction(0x02, 0, 8, this::ld_bcp_a));
-        this.instructions.put(0x03, new Instruction(0x03, 0, 8, this::inc_bc));
-        this.instructions.put(0x04, new Instruction(0x04, 0, 4, this::inc_b));
-        this.instructions.put(0x05, new Instruction(0x05, 0, 4, this::dec_b));
-        this.instructions.put(0x06, new Instruction(0x06, 1, 8, this::ld_b_x));
-        this.instructions.put(0x07, new Instruction(0x07, 0, 4, this::rlca));
-        this.instructions.put(0x08, new Instruction(0x08, 2, 20, this::ld_xxp_sp));
-        this.instructions.put(0x09, new Instruction(0x09, 0, 8, this::add_hl_bc));
-        this.instructions.put(0x0A, new Instruction(0x0A, 0, 8, this::ld_a_bcp));
-        this.instructions.put(0x0B, new Instruction(0x0B, 0, 8, this::dec_bc));
-        this.instructions.put(0x0C, new Instruction(0x0C, 0, 4, this::inc_c));
-        this.instructions.put(0x0D, new Instruction(0x0D, 0, 4, this::dec_c));
-        this.instructions.put(0x0E, new Instruction(0x0E, 1, 8, this::ld_c_x));
-        this.instructions.put(0x0F, new Instruction(0x0F, 0, 4, this::rrca));
-
-        this.instructions.put(0x10, new Instruction(0x10, 1, 4, this::stop));
-//        this.instructions.put(0x11, new Instruction(0x11, 2, 12, this::ld_de_xx));
-//        this.instructions.put(0x12, new Instruction(0x12, 0, 8, this::ld_dep_a));
-//        this.instructions.put(0x13, new Instruction(0x13, 0, 8, this::inc_de));
-//        this.instructions.put(0x14, new Instruction(0x14, 0, 4, this::inc_d));
-//        this.instructions.put(0x15, new Instruction(0x15, 0, 4, this::dec_d));
-        this.instructions.put(0x16, new Instruction(0x16, 1, 8, this::ld_d_x));
-//        this.instructions.put(0x17, new Instruction(0x17, 0, 4, this::rla));
-        this.instructions.put(0x18, new Instruction(0x18, 1, 12, this::jr_x));
-//        this.instructions.put(0x19, new Instruction(0x19, 0, 8, this::add_hl_de));
-//        this.instructions.put(0x1A, new Instruction(0x1A, 0, 8, this::ld_a_dep));
-//        this.instructions.put(0x1B, new Instruction(0x1B, 0, 4, this::dec_de));
-//        this.instructions.put(0x1C, new Instruction(0x1C, 0, 4, this::inc_e));
-//        this.instructions.put(0x1D, new Instruction(0x1D, 0, 4, this::dec_e));
-        this.instructions.put(0x1E, new Instruction(0x1E, 1, 8, this::ld_e_x));
-//        this.instructions.put(0x1F, new Instruction(0x1F, 0, 4, this::rra));
-
-//        this.instructions.put(0x20, new Instruction(0x20, 1, 1, this::jr_nz_x));
-//        this.instructions.put(0x21, new Instruction(0x21, 2, 1, this::ld_hl_xx));
-//        this.instructions.put(0x22, new Instruction(0x22, 0, 1, this::ldi_hlp_a));
-//        this.instructions.put(0x23, new Instruction(0x23, 0, 1, this::inc_hl));
-//        this.instructions.put(0x24, new Instruction(0x24, 0, 1, this::inc_h));
-//        this.instructions.put(0x25, new Instruction(0x25, 0, 1, this::dec_h));
-        this.instructions.put(0x26, new Instruction(0x26, 1, 1, this::ld_h_x));
-        this.instructions.put(0x27, new Instruction(0x27, 0, 1, this::daa));
-//        this.instructions.put(0x28, new Instruction(0x28, 1, 1, this::jr_z_x));
-//        this.instructions.put(0x29, new Instruction(0x29, 0, 1, this::add_hl_hl));
-//        this.instructions.put(0x2A, new Instruction(0x2A, 0, 1, this::ldi_a_hlp));
-//        this.instructions.put(0x2B, new Instruction(0x2B, 0, 1, this::dec_hl));
-//        this.instructions.put(0x2C, new Instruction(0x2C, 0, 1, this::inc_l));
-//        this.instructions.put(0x2D, new Instruction(0x2D, 0, 1, this::dec_l));
-        this.instructions.put(0x2E, new Instruction(0x2E, 1, 1, this::ld_l_x));
-//        this.instructions.put(0x2F, new Instruction(0x2F, 0, 1, this::cpl));
-
-//        this.instructions.put(0x30, new Instruction(0x30, 1, 1, this::jr_nc_x));
-//        this.instructions.put(0x31, new Instruction(0x31, 2, 1, this::ld_sp_xx));
-//        this.instructions.put(0x32, new Instruction(0x32, 0, 1, this::ldd_hlp_a));
-//        this.instructions.put(0x33, new Instruction(0x33, 0, 1, this::inc_sp));
-//        this.instructions.put(0x34, new Instruction(0x34, 0, 1, this::inc_hlp));
-//        this.instructions.put(0x35, new Instruction(0x35, 0, 1, this::dec_hlp));
-//        this.instructions.put(0x36, new Instruction(0x36, 1, 1, this::ld_hlp_x));
-//        this.instructions.put(0x37, new Instruction(0x37, 0, 1, this::scf));
-//        this.instructions.put(0x38, new Instruction(0x38, 1, 1, this::jr_c_x));
-//        this.instructions.put(0x39, new Instruction(0x39, 0, 1, this::add_hl_sp));
-//        this.instructions.put(0x3A, new Instruction(0x3A, 0, 1, this::ldd_a_hlp));
-//        this.instructions.put(0x3B, new Instruction(0x3B, 0, 1, this::dec_sp));
-//        this.instructions.put(0x3C, new Instruction(0x3C, 0, 1, this::inc_a));
-//        this.instructions.put(0x3D, new Instruction(0x3D, 0, 1, this::dec_a));
-        this.instructions.put(0x3E, new Instruction(0x3E, 1, 1, this::ld_a_x));
-//        this.instructions.put(0x3F, new Instruction(0x3F, 0, 1, this::ccf));
-
-//        this.instructions.put(0x40, new Instruction(0x40, 0, 1, this::ld_b_b));
-//        this.instructions.put(0x41, new Instruction(0x41, 0, 1, this::ld_b_c));
-//        this.instructions.put(0x42, new Instruction(0x42, 0, 1, this::ld_b_d));
-//        this.instructions.put(0x43, new Instruction(0x43, 0, 1, this::ld_b_e));
-//        this.instructions.put(0x44, new Instruction(0x44, 0, 1, this::ld_b_h));
-//        this.instructions.put(0x45, new Instruction(0x45, 0, 1, this::ld_b_l));
-//        this.instructions.put(0x46, new Instruction(0x46, 0, 1, this::ld_b_hlp));
-//        this.instructions.put(0x47, new Instruction(0x47, 0, 1, this::ld_b_a));
-//        this.instructions.put(0x48, new Instruction(0x48, 0, 1, this::ld_c_b));
-//        this.instructions.put(0x49, new Instruction(0x49, 0, 1, this::ld_c_c));
-//        this.instructions.put(0x4A, new Instruction(0x4A, 0, 1, this::ld_c_d));
-//        this.instructions.put(0x4B, new Instruction(0x4B, 0, 1, this::ld_c_e));
-//        this.instructions.put(0x4C, new Instruction(0x4C, 0, 1, this::ld_c_h));
-//        this.instructions.put(0x4D, new Instruction(0x4D, 0, 1, this::ld_c_l));
-//        this.instructions.put(0x4E, new Instruction(0x4E, 0, 1, this::ld_c_hlp));
-//        this.instructions.put(0x4F, new Instruction(0x4F, 0, 1, this::ld_c_a));
-
-//        this.instructions.put(0x50, new Instruction(0x50, 0, 1, this::ld_d_b));
-//        this.instructions.put(0x51, new Instruction(0x51, 0, 1, this::ld_d_c));
-//        this.instructions.put(0x52, new Instruction(0x52, 0, 1, this::ld_d_d));
-//        this.instructions.put(0x53, new Instruction(0x53, 0, 1, this::ld_d_e));
-//        this.instructions.put(0x54, new Instruction(0x54, 0, 1, this::ld_d_h));
-//        this.instructions.put(0x55, new Instruction(0x55, 0, 1, this::ld_d_l));
-//        this.instructions.put(0x56, new Instruction(0x56, 0, 1, this::ld_d_hlp));
-//        this.instructions.put(0x57, new Instruction(0x57, 0, 1, this::ld_d_a));
-//        this.instructions.put(0x58, new Instruction(0x58, 0, 1, this::ld_e_b));
-//        this.instructions.put(0x59, new Instruction(0x59, 0, 1, this::ld_e_c));
-//        this.instructions.put(0x5A, new Instruction(0x5A, 0, 1, this::ld_e_d));
-//        this.instructions.put(0x5B, new Instruction(0x5B, 0, 1, this::ld_e_e));
-//        this.instructions.put(0x5C, new Instruction(0x5C, 0, 1, this::ld_e_h));
-//        this.instructions.put(0x5D, new Instruction(0x5D, 0, 1, this::ld_e_l));
-//        this.instructions.put(0x5E, new Instruction(0x5E, 0, 1, this::ld_e_hlp));
-//        this.instructions.put(0x5F, new Instruction(0x5F, 0, 1, this::ld_e_a));
-
-//        this.instructions.put(0x60, new Instruction(0x60, 0, 1, this::ld_h_b));
-//        this.instructions.put(0x61, new Instruction(0x61, 0, 1, this::ld_h_c));
-//        this.instructions.put(0x62, new Instruction(0x62, 0, 1, this::ld_h_d));
-//        this.instructions.put(0x63, new Instruction(0x63, 0, 1, this::ld_h_e));
-//        this.instructions.put(0x64, new Instruction(0x64, 0, 1, this::ld_h_h));
-//        this.instructions.put(0x65, new Instruction(0x65, 0, 1, this::ld_h_l));
-//        this.instructions.put(0x66, new Instruction(0x66, 0, 1, this::ld_h_hlp));
-//        this.instructions.put(0x67, new Instruction(0x67, 0, 1, this::ld_h_a));
-//        this.instructions.put(0x68, new Instruction(0x68, 0, 1, this::ld_l_b));
-//        this.instructions.put(0x69, new Instruction(0x69, 0, 1, this::ld_l_c));
-//        this.instructions.put(0x6A, new Instruction(0x6A, 0, 1, this::ld_l_d));
-//        this.instructions.put(0x6B, new Instruction(0x6B, 0, 1, this::ld_l_e));
-//        this.instructions.put(0x6C, new Instruction(0x6C, 0, 1, this::ld_l_h));
-//        this.instructions.put(0x6D, new Instruction(0x6D, 0, 1, this::ld_l_l));
-//        this.instructions.put(0x6E, new Instruction(0x6E, 0, 1, this::ld_l_hlp));
-//        this.instructions.put(0x6F, new Instruction(0x6F, 0, 1, this::ld_l_a));
-
-//        this.instructions.put(0x70, new Instruction(0x70, 0, 1, this::ld_hlp_b));
-//        this.instructions.put(0x71, new Instruction(0x71, 0, 1, this::ld_hlp_c));
-//        this.instructions.put(0x72, new Instruction(0x72, 0, 1, this::ld_hlp_d));
-//        this.instructions.put(0x73, new Instruction(0x73, 0, 1, this::ld_hlp_e));
-//        this.instructions.put(0x74, new Instruction(0x74, 0, 1, this::ld_hlp_h));
-//        this.instructions.put(0x75, new Instruction(0x75, 0, 1, this::ld_hlp_l));
-//        this.instructions.put(0x76, new Instruction(0x76, 0, 1, this::halt));
-//        this.instructions.put(0x77, new Instruction(0x77, 0, 1, this::ld_hlp_a));
-//        this.instructions.put(0x78, new Instruction(0x78, 0, 1, this::ld_a_b));
-//        this.instructions.put(0x79, new Instruction(0x79, 0, 1, this::ld_a_c));
-//        this.instructions.put(0x7A, new Instruction(0x7A, 0, 1, this::ld_a_d));
-//        this.instructions.put(0x7B, new Instruction(0x7B, 0, 1, this::ld_a_e));
-//        this.instructions.put(0x7C, new Instruction(0x7C, 0, 1, this::ld_a_h));
-//        this.instructions.put(0x7D, new Instruction(0x7D, 0, 1, this::ld_a_l));
-//        this.instructions.put(0x7E, new Instruction(0x7E, 0, 1, this::ld_a_hlp));
-//        this.instructions.put(0x7F, new Instruction(0x7F, 0, 1, this::ld_a_a));
-
-//        this.instructions.put(0x80, new Instruction(0x80, 0, 1, this::add_a_b));
-//        this.instructions.put(0x81, new Instruction(0x81, 0, 1, this::add_a_c));
-//        this.instructions.put(0x82, new Instruction(0x82, 0, 1, this::add_a_d));
-//        this.instructions.put(0x83, new Instruction(0x83, 0, 1, this::add_a_e));
-//        this.instructions.put(0x84, new Instruction(0x84, 0, 1, this::add_a_h));
-//        this.instructions.put(0x85, new Instruction(0x85, 0, 1, this::add_a_l));
-//        this.instructions.put(0x86, new Instruction(0x86, 0, 1, this::add_a_hlp));
-//        this.instructions.put(0x87, new Instruction(0x87, 0, 1, this::add_a_a));
-//        this.instructions.put(0x88, new Instruction(0x88, 0, 1, this::adc_a_b));
-//        this.instructions.put(0x89, new Instruction(0x89, 0, 1, this::adc_a_c));
-//        this.instructions.put(0x8A, new Instruction(0x8A, 0, 1, this::adc_a_d));
-//        this.instructions.put(0x8B, new Instruction(0x8B, 0, 1, this::adc_a_e));
-//        this.instructions.put(0x8C, new Instruction(0x8C, 0, 1, this::adc_a_h));
-//        this.instructions.put(0x8D, new Instruction(0x8D, 0, 1, this::adc_a_l));
-//        this.instructions.put(0x8E, new Instruction(0x8E, 0, 1, this::adc_a_hlp));
-//        this.instructions.put(0x8F, new Instruction(0x8F, 0, 1, this::adc_a_a));
-
-//        this.instructions.put(0x90, new Instruction(0x90, 0, 1, this::sub_b));
-//        this.instructions.put(0x91, new Instruction(0x91, 0, 1, this::sub_c));
-//        this.instructions.put(0x92, new Instruction(0x92, 0, 1, this::sub_d));
-//        this.instructions.put(0x93, new Instruction(0x93, 0, 1, this::sub_e));
-//        this.instructions.put(0x94, new Instruction(0x94, 0, 1, this::sub_h));
-//        this.instructions.put(0x95, new Instruction(0x95, 0, 1, this::sub_l));
-//        this.instructions.put(0x96, new Instruction(0x96, 0, 1, this::sub_hlp));
-//        this.instructions.put(0x97, new Instruction(0x97, 0, 1, this::sub_a));
-//        this.instructions.put(0x98, new Instruction(0x98, 0, 1, this::sbc_a_b));
-//        this.instructions.put(0x99, new Instruction(0x99, 0, 1, this::sbc_a_c));
-//        this.instructions.put(0x9A, new Instruction(0x9A, 0, 1, this::sbc_a_d));
-//        this.instructions.put(0x9B, new Instruction(0x9B, 0, 1, this::sbc_a_e));
-//        this.instructions.put(0x9C, new Instruction(0x9C, 0, 1, this::sbc_a_h));
-//        this.instructions.put(0x9D, new Instruction(0x9D, 0, 1, this::sbc_a_l));
-//        this.instructions.put(0x9E, new Instruction(0x9E, 0, 1, this::sbc_a_hlp));
-//        this.instructions.put(0x9F, new Instruction(0x9F, 0, 1, this::sbc_a_a));
-
-//        this.instructions.put(0xA0, new Instruction(0xA0, 0, 1, this::and_b));
-//        this.instructions.put(0xA1, new Instruction(0xA1, 0, 1, this::and_c));
-//        this.instructions.put(0xA2, new Instruction(0xA2, 0, 1, this::and_d));
-//        this.instructions.put(0xA3, new Instruction(0xA3, 0, 1, this::and_e));
-//        this.instructions.put(0xA4, new Instruction(0xA4, 0, 1, this::and_h));
-//        this.instructions.put(0xA5, new Instruction(0xA5, 0, 1, this::and_l));
-//        this.instructions.put(0xA6, new Instruction(0xA6, 0, 1, this::and_hlp));
-//        this.instructions.put(0xA7, new Instruction(0xA7, 0, 1, this::and_a));
-//        this.instructions.put(0xA8, new Instruction(0xA8, 0, 1, this::xor_b));
-//        this.instructions.put(0xA9, new Instruction(0xA9, 0, 1, this::xor_c));
-//        this.instructions.put(0xAA, new Instruction(0xAA, 0, 1, this::xor_d));
-//        this.instructions.put(0xAB, new Instruction(0xAB, 0, 1, this::xor_e));
-//        this.instructions.put(0xAC, new Instruction(0xAC, 0, 1, this::xor_h));
-//        this.instructions.put(0xAD, new Instruction(0xAD, 0, 1, this::xor_l));
-//        this.instructions.put(0xAE, new Instruction(0xAE, 0, 1, this::xor_hlp));
-//        this.instructions.put(0xAF, new Instruction(0xAF, 0, 1, this::xor_a));
-
-//        this.instructions.put(0xB0, new Instruction(0xB0, 0, 1, this::or_b));
-//        this.instructions.put(0xB1, new Instruction(0xB1, 0, 1, this::or_c));
-//        this.instructions.put(0xB2, new Instruction(0xB2, 0, 1, this::or_d));
-//        this.instructions.put(0xB3, new Instruction(0xB3, 0, 1, this::or_e));
-//        this.instructions.put(0xB4, new Instruction(0xB4, 0, 1, this::or_h));
-//        this.instructions.put(0xB5, new Instruction(0xB5, 0, 1, this::or_l));
-//        this.instructions.put(0xB6, new Instruction(0xB6, 0, 1, this::or_hlp));
-//        this.instructions.put(0xB7, new Instruction(0xB7, 0, 1, this::or_a));
-//        this.instructions.put(0xB8, new Instruction(0xB8, 0, 1, this::cp_b));
-//        this.instructions.put(0xB9, new Instruction(0xB9, 0, 1, this::cp_c));
-//        this.instructions.put(0xBA, new Instruction(0xBA, 0, 1, this::cp_d));
-//        this.instructions.put(0xBB, new Instruction(0xBB, 0, 1, this::cp_e));
-//        this.instructions.put(0xBC, new Instruction(0xBC, 0, 1, this::cp_h));
-//        this.instructions.put(0xBD, new Instruction(0xBD, 0, 1, this::cp_l));
-//        this.instructions.put(0xBE, new Instruction(0xBE, 0, 1, this::cp_hlp));
-//        this.instructions.put(0xBF, new Instruction(0xBF, 0, 1, this::cp_a));
-
-//        this.instructions.put(0xC0, new Instruction(0xC0, 0, 1, this::ret_nz));
-//        this.instructions.put(0xC1, new Instruction(0xC1, 0, 1, this::pop_bc));
-//        this.instructions.put(0xC2, new Instruction(0xC2, 2, 1, this::jp_nz_xx));
-//        this.instructions.put(0xC3, new Instruction(0xC3, 2, 1, this::jp_xx));
-//        this.instructions.put(0xC4, new Instruction(0xC4, 2, 1, this::call_nz_xx));
-//        this.instructions.put(0xC5, new Instruction(0xC5, 0, 1, this::push_bc));
-//        this.instructions.put(0xC6, new Instruction(0xC6, 1, 1, this::add_a_x));
-//        this.instructions.put(0xC7, new Instruction(0xC7, 0, 1, this::rst_00));
-//        this.instructions.put(0xC8, new Instruction(0xC8, 0, 1, this::ret_z));
-//        this.instructions.put(0xC9, new Instruction(0xC9, 0, 1, this::ret));
-//        this.instructions.put(0xCA, new Instruction(0xCA, 2, 1, this::jp_z_xx));
-//        this.instructions.put(0xCC, new Instruction(0xCC, 2, 1, this::call_z_xx));
-//        this.instructions.put(0xCD, new Instruction(0xCD, 2, 1, this::call_xx));
-//        this.instructions.put(0xCE, new Instruction(0xCE, 1, 1, this::adc_a_x));
-//        this.instructions.put(0xCF, new Instruction(0xCF, 0, 1, this::rst_08));
-//
-//        this.instructions.put(0xD0, new Instruction(0xD0, 0, 1, this::ret_nc));
-//        this.instructions.put(0xD1, new Instruction(0xD1, 0, 1, this::pop_de));
-//        this.instructions.put(0xD2, new Instruction(0xD2, 2, 1, this::jp_nc_xx));
-        this.instructions.put(0xD3, new Instruction(0xD3, 0, 4, this::nop));
-//        this.instructions.put(0xD4, new Instruction(0xD4, 2, 1, this::call_nc_xx));
-//        this.instructions.put(0xD5, new Instruction(0xD5, 0, 1, this::push_de));
-//        this.instructions.put(0xD6, new Instruction(0xD6, 1, 1, this::sub_x));
-//        this.instructions.put(0xD7, new Instruction(0xD7, 0, 1, this::rst_10));
-//        this.instructions.put(0xD8, new Instruction(0xD8, 0, 1, this::ret_c));
-//        this.instructions.put(0xD9, new Instruction(0xD9, 0, 1, this::reti));
-//        this.instructions.put(0xDA, new Instruction(0xDA, 2, 1, this::jp_c_xx));
-        this.instructions.put(0xDB, new Instruction(0xDB, 0, 4, this::nop));
-//        this.instructions.put(0xDC, new Instruction(0xDC, 2, 1, this::call_c_xx));
-        this.instructions.put(0xDD, new Instruction(0xDD, 0, 4, this::nop));
-//        this.instructions.put(0xDE, new Instruction(0xDE, 1, 1, this::sbc_a_x));
-//        this.instructions.put(0xDF, new Instruction(0xDF, 0, 1, this::rst_18));
-
-//        this.instructions.put(0xE0, new Instruction(0xE0, 1, 1, this::ldh_xp_a));
-//        this.instructions.put(0xE1, new Instruction(0xE1, 0, 1, this::pop_hl));
-//        this.instructions.put(0xE2, new Instruction(0xE2, 1, 1, this::ld_cp_a));
-        this.instructions.put(0xE3, new Instruction(0xE3, 0, 4, this::nop));
-        this.instructions.put(0xE4, new Instruction(0xE4, 0, 4, this::nop));
-//        this.instructions.put(0xE5, new Instruction(0xE5, 0, 1, this::push_hl));
-//        this.instructions.put(0xE6, new Instruction(0xE6, 1, 1, this::and_x));
-//        this.instructions.put(0xE7, new Instruction(0xE7, 0, 1, this::rst_20));
-//        this.instructions.put(0xE8, new Instruction(0xE8, 1, 1, this::add_sp_x));
-//        this.instructions.put(0xE9, new Instruction(0xE9, 0, 1, this::jp_hlp));
-//        this.instructions.put(0xEA, new Instruction(0xEA, 2, 1, this::ld_xxp_a));
-        this.instructions.put(0xEB, new Instruction(0xEB, 0, 4, this::nop));
-        this.instructions.put(0xEC, new Instruction(0xEC, 0, 4, this::nop));
-        this.instructions.put(0xED, new Instruction(0xED, 0, 4, this::nop));
-//        this.instructions.put(0xEE, new Instruction(0xEE, 1, 1, this::xor_x));
-//        this.instructions.put(0xEF, new Instruction(0xEF, 0, 1, this::rst_28));
-
-//        this.instructions.put(0xF0, new Instruction(0xF0, 1, 1, this::ldh_a_xp));
-//        this.instructions.put(0xF1, new Instruction(0xF1, 0, 1, this::pop_af));
-//        this.instructions.put(0xF2, new Instruction(0xF2, 1, 1, this::ld_a_cp));
-//        this.instructions.put(0xF3, new Instruction(0xF3, 0, 1, this::di));
-        this.instructions.put(0xF4, new Instruction(0xF4, 0, 4, this::nop));
-//        this.instructions.put(0xF5, new Instruction(0xF5, 0, 1, this::push_af));
-//        this.instructions.put(0xF6, new Instruction(0xF6, 1, 1, this::or_x));
-//        this.instructions.put(0xF7, new Instruction(0xF7, 0, 1, this::rst_30));
-//        this.instructions.put(0xF8, new Instruction(0xF8, 1, 1, this::ld_hl_sp_x));
-//        this.instructions.put(0xF9, new Instruction(0xF9, 0, 1, this::ld_sp_hl));
-//        this.instructions.put(0xFA, new Instruction(0xFA, 2, 1, this::ld_a_xxp));
-//        this.instructions.put(0xFB, new Instruction(0xFB, 0, 1, this::ei));
-        this.instructions.put(0xFC, new Instruction(0xFC, 0, 4, this::nop));
-        this.instructions.put(0xFD, new Instruction(0xFD, 0, 4, this::nop));
-//        this.instructions.put(0xFE, new Instruction(0xFE, 1, 1, this::cp_x));
-//        this.instructions.put(0xFF, new Instruction(0xFF, 0, 1, this::rst_38));
-
-//        this.instructions.put(0xCB00, new Instruction(0xCB00, 1, 1, this::rlc_b));
-//        this.instructions.put(0xCB01, new Instruction(0xCB01, 1, 1, this::rlc_c));
-//        this.instructions.put(0xCB02, new Instruction(0xCB02, 1, 1, this::rlc_d));
-//        this.instructions.put(0xCB03, new Instruction(0xCB03, 1, 1, this::rlc_e));
-//        this.instructions.put(0xCB04, new Instruction(0xCB04, 1, 1, this::rlc_h));
-//        this.instructions.put(0xCB05, new Instruction(0xCB05, 1, 1, this::rlc_l));
-//        this.instructions.put(0xCB06, new Instruction(0xCB06, 1, 1, this::rlc_hlp));
-//        this.instructions.put(0xCB07, new Instruction(0xCB07, 1, 1, this::rlc_a));
-//        this.instructions.put(0xCB08, new Instruction(0xCB08, 1, 1, this::rrc_b));
-//        this.instructions.put(0xCB09, new Instruction(0xCB09, 1, 1, this::rrc_c));
-//        this.instructions.put(0xCB0A, new Instruction(0xCB0A, 1, 1, this::rrc_d));
-//        this.instructions.put(0xCB0B, new Instruction(0xCB0B, 1, 1, this::rrc_e));
-//        this.instructions.put(0xCB0C, new Instruction(0xCB0C, 1, 1, this::rrc_h));
-//        this.instructions.put(0xCB0D, new Instruction(0xCB0D, 1, 1, this::rrc_l));
-//        this.instructions.put(0xCB0E, new Instruction(0xCB0E, 1, 1, this::rrc_hlp));
-//        this.instructions.put(0xCB0F, new Instruction(0xCB0F, 1, 1, this::rrc_a));
-
-//        this.instructions.put(0xCB10, new Instruction(0xCB10, 1, 1, this::rl_b));
-//        this.instructions.put(0xCB11, new Instruction(0xCB11, 1, 1, this::rl_c));
-//        this.instructions.put(0xCB12, new Instruction(0xCB12, 1, 1, this::rl_d));
-//        this.instructions.put(0xCB13, new Instruction(0xCB13, 1, 1, this::rl_e));
-//        this.instructions.put(0xCB14, new Instruction(0xCB14, 1, 1, this::rl_h));
-//        this.instructions.put(0xCB15, new Instruction(0xCB15, 1, 1, this::rl_l));
-//        this.instructions.put(0xCB16, new Instruction(0xCB16, 1, 1, this::rl_hlp));
-//        this.instructions.put(0xCB17, new Instruction(0xCB17, 1, 1, this::rl_a));
-//        this.instructions.put(0xCB18, new Instruction(0xCB18, 1, 1, this::rr_b));
-//        this.instructions.put(0xCB19, new Instruction(0xCB19, 1, 1, this::rr_c));
-//        this.instructions.put(0xCB1A, new Instruction(0xCB1A, 1, 1, this::rr_d));
-//        this.instructions.put(0xCB1B, new Instruction(0xCB1B, 1, 1, this::rr_e));
-//        this.instructions.put(0xCB1C, new Instruction(0xCB1C, 1, 1, this::rr_h));
-//        this.instructions.put(0xCB1D, new Instruction(0xCB1D, 1, 1, this::rr_l));
-//        this.instructions.put(0xCB1E, new Instruction(0xCB1E, 1, 1, this::rr_hlp));
-//        this.instructions.put(0xCB1F, new Instruction(0xCB1F, 1, 1, this::rr_a));
-
-//        this.instructions.put(0xCB20, new Instruction(0xCB20, 1, 1, this::sla_b));
-//        this.instructions.put(0xCB21, new Instruction(0xCB21, 1, 1, this::sla_c));
-//        this.instructions.put(0xCB22, new Instruction(0xCB22, 1, 1, this::sla_d));
-//        this.instructions.put(0xCB23, new Instruction(0xCB23, 1, 1, this::sla_e));
-//        this.instructions.put(0xCB24, new Instruction(0xCB24, 1, 1, this::sla_h));
-//        this.instructions.put(0xCB25, new Instruction(0xCB25, 1, 1, this::sla_l));
-//        this.instructions.put(0xCB26, new Instruction(0xCB26, 1, 1, this::sla_hlp));
-//        this.instructions.put(0xCB27, new Instruction(0xCB27, 1, 1, this::sla_a));
-//        this.instructions.put(0xCB28, new Instruction(0xCB28, 1, 1, this::sra_b));
-//        this.instructions.put(0xCB29, new Instruction(0xCB29, 1, 1, this::sra_c));
-//        this.instructions.put(0xCB2A, new Instruction(0xCB2A, 1, 1, this::sra_d));
-//        this.instructions.put(0xCB2B, new Instruction(0xCB2B, 1, 1, this::sra_e));
-//        this.instructions.put(0xCB2C, new Instruction(0xCB2C, 1, 1, this::sra_h));
-//        this.instructions.put(0xCB2D, new Instruction(0xCB2D, 1, 1, this::sra_l));
-//        this.instructions.put(0xCB2E, new Instruction(0xCB2E, 1, 1, this::sra_hlp));
-//        this.instructions.put(0xCB2F, new Instruction(0xCB2F, 1, 1, this::sra_a));
-
-//        this.instructions.put(0xCB30, new Instruction(0xCB30, 1, 1, this::swap_b));
-//        this.instructions.put(0xCB31, new Instruction(0xCB31, 1, 1, this::swap_c));
-//        this.instructions.put(0xCB32, new Instruction(0xCB32, 1, 1, this::swap_d));
-//        this.instructions.put(0xCB33, new Instruction(0xCB33, 1, 1, this::swap_e));
-//        this.instructions.put(0xCB34, new Instruction(0xCB34, 1, 1, this::swap_h));
-//        this.instructions.put(0xCB35, new Instruction(0xCB35, 1, 1, this::swap_l));
-//        this.instructions.put(0xCB36, new Instruction(0xCB36, 1, 1, this::swap_hlp));
-//        this.instructions.put(0xCB37, new Instruction(0xCB37, 1, 1, this::swap_a));
-//        this.instructions.put(0xCB38, new Instruction(0xCB38, 1, 1, this::srl_b));
-//        this.instructions.put(0xCB39, new Instruction(0xCB39, 1, 1, this::srl_c));
-//        this.instructions.put(0xCB3A, new Instruction(0xCB3A, 1, 1, this::srl_d));
-//        this.instructions.put(0xCB3B, new Instruction(0xCB3B, 1, 1, this::srl_e));
-//        this.instructions.put(0xCB3C, new Instruction(0xCB3C, 1, 1, this::srl_h));
-//        this.instructions.put(0xCB3D, new Instruction(0xCB3D, 1, 1, this::srl_l));
-//        this.instructions.put(0xCB3E, new Instruction(0xCB3E, 1, 1, this::srl_hlp));
-//        this.instructions.put(0xCB3F, new Instruction(0xCB3F, 1, 1, this::srl_a));
-
-//        this.instructions.put(0xCB40, new Instruction(0xCB40, 1, 1, this::bit_0_b));
-//        this.instructions.put(0xCB41, new Instruction(0xCB41, 1, 1, this::bit_0_c));
-//        this.instructions.put(0xCB42, new Instruction(0xCB42, 1, 1, this::bit_0_d));
-//        this.instructions.put(0xCB43, new Instruction(0xCB43, 1, 1, this::bit_0_e));
-//        this.instructions.put(0xCB44, new Instruction(0xCB44, 1, 1, this::bit_0_h));
-//        this.instructions.put(0xCB45, new Instruction(0xCB45, 1, 1, this::bit_0_l));
-//        this.instructions.put(0xCB46, new Instruction(0xCB46, 1, 1, this::bit_0_hlp));
-//        this.instructions.put(0xCB47, new Instruction(0xCB47, 1, 1, this::bit_0_a));
-//        this.instructions.put(0xCB48, new Instruction(0xCB48, 1, 1, this::bit_1_b));
-//        this.instructions.put(0xCB49, new Instruction(0xCB49, 1, 1, this::bit_1_c));
-//        this.instructions.put(0xCB4A, new Instruction(0xCB4A, 1, 1, this::bit_1_d));
-//        this.instructions.put(0xCB4B, new Instruction(0xCB4B, 1, 1, this::bit_1_e));
-//        this.instructions.put(0xCB4C, new Instruction(0xCB4C, 1, 1, this::bit_1_h));
-//        this.instructions.put(0xCB4D, new Instruction(0xCB4D, 1, 1, this::bit_1_l));
-//        this.instructions.put(0xCB4E, new Instruction(0xCB4E, 1, 1, this::bit_1_hlp));
-//        this.instructions.put(0xCB4F, new Instruction(0xCB4F, 1, 1, this::bit_1_a));
-
-//        this.instructions.put(0xCB50, new Instruction(0xCB50, 1, 1, this::bit_2_b));
-//        this.instructions.put(0xCB51, new Instruction(0xCB51, 1, 1, this::bit_2_c));
-//        this.instructions.put(0xCB52, new Instruction(0xCB52, 1, 1, this::bit_2_d));
-//        this.instructions.put(0xCB53, new Instruction(0xCB53, 1, 1, this::bit_2_e));
-//        this.instructions.put(0xCB54, new Instruction(0xCB54, 1, 1, this::bit_2_h));
-//        this.instructions.put(0xCB55, new Instruction(0xCB55, 1, 1, this::bit_2_l));
-//        this.instructions.put(0xCB56, new Instruction(0xCB56, 1, 1, this::bit_2_hlp));
-//        this.instructions.put(0xCB57, new Instruction(0xCB57, 1, 1, this::bit_2_a));
-//        this.instructions.put(0xCB58, new Instruction(0xCB58, 1, 1, this::bit_3_b));
-//        this.instructions.put(0xCB59, new Instruction(0xCB59, 1, 1, this::bit_3_c));
-//        this.instructions.put(0xCB5A, new Instruction(0xCB5A, 1, 1, this::bit_3_d));
-//        this.instructions.put(0xCB5B, new Instruction(0xCB5B, 1, 1, this::bit_3_e));
-//        this.instructions.put(0xCB5C, new Instruction(0xCB5C, 1, 1, this::bit_3_h));
-//        this.instructions.put(0xCB5D, new Instruction(0xCB5D, 1, 1, this::bit_3_l));
-//        this.instructions.put(0xCB5E, new Instruction(0xCB5E, 1, 1, this::bit_3_hlp));
-//        this.instructions.put(0xCB5F, new Instruction(0xCB5F, 1, 1, this::bit_3_a));
-
-//        this.instructions.put(0xCB60, new Instruction(0xCB60, 1, 1, this::bit_4_b));
-//        this.instructions.put(0xCB61, new Instruction(0xCB61, 1, 1, this::bit_4_c));
-//        this.instructions.put(0xCB62, new Instruction(0xCB62, 1, 1, this::bit_4_d));
-//        this.instructions.put(0xCB63, new Instruction(0xCB63, 1, 1, this::bit_4_e));
-//        this.instructions.put(0xCB64, new Instruction(0xCB64, 1, 1, this::bit_4_h));
-//        this.instructions.put(0xCB65, new Instruction(0xCB65, 1, 1, this::bit_4_l));
-//        this.instructions.put(0xCB66, new Instruction(0xCB66, 1, 1, this::bit_4_hlp));
-//        this.instructions.put(0xCB67, new Instruction(0xCB67, 1, 1, this::bit_4_a));
-//        this.instructions.put(0xCB68, new Instruction(0xCB68, 1, 1, this::bit_5_b));
-//        this.instructions.put(0xCB69, new Instruction(0xCB69, 1, 1, this::bit_5_c));
-//        this.instructions.put(0xCB6A, new Instruction(0xCB6A, 1, 1, this::bit_5_d));
-//        this.instructions.put(0xCB6B, new Instruction(0xCB6B, 1, 1, this::bit_5_e));
-//        this.instructions.put(0xCB6C, new Instruction(0xCB6C, 1, 1, this::bit_5_h));
-//        this.instructions.put(0xCB6D, new Instruction(0xCB6D, 1, 1, this::bit_5_l));
-//        this.instructions.put(0xCB6E, new Instruction(0xCB6E, 1, 1, this::bit_5_hlp));
-//        this.instructions.put(0xCB6F, new Instruction(0xCB6F, 1, 1, this::bit_5_a));
-
-//        this.instructions.put(0xCB70, new Instruction(0xCB70, 1, 1, this::bit_6_b));
-//        this.instructions.put(0xCB71, new Instruction(0xCB71, 1, 1, this::bit_6_c));
-//        this.instructions.put(0xCB72, new Instruction(0xCB72, 1, 1, this::bit_6_d));
-//        this.instructions.put(0xCB73, new Instruction(0xCB73, 1, 1, this::bit_6_e));
-//        this.instructions.put(0xCB74, new Instruction(0xCB74, 1, 1, this::bit_6_h));
-//        this.instructions.put(0xCB75, new Instruction(0xCB75, 1, 1, this::bit_6_l));
-//        this.instructions.put(0xCB76, new Instruction(0xCB76, 1, 1, this::bit_6_hlp));
-//        this.instructions.put(0xCB77, new Instruction(0xCB77, 1, 1, this::bit_6_a));
-//        this.instructions.put(0xCB78, new Instruction(0xCB78, 1, 1, this::bit_7_b));
-//        this.instructions.put(0xCB79, new Instruction(0xCB79, 1, 1, this::bit_7_c));
-//        this.instructions.put(0xCB7A, new Instruction(0xCB7A, 1, 1, this::bit_7_d));
-//        this.instructions.put(0xCB7B, new Instruction(0xCB7B, 1, 1, this::bit_7_e));
-//        this.instructions.put(0xCB7C, new Instruction(0xCB7C, 1, 1, this::bit_7_h));
-//        this.instructions.put(0xCB7D, new Instruction(0xCB7D, 1, 1, this::bit_7_l));
-//        this.instructions.put(0xCB7E, new Instruction(0xCB7E, 1, 1, this::bit_7_hlp));
-//        this.instructions.put(0xCB7F, new Instruction(0xCB7F, 1, 1, this::bit_7_a));
-
-//        this.instructions.put(0xCB80, new Instruction(0xCB80, 1, 1, this::res_0_b));
-//        this.instructions.put(0xCB81, new Instruction(0xCB81, 1, 1, this::res_0_c));
-//        this.instructions.put(0xCB82, new Instruction(0xCB82, 1, 1, this::res_0_d));
-//        this.instructions.put(0xCB83, new Instruction(0xCB83, 1, 1, this::res_0_e));
-//        this.instructions.put(0xCB84, new Instruction(0xCB84, 1, 1, this::res_0_h));
-//        this.instructions.put(0xCB85, new Instruction(0xCB85, 1, 1, this::res_0_l));
-//        this.instructions.put(0xCB86, new Instruction(0xCB86, 1, 1, this::res_0_hlp));
-//        this.instructions.put(0xCB87, new Instruction(0xCB87, 1, 1, this::res_0_a));
-//        this.instructions.put(0xCB88, new Instruction(0xCB88, 1, 1, this::res_1_b));
-//        this.instructions.put(0xCB89, new Instruction(0xCB89, 1, 1, this::res_1_c));
-//        this.instructions.put(0xCB8A, new Instruction(0xCB8A, 1, 1, this::res_1_d));
-//        this.instructions.put(0xCB8B, new Instruction(0xCB8B, 1, 1, this::res_1_e));
-//        this.instructions.put(0xCB8C, new Instruction(0xCB8C, 1, 1, this::res_1_h));
-//        this.instructions.put(0xCB8D, new Instruction(0xCB8D, 1, 1, this::res_1_l));
-//        this.instructions.put(0xCB8E, new Instruction(0xCB8E, 1, 1, this::res_1_hlp));
-//        this.instructions.put(0xCB8F, new Instruction(0xCB8F, 1, 1, this::res_1_a));
-
-//        this.instructions.put(0xCB90, new Instruction(0xCB90, 1, 1, this::res_2_b));
-//        this.instructions.put(0xCB91, new Instruction(0xCB91, 1, 1, this::res_2_c));
-//        this.instructions.put(0xCB92, new Instruction(0xCB92, 1, 1, this::res_2_d));
-//        this.instructions.put(0xCB93, new Instruction(0xCB93, 1, 1, this::res_2_e));
-//        this.instructions.put(0xCB94, new Instruction(0xCB94, 1, 1, this::res_2_h));
-//        this.instructions.put(0xCB95, new Instruction(0xCB95, 1, 1, this::res_2_l));
-//        this.instructions.put(0xCB96, new Instruction(0xCB96, 1, 1, this::res_2_hlp));
-//        this.instructions.put(0xCB97, new Instruction(0xCB97, 1, 1, this::res_2_a));
-//        this.instructions.put(0xCB98, new Instruction(0xCB98, 1, 1, this::res_3_b));
-//        this.instructions.put(0xCB99, new Instruction(0xCB99, 1, 1, this::res_3_c));
-//        this.instructions.put(0xCB9A, new Instruction(0xCB9A, 1, 1, this::res_3_d));
-//        this.instructions.put(0xCB9B, new Instruction(0xCB9B, 1, 1, this::res_3_e));
-//        this.instructions.put(0xCB9C, new Instruction(0xCB9C, 1, 1, this::res_3_h));
-//        this.instructions.put(0xCB9D, new Instruction(0xCB9D, 1, 1, this::res_3_l));
-//        this.instructions.put(0xCB9E, new Instruction(0xCB9E, 1, 1, this::res_3_hlp));
-//        this.instructions.put(0xCB9F, new Instruction(0xCB9F, 1, 1, this::res_3_a));
-
-//        this.instructions.put(0xCBA0, new Instruction(0xCBA0, 1, 1, this::res_4_b));
-//        this.instructions.put(0xCBA1, new Instruction(0xCBA1, 1, 1, this::res_4_c));
-//        this.instructions.put(0xCBA2, new Instruction(0xCBA2, 1, 1, this::res_4_d));
-//        this.instructions.put(0xCBA3, new Instruction(0xCBA3, 1, 1, this::res_4_e));
-//        this.instructions.put(0xCBA4, new Instruction(0xCBA4, 1, 1, this::res_4_h));
-//        this.instructions.put(0xCBA5, new Instruction(0xCBA5, 1, 1, this::res_4_l));
-//        this.instructions.put(0xCBA6, new Instruction(0xCBA6, 1, 1, this::res_4_hlp));
-//        this.instructions.put(0xCBA7, new Instruction(0xCBA7, 1, 1, this::res_4_a));
-//        this.instructions.put(0xCBA8, new Instruction(0xCBA8, 1, 1, this::res_5_b));
-//        this.instructions.put(0xCBA9, new Instruction(0xCBA9, 1, 1, this::res_5_c));
-//        this.instructions.put(0xCBAA, new Instruction(0xCBAA, 1, 1, this::res_5_d));
-//        this.instructions.put(0xCBAB, new Instruction(0xCBAB, 1, 1, this::res_5_e));
-//        this.instructions.put(0xCBAC, new Instruction(0xCBAC, 1, 1, this::res_5_h));
-//        this.instructions.put(0xCBAD, new Instruction(0xCBAD, 1, 1, this::res_5_l));
-//        this.instructions.put(0xCBAE, new Instruction(0xCBAE, 1, 1, this::res_5_hlp));
-//        this.instructions.put(0xCBAF, new Instruction(0xCBAF, 1, 1, this::res_5_a));
-
-//        this.instructions.put(0xCBB0, new Instruction(0xCBB0, 1, 1, this::res_6_b));
-//        this.instructions.put(0xCBB1, new Instruction(0xCBB1, 1, 1, this::res_6_c));
-//        this.instructions.put(0xCBB2, new Instruction(0xCBB2, 1, 1, this::res_6_d));
-//        this.instructions.put(0xCBB3, new Instruction(0xCBB3, 1, 1, this::res_6_e));
-//        this.instructions.put(0xCBB4, new Instruction(0xCBB4, 1, 1, this::res_6_h));
-//        this.instructions.put(0xCBB5, new Instruction(0xCBB5, 1, 1, this::res_6_l));
-//        this.instructions.put(0xCBB6, new Instruction(0xCBB6, 1, 1, this::res_6_hlp));
-//        this.instructions.put(0xCBB7, new Instruction(0xCBB7, 1, 1, this::res_6_a));
-//        this.instructions.put(0xCBB8, new Instruction(0xCBB8, 1, 1, this::res_7_b));
-//        this.instructions.put(0xCBB9, new Instruction(0xCBB9, 1, 1, this::res_7_c));
-//        this.instructions.put(0xCBBA, new Instruction(0xCBBA, 1, 1, this::res_7_d));
-//        this.instructions.put(0xCBBB, new Instruction(0xCBBB, 1, 1, this::res_7_e));
-//        this.instructions.put(0xCBBC, new Instruction(0xCBBC, 1, 1, this::res_7_h));
-//        this.instructions.put(0xCBBD, new Instruction(0xCBBD, 1, 1, this::res_7_l));
-//        this.instructions.put(0xCBBE, new Instruction(0xCBBE, 1, 1, this::res_7_hlp));
-//        this.instructions.put(0xCBBF, new Instruction(0xCBBF, 1, 1, this::res_7_a));
-
-//        this.instructions.put(0xCBC0, new Instruction(0xCBC0, 1, 1, this::set_0_b));
-//        this.instructions.put(0xCBC1, new Instruction(0xCBC1, 1, 1, this::set_0_c));
-//        this.instructions.put(0xCBC2, new Instruction(0xCBC2, 1, 1, this::set_0_d));
-//        this.instructions.put(0xCBC3, new Instruction(0xCBC3, 1, 1, this::set_0_e));
-//        this.instructions.put(0xCBC4, new Instruction(0xCBC4, 1, 1, this::set_0_h));
-//        this.instructions.put(0xCBC5, new Instruction(0xCBC5, 1, 1, this::set_0_l));
-//        this.instructions.put(0xCBC6, new Instruction(0xCBC6, 1, 1, this::set_0_hlp));
-//        this.instructions.put(0xCBC7, new Instruction(0xCBC7, 1, 1, this::set_0_a));
-//        this.instructions.put(0xCBC8, new Instruction(0xCBC8, 1, 1, this::set_1_b));
-//        this.instructions.put(0xCBC9, new Instruction(0xCBC9, 1, 1, this::set_1_c));
-//        this.instructions.put(0xCBCA, new Instruction(0xCBCA, 1, 1, this::set_1_d));
-//        this.instructions.put(0xCBCB, new Instruction(0xCBCB, 1, 1, this::set_1_e));
-//        this.instructions.put(0xCBCC, new Instruction(0xCBCC, 1, 1, this::set_1_h));
-//        this.instructions.put(0xCBCD, new Instruction(0xCBCD, 1, 1, this::set_1_l));
-//        this.instructions.put(0xCBCE, new Instruction(0xCBCE, 1, 1, this::set_1_hlp));
-//        this.instructions.put(0xCBCF, new Instruction(0xCBCF, 1, 1, this::set_1_a));
-
-//        this.instructions.put(0xCBD0, new Instruction(0xCBD0, 1, 1, this::set_2_b));
-//        this.instructions.put(0xCBD1, new Instruction(0xCBD1, 1, 1, this::set_2_c));
-//        this.instructions.put(0xCBD2, new Instruction(0xCBD2, 1, 1, this::set_2_d));
-//        this.instructions.put(0xCBD3, new Instruction(0xCBD3, 1, 1, this::set_2_e));
-//        this.instructions.put(0xCBD4, new Instruction(0xCBD4, 1, 1, this::set_2_h));
-//        this.instructions.put(0xCBD5, new Instruction(0xCBD5, 1, 1, this::set_2_l));
-//        this.instructions.put(0xCBD6, new Instruction(0xCBD6, 1, 1, this::set_2_hlp));
-//        this.instructions.put(0xCBD7, new Instruction(0xCBD7, 1, 1, this::set_2_a));
-//        this.instructions.put(0xCBD8, new Instruction(0xCBD8, 1, 1, this::set_3_b));
-//        this.instructions.put(0xCBD9, new Instruction(0xCBD9, 1, 1, this::set_3_c));
-//        this.instructions.put(0xCBDA, new Instruction(0xCBDA, 1, 1, this::set_3_d));
-//        this.instructions.put(0xCBDB, new Instruction(0xCBDB, 1, 1, this::set_3_e));
-//        this.instructions.put(0xCBDC, new Instruction(0xCBDC, 1, 1, this::set_3_h));
-//        this.instructions.put(0xCBDD, new Instruction(0xCBDD, 1, 1, this::set_3_l));
-//        this.instructions.put(0xCBDE, new Instruction(0xCBDE, 1, 1, this::set_3_hlp));
-//        this.instructions.put(0xCBDF, new Instruction(0xCBDF, 1, 1, this::set_3_a));
-
-//        this.instructions.put(0xCBE0, new Instruction(0xCBE0, 1, 1, this::set_4_b));
-//        this.instructions.put(0xCBE1, new Instruction(0xCBE1, 1, 1, this::set_4_c));
-//        this.instructions.put(0xCBE2, new Instruction(0xCBE2, 1, 1, this::set_4_d));
-//        this.instructions.put(0xCBE3, new Instruction(0xCBE3, 1, 1, this::set_4_e));
-//        this.instructions.put(0xCBE4, new Instruction(0xCBE4, 1, 1, this::set_4_h));
-//        this.instructions.put(0xCBE5, new Instruction(0xCBE5, 1, 1, this::set_4_l));
-//        this.instructions.put(0xCBE6, new Instruction(0xCBE6, 1, 1, this::set_4_hlp));
-//        this.instructions.put(0xCBE7, new Instruction(0xCBE7, 1, 1, this::set_4_a));
-//        this.instructions.put(0xCBE8, new Instruction(0xCBE8, 1, 1, this::set_5_b));
-//        this.instructions.put(0xCBE9, new Instruction(0xCBE9, 1, 1, this::set_5_c));
-//        this.instructions.put(0xCBEA, new Instruction(0xCBEA, 1, 1, this::set_5_d));
-//        this.instructions.put(0xCBEB, new Instruction(0xCBEB, 1, 1, this::set_5_e));
-//        this.instructions.put(0xCBEC, new Instruction(0xCBEC, 1, 1, this::set_5_h));
-//        this.instructions.put(0xCBED, new Instruction(0xCBED, 1, 1, this::set_5_l));
-//        this.instructions.put(0xCBEE, new Instruction(0xCBEE, 1, 1, this::set_5_hlp));
-//        this.instructions.put(0xCBEF, new Instruction(0xCBEF, 1, 1, this::set_5_a));
-
-//        this.instructions.put(0xCBF0, new Instruction(0xCBF0, 1, 1, this::set_6_b));
-//        this.instructions.put(0xCBF1, new Instruction(0xCBF1, 1, 1, this::set_6_c));
-//        this.instructions.put(0xCBF2, new Instruction(0xCBF2, 1, 1, this::set_6_d));
-//        this.instructions.put(0xCBF3, new Instruction(0xCBF3, 1, 1, this::set_6_e));
-//        this.instructions.put(0xCBF4, new Instruction(0xCBF4, 1, 1, this::set_6_h));
-//        this.instructions.put(0xCBF5, new Instruction(0xCBF5, 1, 1, this::set_6_l));
-//        this.instructions.put(0xCBF6, new Instruction(0xCBF6, 1, 1, this::set_6_hlp));
-//        this.instructions.put(0xCBF7, new Instruction(0xCBF7, 1, 1, this::set_6_a));
-//        this.instructions.put(0xCBF8, new Instruction(0xCBF8, 1, 1, this::set_7_b));
-//        this.instructions.put(0xCBF9, new Instruction(0xCBF9, 1, 1, this::set_7_c));
-//        this.instructions.put(0xCBFA, new Instruction(0xCBFA, 1, 1, this::set_7_d));
-//        this.instructions.put(0xCBFB, new Instruction(0xCBFB, 1, 1, this::set_7_e));
-//        this.instructions.put(0xCBFC, new Instruction(0xCBFC, 1, 1, this::set_7_h));
-//        this.instructions.put(0xCBFD, new Instruction(0xCBFD, 1, 1, this::set_7_l));
-//        this.instructions.put(0xCBFE, new Instruction(0xCBFE, 1, 1, this::set_7_hlp));
-//        this.instructions.put(0xCBFF, new Instruction(0xCBFF, 1, 1, this::set_7_a));
+        this.setAF(0x01B0);
+        this.setBC(0x0013);
+        this.setDE(0x00D8);
+        this.setHL(0x014D);
+        this.setSP(0xFFFE);
+        this.setPC(0x100);
     }
 
     public int getA() {
@@ -687,25 +138,73 @@ public class CPU implements Registers {
         return this.L;
     }
 
-    // TODO: access these with the 8-bit registers using bit shifting.
     public int getAF() {
-        return this.AF;
+        return (this.A << 8) + this.F;
     }
 
     public int getBC() {
-        return this.BC;
+        return (this.B << 8) + this.C;
     }
 
     public int getDE() {
-        return this.DE;
+        return (this.D << 8) + this.E;
     }
 
     public int getHL() {
-        return this.HL;
+        return (this.H << 8) + this.L;
     }
-    // end
 
-    // TODO: create setter methods for the 16-bit registers
+    public void setA(int n) {
+        this.A = n;
+    }
+
+    public void setB(int n) {
+        this.B = n;
+    }
+
+    public void setC(int n) {
+        this.C = n;
+    }
+
+    public void setD(int n) {
+        this.D = n;
+    }
+
+    public void setE(int n) {
+        this.E = n;
+    }
+
+    public void setF(int n) {
+        this.F = (n & 0xF0);
+    }
+
+    public void setH(int n) {
+        this.H = n;
+    }
+
+    public void setL(int n) {
+        this.L = n;
+    }
+
+    public void setAF(int n) {
+        this.A = (n & 0xFF00) >> 8;
+        this.F = n & 0x00FF;
+    }
+
+    public void setBC(int n) {
+        this.B = (n & 0xFF00) >> 8;
+        this.C = n & 0x00FF;
+    }
+
+    public void setDE(int n) {
+        this.D = (n & 0xFF00) >> 8;
+        this.E = n & 0x00FF;
+    }
+
+    public void setHL(int n) {
+        this.H = (n & 0xFF00) >> 8;
+        this.L = n & 0x00FF;
+    }
 
     public int getSP() {
         return this.SP;
@@ -723,16 +222,16 @@ public class CPU implements Registers {
         this.SP = n;
     }
 
-    private void incrementPC(int n) {
-        this.PC += n;
-    }
-
     /**
      * Tick one clock cycle
      */
     public void tick() {
         Instruction instruction = this.getInstruction(this.memory.getByteAt(this.PC++));
         this.execute(instruction);
+    }
+
+    private void incrementPC(int n) {
+        this.PC += n;
     }
 
     /**
@@ -893,7 +392,7 @@ public class CPU implements Registers {
      * OP codes 0x00, 0xD3, 0xDB, 0xDD, 0xE3, 0xE4, 0xEB, 0xEC, 0xED, 0xF4, 0xFC, 0xFD - No operation.
      * @param ops unused
      */
-    private Void nop(int[] ops) {
+    Void nop(int[] ops) {
         // nothing.
         return null;
     }
@@ -902,8 +401,8 @@ public class CPU implements Registers {
      * OP code 0x01 - Load immediate 2 bytes into BC.
      * @param ops the two immediate 8 byte chunks.
      */
-    private Void ld_bc_xx(int[] ops) {
-        this.BC = this.combineBytes(ops[0], ops[1]);
+    Void ld_bc_xx(int[] ops) {
+        this.setBC(this.combineBytes(ops[0], ops[1]));
         return null;
     }
 
@@ -911,8 +410,8 @@ public class CPU implements Registers {
      * OP code 0x02 - Load value of A into memory address at BC.
      * @param ops unused
      */
-    private Void ld_bcp_a(int[] ops) {
-        this.memory.setByteAt(this.BC, this.A);
+    Void ld_bcp_a(int[] ops) {
+        this.memory.setByteAt(this.getBC(), this.A);
         return null;
     }
 
@@ -920,9 +419,9 @@ public class CPU implements Registers {
      * OP code 0x03 - Increment BC.
      * @param ops unused
      */
-    private Void inc_bc(int[] ops) {
+    Void inc_bc(int[] ops) {
         // increment BC by 1 and get the first 8 bits
-        this.BC = (this.BC + 1) & 0xFF;
+        this.setBC((this.getBC() + 1) & 0xFF);
         return null;
     }
 
@@ -930,7 +429,7 @@ public class CPU implements Registers {
      * OP code 0x04 - Increment B.
      * @param ops unused
      */
-    private Void inc_b(int[] ops) {
+    Void inc_b(int[] ops) {
         this.B = this.increment(this.B);
         return null;
     }
@@ -939,7 +438,7 @@ public class CPU implements Registers {
      * OP code 0x05 - Decrement B.
      * @param ops unused
      */
-    private Void dec_b(int[] ops) {
+    Void dec_b(int[] ops) {
         this.B = this.decrement(this.B);
         return null;
     }
@@ -948,7 +447,7 @@ public class CPU implements Registers {
      * OP code 0x06 - Load immediate byte into B.
      * @param ops An 8 bit immediate value.
      */
-    private Void ld_b_x(int[] ops) {
+    Void ld_b_x(int[] ops) {
         this.B = ops[0];
         return null;
     }
@@ -957,7 +456,7 @@ public class CPU implements Registers {
      * OP code 0x07 - Shift A left by 1 bit. Carry flag is set to the 7th bit of A.
      * @param ops unused
      */
-    private Void rlca(int[] ops) {
+    Void rlca(int[] ops) {
         int carry = (this.A & 0x80) >> 7;
 
         if(carry == 1) {
@@ -978,7 +477,7 @@ public class CPU implements Registers {
      * OP code 0x08 - Load value of SP into address at xx.
      * @param ops the two immediate 8 byte chunks.
      */
-    private Void ld_xxp_sp(int[] ops) {
+    Void ld_xxp_sp(int[] ops) {
         this.memory.setByteAt(this.combineBytes(ops[1], ops[0]), this.SP);
         return null;
     }
@@ -987,9 +486,9 @@ public class CPU implements Registers {
      * OP code 0x09 - Add the value of BC to HL.
      * @param ops unused
      */
-    private Void add_hl_bc(int[] ops) {
+    Void add_hl_bc(int[] ops) {
         // TODO: Flags are affected by this operation. Need to figure that out.
-        this.HL += this.BC;
+        this.setHL(this.getHL() + this.getBC());
         return null;
     }
 
@@ -997,8 +496,8 @@ public class CPU implements Registers {
      * OP code 0x0A - Load value at memory address BC into A.
      * @param ops unused.
      */
-    private Void ld_a_bcp(int[] ops) {
-        this.A = this.memory.getByteAt(this.BC);
+    Void ld_a_bcp(int[] ops) {
+        this.A = this.memory.getByteAt(this.getBC());
         return null;
     }
 
@@ -1006,8 +505,8 @@ public class CPU implements Registers {
      * OP code 0x0B - Decrement the value of BC.
      * @param ops unused.
      */
-    private Void dec_bc(int[] ops) {
-        this.BC -= 1;
+    Void dec_bc(int[] ops) {
+        this.setBC(this.getBC() - 1);
         return null;
     }
 
@@ -1015,7 +514,7 @@ public class CPU implements Registers {
      * OP code 0x0C - Increment the value of C.
      * @param ops unused.
      */
-    private Void inc_c(int[] ops) {
+    Void inc_c(int[] ops) {
         this.C = this.increment(this.C);
         return null;
     }
@@ -1024,7 +523,7 @@ public class CPU implements Registers {
      * OP code 0x0C - Decrement the value of C.
      * @param ops unused.
      */
-    private Void dec_c(int[] ops) {
+    Void dec_c(int[] ops) {
         this.C = this.decrement(this.C);
         return null;
     }
@@ -1033,7 +532,7 @@ public class CPU implements Registers {
      * OP code 0x0E - Load immediate byte into C.
      * @param ops An 8 bit immediate value.
      */
-    private Void ld_c_x(int[] ops) {
+    Void ld_c_x(int[] ops) {
         this.C = ops[0];
         return null;
     }
@@ -1042,7 +541,7 @@ public class CPU implements Registers {
      * OP code 0x0F - Shift A right by 1 bit. Carry flag is set to the 7th bit of A.
      * @param ops unused.
      */
-    private Void rrca(int[] ops) {
+    Void rrca(int[] ops) {
         int carry = (this.A & 0x01);
 
         if(carry == 1) {
@@ -1075,7 +574,7 @@ public class CPU implements Registers {
      *   > Input to P10 - P13 is LOW for all.
      * @param ops unused.
      */
-    private Void stop(int[] ops) {
+    Void stop(int[] ops) {
         // TODO: figure out what to do with this.
         // I guess reset the IE flag, but how do I implement STOP in the CPU?
         // I think just a boolean, and check if it's set in the tick method.
@@ -1086,7 +585,7 @@ public class CPU implements Registers {
      * OP code 0x16 - Load immediate byte into D.
      * @param ops An 8 bit immediate value.
      */
-    private Void ld_d_x(int[] ops) {
+    Void ld_d_x(int[] ops) {
         this.D = ops[0];
         return null;
     }
@@ -1095,7 +594,7 @@ public class CPU implements Registers {
      * OP code 0x18 - Increments PC by the amount of the next byte (between -128 and 127)
      * @param ops An 8 bit immediate value.
      */
-    private Void jr_x(int[] ops) {
+    Void jr_x(int[] ops) {
         this.incrementPC((byte)ops[0]);
 
         return null;
@@ -1105,7 +604,7 @@ public class CPU implements Registers {
      * OP code 0x1E - Load immediate byte into E.
      * @param ops An 8 bit immediate value.
      */
-    private Void ld_e_x(int[] ops) {
+    Void ld_e_x(int[] ops) {
         this.E = ops[0];
         return null;
     }
@@ -1114,7 +613,7 @@ public class CPU implements Registers {
      * OP code 0x26 - Load immediate byte into H.
      * @param ops An 8 bit immediate value.
      */
-    private Void ld_h_x(int[] ops) {
+    Void ld_h_x(int[] ops) {
         this.H = ops[0];
         return null;
     }
@@ -1124,7 +623,7 @@ public class CPU implements Registers {
      * used to set the contents of register A to a BCD number.
      * @param ops unused
      */
-    private Void daa(int[] ops) {
+    Void daa(int[] ops) {
         // after an addition, adjust A if a HALF_CARRY or CARRY occurred or if the result is out of bounds.
         if(!this.areFlagsSet(CPU.FLAG_ZERO)) {
             if(this.areFlagsSet(CPU.FLAG_CARRY) || this.A > 0x99) {
@@ -1161,7 +660,7 @@ public class CPU implements Registers {
      * OP code 0x2E - Load immediate byte into L.
      * @param ops An 8 bit immediate value.
      */
-    private Void ld_l_x(int[] ops) {
+    Void ld_l_x(int[] ops) {
         this.L = ops[0];
         return null;
     }
@@ -1170,7 +669,7 @@ public class CPU implements Registers {
      * OP code 0x3E - Load immediate byte into A.
      * @param ops An 8 bit immediate value.
      */
-    private Void ld_a_x(int[] ops) {
+    Void ld_a_x(int[] ops) {
         this.A = ops[0];
         return null;
     }
