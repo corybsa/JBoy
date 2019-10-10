@@ -520,7 +520,7 @@ public class CPU {
     }
 
     /**
-     * OP code 0x0C - Decrement the value of C.
+     * OP code 0x0D - Decrement the value of C.
      * @param ops unused.
      */
     Void dec_c(int[] ops) {
@@ -538,25 +538,22 @@ public class CPU {
     }
 
     /**
-     * OP code 0x0F - Shift A right by 1 bit. Carry flag is set to the 7th bit of A.
+     * OP code 0x0F - Shift A right by 1 bit. Carry flag is set to the 0th bit of A.
      * @param ops unused.
      */
     Void rrca(int[] ops) {
-        int carry = (this.A & 0x01);
+        int carry = this.A & 0x01;
 
-        if(carry == 1) {
+        if(carry == 0x01) {
             this.setFlags(FLAG_CARRY);
         } else {
             this.resetFlags(FLAG_CARRY);
         }
 
-        // shift bit right by 1 and only keep the value below 256
-        this.A = (this.A >> 1) & 0xFF;
-
         // set the 7th bit to whatever was at the 0th bit.
         // TODO: This might be right
         // https://www.geeksforgeeks.org/modify-bit-given-position/
-        this.A = (((this.A >> 1) & (~0x80)) | ((carry << 7) & 0x80));
+        this.A = (((this.A >> 1) & (~0x80)) | ((carry) & 0x80)) & 0xFF;
 
         this.resetFlags(FLAG_ZERO | FLAG_SUB | FLAG_HALF);
         return null;
@@ -582,11 +579,75 @@ public class CPU {
     }
 
     /**
+     * OP code 0x11 - Load immediate 2 bytes into DE.
+     * @param ops the two immediate 8 byte chunks.
+     */
+    Void ld_de_xx(int[] ops) {
+        this.setDE(this.combineBytes(ops[0], ops[1]));
+        return null;
+    }
+
+    /**
+     * OP code 0x12 - Load the value of A in the memory address pointed to by DE.
+     * @param ops unused.
+     */
+    Void ld_dep_a(int[] ops) {
+        this.memory.setByteAt(this.getDE(), this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0x13 - Increment DE.
+     * @param ops unused
+     */
+    Void inc_de(int[] ops) {
+        this.setDE(this.getDE() + 1);
+        return null;
+    }
+
+    /**
+     * OP code 0x14 - Increment the value of D.
+     * @param ops unused.
+     */
+    Void inc_d(int[] ops) {
+        this.D = this.increment(this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0x15 - Decrement the value of D.
+     * @param ops unused.
+     */
+    Void dec_d(int[] ops) {
+        this.D = this.decrement(this.D);
+        return null;
+    }
+
+    /**
      * OP code 0x16 - Load immediate byte into D.
      * @param ops An 8 bit immediate value.
      */
     Void ld_d_x(int[] ops) {
         this.D = ops[0];
+        return null;
+    }
+
+    /**
+     * OP code 0x17 - Shift A left by 1. Carry flag is set to the 7th bit of A.
+     * @param ops  unused.
+     */
+    Void rla(int[] ops) {
+        int carry = (this.A & 0x80) >> 7;
+
+        if(carry == 0x01) {
+            this.setFlags(FLAG_CARRY);
+        } else {
+            this.resetFlags(FLAG_CARRY);
+        }
+
+        this.A = (((this.A << 1) & (~0x80)) | ((carry << 7) & 0x80)) & 0xFF;
+
+        this.resetFlags(FLAG_ZERO | FLAG_SUB | FLAG_HALF);
         return null;
     }
 

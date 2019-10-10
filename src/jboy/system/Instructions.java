@@ -20,14 +20,15 @@ class Instructions extends HashMap<Integer, Instruction> {
         this.put(0x0D, new Instruction(0x0D, 0, 4, cpu::dec_c));
         this.put(0x0E, new Instruction(0x0E, 1, 8, cpu::ld_c_x));
         this.put(0x0F, new Instruction(0x0F, 0, 4, cpu::rrca));
+
         this.put(0x10, new Instruction(0x10, 1, 4, cpu::stop));
-//        this.put(0x11, new Instruction(0x11, 2, 12, cpu::ld_de_xx));
-//        this.put(0x12, new Instruction(0x12, 0, 8, cpu::ld_dep_a));
-//        this.put(0x13, new Instruction(0x13, 0, 8, cpu::inc_de));
-//        this.put(0x14, new Instruction(0x14, 0, 4, cpu::inc_d));
-//        this.put(0x15, new Instruction(0x15, 0, 4, cpu::dec_d));
+        this.put(0x11, new Instruction(0x11, 2, 12, cpu::ld_de_xx));
+        this.put(0x12, new Instruction(0x12, 0, 8, cpu::ld_dep_a));
+        this.put(0x13, new Instruction(0x13, 0, 8, cpu::inc_de));
+        this.put(0x14, new Instruction(0x14, 0, 4, cpu::inc_d));
+        this.put(0x15, new Instruction(0x15, 0, 4, cpu::dec_d));
         this.put(0x16, new Instruction(0x16, 1, 8, cpu::ld_d_x));
-//        this.put(0x17, new Instruction(0x17, 0, 4, cpu::rla));
+        this.put(0x17, new Instruction(0x17, 0, 4, cpu::rla));
         this.put(0x18, new Instruction(0x18, 1, 12, cpu::jr_x));
 //        this.put(0x19, new Instruction(0x19, 0, 8, cpu::add_hl_de));
 //        this.put(0x1A, new Instruction(0x1A, 0, 8, cpu::ld_a_dep));
@@ -36,6 +37,7 @@ class Instructions extends HashMap<Integer, Instruction> {
 //        this.put(0x1D, new Instruction(0x1D, 0, 4, cpu::dec_e));
         this.put(0x1E, new Instruction(0x1E, 1, 8, cpu::ld_e_x));
 //        this.put(0x1F, new Instruction(0x1F, 0, 4, cpu::rra));
+
 //        this.put(0x20, new Instruction(0x20, 1, 1, cpu::jr_nz_x));
 //        this.put(0x21, new Instruction(0x21, 2, 1, cpu::ld_hl_xx));
 //        this.put(0x22, new Instruction(0x22, 0, 1, cpu::ldi_hlp_a));
@@ -52,6 +54,7 @@ class Instructions extends HashMap<Integer, Instruction> {
 //        this.put(0x2D, new Instruction(0x2D, 0, 1, cpu::dec_l));
         this.put(0x2E, new Instruction(0x2E, 1, 1, cpu::ld_l_x));
 //        this.put(0x2F, new Instruction(0x2F, 0, 1, cpu::cpl));
+
 //        this.put(0x30, new Instruction(0x30, 1, 1, cpu::jr_nc_x));
 //        this.put(0x31, new Instruction(0x31, 2, 1, cpu::ld_sp_xx));
 //        this.put(0x32, new Instruction(0x32, 0, 1, cpu::ldd_hlp_a));
@@ -68,6 +71,7 @@ class Instructions extends HashMap<Integer, Instruction> {
 //        this.put(0x3D, new Instruction(0x3D, 0, 1, cpu::dec_a));
         this.put(0x3E, new Instruction(0x3E, 1, 1, cpu::ld_a_x));
 //        this.put(0x3F, new Instruction(0x3F, 0, 1, cpu::ccf));
+
 //        this.put(0x40, new Instruction(0x40, 0, 1, cpu::ld_b_b));
 //        this.put(0x41, new Instruction(0x41, 0, 1, cpu::ld_b_c));
 //        this.put(0x42, new Instruction(0x42, 0, 1, cpu::ld_b_d));
@@ -84,6 +88,7 @@ class Instructions extends HashMap<Integer, Instruction> {
 //        this.put(0x4D, new Instruction(0x4D, 0, 1, cpu::ld_c_l));
 //        this.put(0x4E, new Instruction(0x4E, 0, 1, cpu::ld_c_hlp));
 //        this.put(0x4F, new Instruction(0x4F, 0, 1, cpu::ld_c_a));
+
 //        this.put(0x50, new Instruction(0x50, 0, 1, cpu::ld_d_b));
 //        this.put(0x51, new Instruction(0x51, 0, 1, cpu::ld_d_c));
 //        this.put(0x52, new Instruction(0x52, 0, 1, cpu::ld_d_d));
@@ -100,6 +105,7 @@ class Instructions extends HashMap<Integer, Instruction> {
 //        this.put(0x5D, new Instruction(0x5D, 0, 1, cpu::ld_e_l));
 //        this.put(0x5E, new Instruction(0x5E, 0, 1, cpu::ld_e_hlp));
 //        this.put(0x5F, new Instruction(0x5F, 0, 1, cpu::ld_e_a));
+
 //        this.put(0x60, new Instruction(0x60, 0, 1, cpu::ld_h_b));
 //        this.put(0x61, new Instruction(0x61, 0, 1, cpu::ld_h_c));
 //        this.put(0x62, new Instruction(0x62, 0, 1, cpu::ld_h_d));
@@ -116,6 +122,7 @@ class Instructions extends HashMap<Integer, Instruction> {
 //        this.put(0x6D, new Instruction(0x6D, 0, 1, cpu::ld_l_l));
 //        this.put(0x6E, new Instruction(0x6E, 0, 1, cpu::ld_l_hlp));
 //        this.put(0x6F, new Instruction(0x6F, 0, 1, cpu::ld_l_a));
+
 //        this.put(0x70, new Instruction(0x70, 0, 1, cpu::ld_hlp_b));
 //        this.put(0x71, new Instruction(0x71, 0, 1, cpu::ld_hlp_c));
 //        this.put(0x72, new Instruction(0x72, 0, 1, cpu::ld_hlp_d));
@@ -132,6 +139,7 @@ class Instructions extends HashMap<Integer, Instruction> {
 //        this.put(0x7D, new Instruction(0x7D, 0, 1, cpu::ld_a_l));
 //        this.put(0x7E, new Instruction(0x7E, 0, 1, cpu::ld_a_hlp));
 //        this.put(0x7F, new Instruction(0x7F, 0, 1, cpu::ld_a_a));
+
 //        this.put(0x80, new Instruction(0x80, 0, 1, cpu::add_a_b));
 //        this.put(0x81, new Instruction(0x81, 0, 1, cpu::add_a_c));
 //        this.put(0x82, new Instruction(0x82, 0, 1, cpu::add_a_d));
@@ -148,6 +156,7 @@ class Instructions extends HashMap<Integer, Instruction> {
 //        this.put(0x8D, new Instruction(0x8D, 0, 1, cpu::adc_a_l));
 //        this.put(0x8E, new Instruction(0x8E, 0, 1, cpu::adc_a_hlp));
 //        this.put(0x8F, new Instruction(0x8F, 0, 1, cpu::adc_a_a));
+
 //        this.put(0x90, new Instruction(0x90, 0, 1, cpu::sub_b));
 //        this.put(0x91, new Instruction(0x91, 0, 1, cpu::sub_c));
 //        this.put(0x92, new Instruction(0x92, 0, 1, cpu::sub_d));
@@ -164,6 +173,7 @@ class Instructions extends HashMap<Integer, Instruction> {
 //        this.put(0x9D, new Instruction(0x9D, 0, 1, cpu::sbc_a_l));
 //        this.put(0x9E, new Instruction(0x9E, 0, 1, cpu::sbc_a_hlp));
 //        this.put(0x9F, new Instruction(0x9F, 0, 1, cpu::sbc_a_a));
+
 //        this.put(0xA0, new Instruction(0xA0, 0, 1, cpu::and_b));
 //        this.put(0xA1, new Instruction(0xA1, 0, 1, cpu::and_c));
 //        this.put(0xA2, new Instruction(0xA2, 0, 1, cpu::and_d));
@@ -180,6 +190,7 @@ class Instructions extends HashMap<Integer, Instruction> {
 //        this.put(0xAD, new Instruction(0xAD, 0, 1, cpu::xor_l));
 //        this.put(0xAE, new Instruction(0xAE, 0, 1, cpu::xor_hlp));
 //        this.put(0xAF, new Instruction(0xAF, 0, 1, cpu::xor_a));
+
 //        this.put(0xB0, new Instruction(0xB0, 0, 1, cpu::or_b));
 //        this.put(0xB1, new Instruction(0xB1, 0, 1, cpu::or_c));
 //        this.put(0xB2, new Instruction(0xB2, 0, 1, cpu::or_d));
@@ -196,6 +207,7 @@ class Instructions extends HashMap<Integer, Instruction> {
 //        this.put(0xBD, new Instruction(0xBD, 0, 1, cpu::cp_l));
 //        this.put(0xBE, new Instruction(0xBE, 0, 1, cpu::cp_hlp));
 //        this.put(0xBF, new Instruction(0xBF, 0, 1, cpu::cp_a));
+
 //        this.put(0xC0, new Instruction(0xC0, 0, 1, cpu::ret_nz));
 //        this.put(0xC1, new Instruction(0xC1, 0, 1, cpu::pop_bc));
 //        this.put(0xC2, new Instruction(0xC2, 2, 1, cpu::jp_nz_xx));
@@ -211,6 +223,7 @@ class Instructions extends HashMap<Integer, Instruction> {
 //        this.put(0xCD, new Instruction(0xCD, 2, 1, cpu::call_xx));
 //        this.put(0xCE, new Instruction(0xCE, 1, 1, cpu::adc_a_x));
 //        this.put(0xCF, new Instruction(0xCF, 0, 1, cpu::rst_08));
+
 //        this.put(0xD0, new Instruction(0xD0, 0, 1, cpu::ret_nc));
 //        this.put(0xD1, new Instruction(0xD1, 0, 1, cpu::pop_de));
 //        this.put(0xD2, new Instruction(0xD2, 2, 1, cpu::jp_nc_xx));
@@ -227,6 +240,7 @@ class Instructions extends HashMap<Integer, Instruction> {
         this.put(0xDD, new Instruction(0xDD, 0, 4, cpu::nop));
 //        this.put(0xDE, new Instruction(0xDE, 1, 1, cpu::sbc_a_x));
 //        this.put(0xDF, new Instruction(0xDF, 0, 1, cpu::rst_18));
+
 //        this.put(0xE0, new Instruction(0xE0, 1, 1, cpu::ldh_xp_a));
 //        this.put(0xE1, new Instruction(0xE1, 0, 1, cpu::pop_hl));
 //        this.put(0xE2, new Instruction(0xE2, 1, 1, cpu::ld_cp_a));
@@ -243,6 +257,7 @@ class Instructions extends HashMap<Integer, Instruction> {
         this.put(0xED, new Instruction(0xED, 0, 4, cpu::nop));
 //        this.put(0xEE, new Instruction(0xEE, 1, 1, cpu::xor_x));
 //        this.put(0xEF, new Instruction(0xEF, 0, 1, cpu::rst_28));
+
 //        this.put(0xF0, new Instruction(0xF0, 1, 1, cpu::ldh_a_xp));
 //        this.put(0xF1, new Instruction(0xF1, 0, 1, cpu::pop_af));
 //        this.put(0xF2, new Instruction(0xF2, 1, 1, cpu::ld_a_cp));
@@ -259,6 +274,7 @@ class Instructions extends HashMap<Integer, Instruction> {
         this.put(0xFD, new Instruction(0xFD, 0, 4, cpu::nop));
 //        this.put(0xFE, new Instruction(0xFE, 1, 1, cpu::cp_x));
 //        this.put(0xFF, new Instruction(0xFF, 0, 1, cpu::rst_38));
+
 //        this.put(0xCB00, new Instruction(0xCB00, 1, 1, cpu::rlc_b));
 //        this.put(0xCB01, new Instruction(0xCB01, 1, 1, cpu::rlc_c));
 //        this.put(0xCB02, new Instruction(0xCB02, 1, 1, cpu::rlc_d));
@@ -275,6 +291,7 @@ class Instructions extends HashMap<Integer, Instruction> {
 //        this.put(0xCB0D, new Instruction(0xCB0D, 1, 1, cpu::rrc_l));
 //        this.put(0xCB0E, new Instruction(0xCB0E, 1, 1, cpu::rrc_hlp));
 //        this.put(0xCB0F, new Instruction(0xCB0F, 1, 1, cpu::rrc_a));
+
 //        this.put(0xCB10, new Instruction(0xCB10, 1, 1, cpu::rl_b));
 //        this.put(0xCB11, new Instruction(0xCB11, 1, 1, cpu::rl_c));
 //        this.put(0xCB12, new Instruction(0xCB12, 1, 1, cpu::rl_d));
@@ -291,6 +308,7 @@ class Instructions extends HashMap<Integer, Instruction> {
 //        this.put(0xCB1D, new Instruction(0xCB1D, 1, 1, cpu::rr_l));
 //        this.put(0xCB1E, new Instruction(0xCB1E, 1, 1, cpu::rr_hlp));
 //        this.put(0xCB1F, new Instruction(0xCB1F, 1, 1, cpu::rr_a));
+
 //        this.put(0xCB20, new Instruction(0xCB20, 1, 1, cpu::sla_b));
 //        this.put(0xCB21, new Instruction(0xCB21, 1, 1, cpu::sla_c));
 //        this.put(0xCB22, new Instruction(0xCB22, 1, 1, cpu::sla_d));
@@ -307,6 +325,7 @@ class Instructions extends HashMap<Integer, Instruction> {
 //        this.put(0xCB2D, new Instruction(0xCB2D, 1, 1, cpu::sra_l));
 //        this.put(0xCB2E, new Instruction(0xCB2E, 1, 1, cpu::sra_hlp));
 //        this.put(0xCB2F, new Instruction(0xCB2F, 1, 1, cpu::sra_a));
+
 //        this.put(0xCB30, new Instruction(0xCB30, 1, 1, cpu::swap_b));
 //        this.put(0xCB31, new Instruction(0xCB31, 1, 1, cpu::swap_c));
 //        this.put(0xCB32, new Instruction(0xCB32, 1, 1, cpu::swap_d));
@@ -323,6 +342,7 @@ class Instructions extends HashMap<Integer, Instruction> {
 //        this.put(0xCB3D, new Instruction(0xCB3D, 1, 1, cpu::srl_l));
 //        this.put(0xCB3E, new Instruction(0xCB3E, 1, 1, cpu::srl_hlp));
 //        this.put(0xCB3F, new Instruction(0xCB3F, 1, 1, cpu::srl_a));
+
 //        this.put(0xCB40, new Instruction(0xCB40, 1, 1, cpu::bit_0_b));
 //        this.put(0xCB41, new Instruction(0xCB41, 1, 1, cpu::bit_0_c));
 //        this.put(0xCB42, new Instruction(0xCB42, 1, 1, cpu::bit_0_d));
@@ -339,6 +359,7 @@ class Instructions extends HashMap<Integer, Instruction> {
 //        this.put(0xCB4D, new Instruction(0xCB4D, 1, 1, cpu::bit_1_l));
 //        this.put(0xCB4E, new Instruction(0xCB4E, 1, 1, cpu::bit_1_hlp));
 //        this.put(0xCB4F, new Instruction(0xCB4F, 1, 1, cpu::bit_1_a));
+
 //        this.put(0xCB50, new Instruction(0xCB50, 1, 1, cpu::bit_2_b));
 //        this.put(0xCB51, new Instruction(0xCB51, 1, 1, cpu::bit_2_c));
 //        this.put(0xCB52, new Instruction(0xCB52, 1, 1, cpu::bit_2_d));
@@ -355,6 +376,7 @@ class Instructions extends HashMap<Integer, Instruction> {
 //        this.put(0xCB5D, new Instruction(0xCB5D, 1, 1, cpu::bit_3_l));
 //        this.put(0xCB5E, new Instruction(0xCB5E, 1, 1, cpu::bit_3_hlp));
 //        this.put(0xCB5F, new Instruction(0xCB5F, 1, 1, cpu::bit_3_a));
+
 //        this.put(0xCB60, new Instruction(0xCB60, 1, 1, cpu::bit_4_b));
 //        this.put(0xCB61, new Instruction(0xCB61, 1, 1, cpu::bit_4_c));
 //        this.put(0xCB62, new Instruction(0xCB62, 1, 1, cpu::bit_4_d));
@@ -371,6 +393,7 @@ class Instructions extends HashMap<Integer, Instruction> {
 //        this.put(0xCB6D, new Instruction(0xCB6D, 1, 1, cpu::bit_5_l));
 //        this.put(0xCB6E, new Instruction(0xCB6E, 1, 1, cpu::bit_5_hlp));
 //        this.put(0xCB6F, new Instruction(0xCB6F, 1, 1, cpu::bit_5_a));
+
 //        this.put(0xCB70, new Instruction(0xCB70, 1, 1, cpu::bit_6_b));
 //        this.put(0xCB71, new Instruction(0xCB71, 1, 1, cpu::bit_6_c));
 //        this.put(0xCB72, new Instruction(0xCB72, 1, 1, cpu::bit_6_d));
@@ -387,6 +410,7 @@ class Instructions extends HashMap<Integer, Instruction> {
 //        this.put(0xCB7D, new Instruction(0xCB7D, 1, 1, cpu::bit_7_l));
 //        this.put(0xCB7E, new Instruction(0xCB7E, 1, 1, cpu::bit_7_hlp));
 //        this.put(0xCB7F, new Instruction(0xCB7F, 1, 1, cpu::bit_7_a));
+
 //        this.put(0xCB80, new Instruction(0xCB80, 1, 1, cpu::res_0_b));
 //        this.put(0xCB81, new Instruction(0xCB81, 1, 1, cpu::res_0_c));
 //        this.put(0xCB82, new Instruction(0xCB82, 1, 1, cpu::res_0_d));
@@ -403,6 +427,7 @@ class Instructions extends HashMap<Integer, Instruction> {
 //        this.put(0xCB8D, new Instruction(0xCB8D, 1, 1, cpu::res_1_l));
 //        this.put(0xCB8E, new Instruction(0xCB8E, 1, 1, cpu::res_1_hlp));
 //        this.put(0xCB8F, new Instruction(0xCB8F, 1, 1, cpu::res_1_a));
+
 //        this.put(0xCB90, new Instruction(0xCB90, 1, 1, cpu::res_2_b));
 //        this.put(0xCB91, new Instruction(0xCB91, 1, 1, cpu::res_2_c));
 //        this.put(0xCB92, new Instruction(0xCB92, 1, 1, cpu::res_2_d));
@@ -419,6 +444,7 @@ class Instructions extends HashMap<Integer, Instruction> {
 //        this.put(0xCB9D, new Instruction(0xCB9D, 1, 1, cpu::res_3_l));
 //        this.put(0xCB9E, new Instruction(0xCB9E, 1, 1, cpu::res_3_hlp));
 //        this.put(0xCB9F, new Instruction(0xCB9F, 1, 1, cpu::res_3_a));
+
 //        this.put(0xCBA0, new Instruction(0xCBA0, 1, 1, cpu::res_4_b));
 //        this.put(0xCBA1, new Instruction(0xCBA1, 1, 1, cpu::res_4_c));
 //        this.put(0xCBA2, new Instruction(0xCBA2, 1, 1, cpu::res_4_d));
@@ -435,6 +461,7 @@ class Instructions extends HashMap<Integer, Instruction> {
 //        this.put(0xCBAD, new Instruction(0xCBAD, 1, 1, cpu::res_5_l));
 //        this.put(0xCBAE, new Instruction(0xCBAE, 1, 1, cpu::res_5_hlp));
 //        this.put(0xCBAF, new Instruction(0xCBAF, 1, 1, cpu::res_5_a));
+
 //        this.put(0xCBB0, new Instruction(0xCBB0, 1, 1, cpu::res_6_b));
 //        this.put(0xCBB1, new Instruction(0xCBB1, 1, 1, cpu::res_6_c));
 //        this.put(0xCBB2, new Instruction(0xCBB2, 1, 1, cpu::res_6_d));
@@ -451,6 +478,7 @@ class Instructions extends HashMap<Integer, Instruction> {
 //        this.put(0xCBBD, new Instruction(0xCBBD, 1, 1, cpu::res_7_l));
 //        this.put(0xCBBE, new Instruction(0xCBBE, 1, 1, cpu::res_7_hlp));
 //        this.put(0xCBBF, new Instruction(0xCBBF, 1, 1, cpu::res_7_a));
+
 //        this.put(0xCBC0, new Instruction(0xCBC0, 1, 1, cpu::set_0_b));
 //        this.put(0xCBC1, new Instruction(0xCBC1, 1, 1, cpu::set_0_c));
 //        this.put(0xCBC2, new Instruction(0xCBC2, 1, 1, cpu::set_0_d));
@@ -467,6 +495,7 @@ class Instructions extends HashMap<Integer, Instruction> {
 //        this.put(0xCBCD, new Instruction(0xCBCD, 1, 1, cpu::set_1_l));
 //        this.put(0xCBCE, new Instruction(0xCBCE, 1, 1, cpu::set_1_hlp));
 //        this.put(0xCBCF, new Instruction(0xCBCF, 1, 1, cpu::set_1_a));
+
 //        this.put(0xCBD0, new Instruction(0xCBD0, 1, 1, cpu::set_2_b));
 //        this.put(0xCBD1, new Instruction(0xCBD1, 1, 1, cpu::set_2_c));
 //        this.put(0xCBD2, new Instruction(0xCBD2, 1, 1, cpu::set_2_d));
@@ -483,6 +512,7 @@ class Instructions extends HashMap<Integer, Instruction> {
 //        this.put(0xCBDD, new Instruction(0xCBDD, 1, 1, cpu::set_3_l));
 //        this.put(0xCBDE, new Instruction(0xCBDE, 1, 1, cpu::set_3_hlp));
 //        this.put(0xCBDF, new Instruction(0xCBDF, 1, 1, cpu::set_3_a));
+
 //        this.put(0xCBE0, new Instruction(0xCBE0, 1, 1, cpu::set_4_b));
 //        this.put(0xCBE1, new Instruction(0xCBE1, 1, 1, cpu::set_4_c));
 //        this.put(0xCBE2, new Instruction(0xCBE2, 1, 1, cpu::set_4_d));
@@ -499,6 +529,7 @@ class Instructions extends HashMap<Integer, Instruction> {
 //        this.put(0xCBED, new Instruction(0xCBED, 1, 1, cpu::set_5_l));
 //        this.put(0xCBEE, new Instruction(0xCBEE, 1, 1, cpu::set_5_hlp));
 //        this.put(0xCBEF, new Instruction(0xCBEF, 1, 1, cpu::set_5_a));
+
 //        this.put(0xCBF0, new Instruction(0xCBF0, 1, 1, cpu::set_6_b));
 //        this.put(0xCBF1, new Instruction(0xCBF1, 1, 1, cpu::set_6_c));
 //        this.put(0xCBF2, new Instruction(0xCBF2, 1, 1, cpu::set_6_d));
