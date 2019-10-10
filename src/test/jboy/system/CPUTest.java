@@ -19,6 +19,7 @@ class CPUTest {
     @BeforeEach
     void setUp() {
         cpu.setPC(0x100);
+        cpu.setSP(0xFFFE);
     }
 
     @AfterEach

@@ -23,6 +23,7 @@ class CPUInstructions0xCB60_0xCB6F {
     @BeforeEach
     void setUp() {
         cpu.setPC(0x100);
+        cpu.setSP(0xFFFE);
         rom = new int[0x7FFF];
     }
 
