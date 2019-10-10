@@ -389,6 +389,62 @@ public class CPU {
     }
 
     /**
+     * Adds two 16-bit numbers together and sets the necessary flags.
+     * @param num1 The first number.
+     * @param num2 The second number.
+     * @return The 16-bit result of the addition.
+     */
+    private int add16Bit(int num1, int num2) {
+        int result = num1 + num2;
+
+        if((result & 0xFFFF0000) != 0) {
+            this.setFlags(FLAG_CARRY);
+        } else {
+            this.resetFlags(FLAG_CARRY);
+        }
+
+        if(((result & 0x0F) + (num2 & 0x0F)) > 0x0F) {
+            this.setFlags(FLAG_HALF);
+        } else {
+            this.resetFlags(FLAG_HALF);
+        }
+
+        this.resetFlags(FLAG_SUB);
+        return result & 0xFFFF;
+    }
+
+    /**
+     * Adds two 8-bit numbers together and sets the necessary flags.
+     * @param num1 The first number.
+     * @param num2 The second number.
+     * @return The 8-bit result of the addition.
+     */
+    private int add8Bit(int num1, int num2) {
+        int result = num1 + num2;
+
+        if((result & 0xFF00) != 0) {
+            this.setFlags(FLAG_CARRY);
+        } else {
+            this.resetFlags(FLAG_CARRY);
+        }
+
+        if((result & 0xFF) != 0) {
+            this.resetFlags(FLAG_ZERO);
+        } else {
+            this.setFlags(FLAG_ZERO);
+        }
+
+        if(((result & 0x0F) + (num2 & 0x0F)) > 0x0F) {
+            this.setFlags(FLAG_HALF);
+        } else {
+            this.resetFlags(FLAG_CARRY);
+        }
+
+        this.resetFlags(FLAG_SUB);
+        return result & 0xFF;
+    }
+
+    /**
      * OP codes 0x00, 0xD3, 0xDB, 0xDD, 0xE3, 0xE4, 0xEB, 0xEC, 0xED, 0xF4, 0xFC, 0xFD - No operation.
      * @param ops unused
      */
@@ -633,19 +689,20 @@ public class CPU {
     }
 
     /**
-     * OP code 0x17 - Shift A left by 1. Carry flag is set to the 7th bit of A.
+     * OP code 0x17 - Shift A left by 1. The 0th bit of A is set to the value of the CARRY flag. CARRY flag is set to the 7th bit of A.
      * @param ops  unused.
      */
     Void rla(int[] ops) {
-        int carry = (this.A & 0x80) >> 7;
+        // TODO: check this to make sure it's right.
+        int carry = this.F & FLAG_CARRY;
+        this.A = (((this.A << 1) & (~0x80)) | ((carry) & 0x80)) & 0xFF;
+        carry = (this.A & 0x80) >> 7;
 
         if(carry == 0x01) {
             this.setFlags(FLAG_CARRY);
         } else {
             this.resetFlags(FLAG_CARRY);
         }
-
-        this.A = (((this.A << 1) & (~0x80)) | ((carry << 7) & 0x80)) & 0xFF;
 
         this.resetFlags(FLAG_ZERO | FLAG_SUB | FLAG_HALF);
         return null;
@@ -662,11 +719,72 @@ public class CPU {
     }
 
     /**
+     * OP code 0x19 - Add HL and DE and store the result in HL.
+     * @param ops unused.
+     */
+    Void add_hl_de(int[] ops) {
+        this.setHL(this.add16Bit(this.getHL(), this.getDE()));
+        return null;
+    }
+
+    /**
+     * OP code 0x1A - Load the value memory address pointed to by DE into A.
+     * @param ops unused.
+     */
+    Void ld_a_dep(int[] ops) {
+        this.A = this.memory.getByteAt(this.getDE());
+        return null;
+    }
+
+    /**
+     * OP code 0x1B - Decrement DE by 1.
+     * @param ops unused.
+     */
+    Void dec_de(int[] ops) {
+        this.setDE(this.getDE() - 1);
+        return null;
+    }
+
+    /**
+     * OP code 0x1C - Increment E by 1.
+     * @param ops unused.
+     */
+    Void inc_e(int[] ops) {
+        this.E = this.increment(this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0x1D - Decrement E by 1.
+     * @param ops unused.
+     */
+    Void dec_e(int[] ops) {
+        this.E = this.decrement(this.E);
+        return null;
+    }
+
+    /**
      * OP code 0x1E - Load immediate byte into E.
      * @param ops An 8 bit immediate value.
      */
     Void ld_e_x(int[] ops) {
         this.E = ops[0];
+        return null;
+    }
+
+    Void rra(int[] ops) {
+        // TODO: I don't think this is right.
+        int carry = (this.A & 0x80) >> 7;
+
+        if(carry == 0x01) {
+            this.setFlags(FLAG_CARRY);
+        } else {
+            this.resetFlags(FLAG_CARRY);
+        }
+
+        this.A = (((this.A << 1) & (~0x80)) | ((carry << 7) & 0x80)) & 0xFF;
+
+        this.resetFlags(FLAG_ZERO | FLAG_SUB | FLAG_HALF);
         return null;
     }
 
