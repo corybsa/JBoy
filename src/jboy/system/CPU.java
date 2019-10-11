@@ -609,7 +609,8 @@ public class CPU {
         // set the 7th bit to whatever was at the 0th bit.
         // TODO: This might be right
         // https://www.geeksforgeeks.org/modify-bit-given-position/
-        this.A = (((this.A >> 1) & (~0x80)) | ((carry) & 0x80)) & 0xFF;
+        // (n & ~mask) | ((b << p) & mask)
+        this.A = (((this.A >> 1) & (~0x80)) | (carry << 7)) & 0xFF;
 
         this.resetFlags(FLAG_ZERO | FLAG_SUB | FLAG_HALF);
         return null;
@@ -693,17 +694,20 @@ public class CPU {
      * @param ops  unused.
      */
     Void rla(int[] ops) {
-        // TODO: check this to make sure it's right.
+        // get current state of carry flag.
         int carry = this.F & FLAG_CARRY;
-        this.A = (((this.A << 1) & (~0x80)) | ((carry) & 0x80)) & 0xFF;
-        carry = (this.A & 0x80) >> 7;
 
-        if(carry == 0x01) {
+        // check the 7th bit of A.
+        if((this.A & 0x80) == 0x80) {
             this.setFlags(FLAG_CARRY);
         } else {
             this.resetFlags(FLAG_CARRY);
         }
 
+        // shift A left by 1 bit, change the 0th bit to whatever the carry flag was.
+        this.A = (((this.A << 1) & (~0x01)) | carry) & 0xFF;
+
+        // all other flags are reset.
         this.resetFlags(FLAG_ZERO | FLAG_SUB | FLAG_HALF);
         return null;
     }
@@ -714,6 +718,13 @@ public class CPU {
      */
     Void jr_x(int[] ops) {
         this.incrementPC((byte)ops[0]);
+
+        // TODO: do I need to do this instead?
+        /*if(ops[0] > 126) {
+            this.incrementPC((ops[0] + 1) - 127);
+        } else {
+            this.incrementPC(ops[0] - 127);
+        }*/
 
         return null;
     }
@@ -772,19 +783,49 @@ public class CPU {
         return null;
     }
 
+    /**
+     * OP code 0x1F - Shift A right by 1. The 7th bit of A is set to the value of the CARRY flag. CARRY flag is set the 0th bit of A.
+     * @param ops unsued.
+     */
     Void rra(int[] ops) {
-        // TODO: I don't think this is right.
-        int carry = (this.A & 0x80) >> 7;
+        // get current state of carry flag.
+        int carry = this.F & FLAG_CARRY;
 
-        if(carry == 0x01) {
+        // check the 0th bit of A.
+        if((this.A & 0x01) == 0x01) {
             this.setFlags(FLAG_CARRY);
         } else {
             this.resetFlags(FLAG_CARRY);
         }
 
-        this.A = (((this.A << 1) & (~0x80)) | ((carry << 7) & 0x80)) & 0xFF;
+        // shift A right by 1 bit, change the 7th bit to whatever the carry flag was.
+        this.A = (((this.A >> 1) & (~0x80)) | (carry << 7)) & 0xFF;
 
+        // all other flags are reset.
         this.resetFlags(FLAG_ZERO | FLAG_SUB | FLAG_HALF);
+        return null;
+    }
+
+    /**
+     * OP code 0x20 - Jump to given address relative to the current address if the zero flag is not set.
+     * @param ops The 8-bit offset
+     */
+    Void jr_nz_x(int[] ops) {
+        if((this.F & FLAG_ZERO) != FLAG_ZERO) {
+            this.incrementPC((byte)ops[0]);
+
+            // TODO: do I need to do this instead?
+            /*if(ops[0] > 126) {
+                this.incrementPC((ops[0] + 1) - 127);
+            } else {
+                this.incrementPC(ops[0] - 127);
+            }*/
+
+            // TODO: this takes 12 clock cycles
+        } else {
+            // TODO: this takes 8 clock cycles
+        }
+
         return null;
     }
 

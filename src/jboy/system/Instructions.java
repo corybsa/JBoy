@@ -36,9 +36,9 @@ class Instructions extends HashMap<Integer, Instruction> {
         this.put(0x1C, new Instruction(0x1C, 0, 4, cpu::inc_e));
         this.put(0x1D, new Instruction(0x1D, 0, 4, cpu::dec_e));
         this.put(0x1E, new Instruction(0x1E, 1, 8, cpu::ld_e_x));
-//        this.put(0x1F, new Instruction(0x1F, 0, 4, cpu::rra));
+        this.put(0x1F, new Instruction(0x1F, 0, 4, cpu::rra));
 
-//        this.put(0x20, new Instruction(0x20, 1, 1, cpu::jr_nz_x));
+        this.put(0x20, new Instruction(0x20, 1, 1, cpu::jr_nz_x));
 //        this.put(0x21, new Instruction(0x21, 2, 1, cpu::ld_hl_xx));
 //        this.put(0x22, new Instruction(0x22, 0, 1, cpu::ldi_hlp_a));
 //        this.put(0x23, new Instruction(0x23, 0, 1, cpu::inc_hl));
