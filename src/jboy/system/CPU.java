@@ -830,6 +830,52 @@ public class CPU {
     }
 
     /**
+     * OP code 0x21 - Load immediate 16 bits into HL register.
+     * @param ops The immediate 16 bits.
+     */
+    Void ld_hl_xx(int[] ops) {
+        this.setHL(this.combineBytes(ops[0], ops[1]));
+        return null;
+    }
+
+    /**
+     * OP code 0x22 - Load A into the memory address pointed to by HL and then increment HL by 1.
+     * @param ops unused.
+     */
+    Void ldi_hlp_a(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.A);
+        this.setHL(this.getHL() + 1);
+        return null;
+    }
+
+    /**
+     * OP code 0x23 - Increment HL by 1.
+     * @param ops unused.
+     */
+    Void inc_hl(int[] ops) {
+        this.setHL(this.getHL() + 1);
+        return null;
+    }
+
+    /**
+     * OP code 0x24 - Increment H by 1.
+     * @param ops unused.
+     */
+    Void inc_h(int[] ops) {
+        this.H = this.increment(this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0x25 - Decrement H by 1.
+     * @param ops unused.
+     */
+    Void dec_h(int[] ops) {
+        this.H = this.decrement(this.H);
+        return null;
+    }
+
+    /**
      * OP code 0x26 - Load immediate byte into H.
      * @param ops An 8 bit immediate value.
      */
@@ -877,11 +923,89 @@ public class CPU {
     }
 
     /**
+     * OP code 0x28 - Jump to given address relative to the current address if the zero flag is set.
+     * @param ops The 8-bit offset
+     */
+    Void jr_z_x(int[] ops) {
+        if((this.F & FLAG_ZERO) == FLAG_ZERO) {
+            this.incrementPC((byte)ops[0]);
+
+            // TODO: do I need to do this instead?
+            /*if(ops[0] > 126) {
+                this.incrementPC((ops[0] + 1) - 127);
+            } else {
+                this.incrementPC(ops[0] - 127);
+            }*/
+
+            // TODO: this takes 12 clock cycles
+        } else {
+            // TODO: this takes 8 clock cycles
+        }
+
+        return null;
+    }
+
+    /**
+     * OP code 0x29 - Add HL to HL and store the value in HL.
+     * @param ops unused.
+     */
+    Void add_hl_hl(int[] ops) {
+        this.setHL(this.add16Bit(this.getHL(), this.getHL()));
+        return null;
+    }
+
+    /**
+     * OP code 0x2A - Load the value in memory pointed to by HL into A, then increment HL by 1.
+     * @param ops unused.
+     */
+    Void ldi_a_hlp(int[] ops) {
+        this.A = this.memory.getByteAt(this.getHL());
+        this.setHL(this.getHL() + 1);
+        return null;
+    }
+
+    /**
+     * OP code 0x2B - Decrement HL by 1.
+     * @param ops unused.
+     */
+    Void dec_hl(int[] ops) {
+        this.setHL(this.getHL() - 1);
+        return null;
+    }
+
+    /**
+     * OP code 0x2C - Increment L by 1.
+     * @param ops unused.
+     */
+    Void inc_l(int[] ops) {
+        this.L = this.increment(this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0x2D - Decrement L by 1.
+     * @param ops unused.
+     */
+    Void dec_l(int[] ops) {
+        this.L = this.decrement(this.L);
+        return null;
+    }
+
+    /**
      * OP code 0x2E - Load immediate byte into L.
      * @param ops An 8 bit immediate value.
      */
     Void ld_l_x(int[] ops) {
         this.L = ops[0];
+        return null;
+    }
+
+    /**
+     * OP code 0x2F - Take the one's compliment of A and store the result in A.
+     * @param ops unused.
+     */
+    Void cpl(int[] ops) {
+        this.A = (~this.A) & 0xFF;
         return null;
     }
 
