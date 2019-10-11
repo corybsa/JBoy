@@ -1010,11 +1010,186 @@ public class CPU {
     }
 
     /**
+     * OP code 0x30 - Jump to given address relative to the current address if the carry flag is not set.
+     * @param ops The 8-bit offset
+     */
+    Void jr_nc_x(int[] ops) {
+        if((this.F & FLAG_CARRY) != FLAG_CARRY) {
+            this.incrementPC((byte)ops[0]);
+
+            // TODO: do I need to do this instead?
+            /*if(ops[0] > 126) {
+                this.incrementPC((ops[0] + 1) - 127);
+            } else {
+                this.incrementPC(ops[0] - 127);
+            }*/
+
+            // TODO: this takes 12 clock cycles
+        } else {
+            // TODO: this takes 8 clock cycles
+        }
+
+        return null;
+    }
+
+    /**
+     * OP code 0x31 - Load immediate 16 bits into SP.
+     * @param ops Immediate 16 bits
+     */
+    Void ld_sp_xx(int[] ops) {
+        this.setSP(this.combineBytes(ops[0], ops[1]));
+        return null;
+    }
+
+    /**
+     * OP code 0x32 - Load A into the memory address pointed to by HL and then decrement HL by 1.
+     * @param ops unused.
+     */
+    Void ldd_hlp_a(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.A);
+        this.setHL(this.getHL() - 1);
+        return null;
+    }
+
+    /**
+     * OP code 0x33 - Increment SP by 1.
+     * @param ops unused.
+     */
+    Void inc_sp(int[] ops) {
+        this.SP += 1;
+        return null;
+    }
+
+    /**
+     * OP code 0x34 - Increment the value in memory pointed to by HL by 1.
+     * @param ops unused.
+     */
+    Void inc_hlp(int[] ops) {
+        int value = this.increment(this.memory.getByteAt(this.getHL()));
+        this.memory.setByteAt(this.getHL(), value);
+        return null;
+    }
+
+    /**
+     * OP code 0x35 - Decrement the value in memory pointed to by HL by 1.
+     * @param ops unused.
+     */
+    Void dec_hlp(int[] ops) {
+        int value = this.decrement(this.memory.getByteAt(this.getHL()));
+        this.memory.setByteAt(this.getHL(), value);
+        return null;
+    }
+
+    /**
+     * OP code 0x36 - Load immediate 8 bits into memory address pointed to by HL.
+     * @param ops Immediate 8 bit value.
+     */
+    Void ld_hlp_x(int[] ops) {
+        this.memory.setByteAt(this.getHL(), ops[0]);
+        return null;
+    }
+
+    /**
+     * OP code 0x37 - Sets carry flag, resets half carry and subtraction flags.
+     * @param ops unused.
+     */
+    Void scf(int[] ops) {
+        this.setFlags(FLAG_CARRY);
+        this.resetFlags(FLAG_SUB | FLAG_HALF);
+        return null;
+    }
+
+    /**
+     * OP code 0x38 - Jump to given address relative to the current address if the carry flag is set.
+     * @param ops The 8-bit offset
+     */
+    Void jr_c_x(int[] ops) {
+        if((this.F & FLAG_CARRY) == FLAG_CARRY) {
+            this.incrementPC((byte)ops[0]);
+
+            // TODO: do I need to do this instead?
+            /*if(ops[0] > 126) {
+                this.incrementPC((ops[0] + 1) - 127);
+            } else {
+                this.incrementPC(ops[0] - 127);
+            }*/
+
+            // TODO: this takes 12 clock cycles
+        } else {
+            // TODO: this takes 8 clock cycles
+        }
+
+        return null;
+    }
+
+    /**
+     * OP code 0x39 - Add HL and SP and store the result in HL.
+     * @param ops unused.
+     */
+    Void add_hl_sp(int[] ops) {
+        this.setHL(this.add16Bit(this.getHL(), this.getSP()));
+        return null;
+    }
+
+    /**
+     * OP code 0x3A - Load the value in memory pointed to by HL into A, then decrement HL by 1.
+     * @param ops unused.
+     */
+    Void ldd_a_hlp(int[] ops) {
+        this.A = this.memory.getByteAt(this.getHL());
+        this.setHL(this.getHL() - 1);
+        return null;
+    }
+
+    /**
+     * OP code 0x3B - Decrement SP by 1.
+     * @param ops unused.
+     */
+    Void dec_sp(int[] ops) {
+        this.SP -= 1;
+        return null;
+    }
+
+    /**
+     * OP code 0x3C - Increment A by 1.
+     * @param ops unused.
+     */
+    Void inc_a(int[] ops) {
+        this.A = this.increment(this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0x3D - Decrement A by 1.
+     * @param ops unused.
+     */
+    Void dec_a(int[] ops) {
+        this.A = this.decrement(this.A);
+        return null;
+    }
+
+    /**
      * OP code 0x3E - Load immediate byte into A.
      * @param ops An 8 bit immediate value.
      */
     Void ld_a_x(int[] ops) {
         this.A = ops[0];
+        return null;
+    }
+
+    /**
+     * OP code 0x3F - Toggle the carry flag.
+     * @param ops unused.
+     */
+    Void ccf(int[] ops) {
+        int carry = ((~this.getF() & 0xFF) & FLAG_CARRY) >> 4;
+
+        if(carry == 1) {
+            this.setFlags(FLAG_CARRY);
+        } else {
+            this.resetFlags(FLAG_CARRY);
+        }
+
         return null;
     }
 }

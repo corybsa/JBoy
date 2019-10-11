@@ -55,22 +55,22 @@ class Instructions extends HashMap<Integer, Instruction> {
         this.put(0x2E, new Instruction(0x2E, 1, 1, cpu::ld_l_x));
         this.put(0x2F, new Instruction(0x2F, 0, 1, cpu::cpl));
 
-//        this.put(0x30, new Instruction(0x30, 1, 1, cpu::jr_nc_x));
-//        this.put(0x31, new Instruction(0x31, 2, 1, cpu::ld_sp_xx));
-//        this.put(0x32, new Instruction(0x32, 0, 1, cpu::ldd_hlp_a));
-//        this.put(0x33, new Instruction(0x33, 0, 1, cpu::inc_sp));
-//        this.put(0x34, new Instruction(0x34, 0, 1, cpu::inc_hlp));
-//        this.put(0x35, new Instruction(0x35, 0, 1, cpu::dec_hlp));
-//        this.put(0x36, new Instruction(0x36, 1, 1, cpu::ld_hlp_x));
-//        this.put(0x37, new Instruction(0x37, 0, 1, cpu::scf));
-//        this.put(0x38, new Instruction(0x38, 1, 1, cpu::jr_c_x));
-//        this.put(0x39, new Instruction(0x39, 0, 1, cpu::add_hl_sp));
-//        this.put(0x3A, new Instruction(0x3A, 0, 1, cpu::ldd_a_hlp));
-//        this.put(0x3B, new Instruction(0x3B, 0, 1, cpu::dec_sp));
-//        this.put(0x3C, new Instruction(0x3C, 0, 1, cpu::inc_a));
-//        this.put(0x3D, new Instruction(0x3D, 0, 1, cpu::dec_a));
+        this.put(0x30, new Instruction(0x30, 1, 1, cpu::jr_nc_x));
+        this.put(0x31, new Instruction(0x31, 2, 1, cpu::ld_sp_xx));
+        this.put(0x32, new Instruction(0x32, 0, 1, cpu::ldd_hlp_a));
+        this.put(0x33, new Instruction(0x33, 0, 1, cpu::inc_sp));
+        this.put(0x34, new Instruction(0x34, 0, 1, cpu::inc_hlp));
+        this.put(0x35, new Instruction(0x35, 0, 1, cpu::dec_hlp));
+        this.put(0x36, new Instruction(0x36, 1, 1, cpu::ld_hlp_x));
+        this.put(0x37, new Instruction(0x37, 0, 1, cpu::scf));
+        this.put(0x38, new Instruction(0x38, 1, 1, cpu::jr_c_x));
+        this.put(0x39, new Instruction(0x39, 0, 1, cpu::add_hl_sp));
+        this.put(0x3A, new Instruction(0x3A, 0, 1, cpu::ldd_a_hlp));
+        this.put(0x3B, new Instruction(0x3B, 0, 1, cpu::dec_sp));
+        this.put(0x3C, new Instruction(0x3C, 0, 1, cpu::inc_a));
+        this.put(0x3D, new Instruction(0x3D, 0, 1, cpu::dec_a));
         this.put(0x3E, new Instruction(0x3E, 1, 1, cpu::ld_a_x));
-//        this.put(0x3F, new Instruction(0x3F, 0, 1, cpu::ccf));
+        this.put(0x3F, new Instruction(0x3F, 0, 1, cpu::ccf));
 
 //        this.put(0x40, new Instruction(0x40, 0, 1, cpu::ld_b_b));
 //        this.put(0x41, new Instruction(0x41, 0, 1, cpu::ld_b_c));

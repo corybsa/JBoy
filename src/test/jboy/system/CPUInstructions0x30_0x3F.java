@@ -118,7 +118,7 @@ class CPUInstructions0x30_0x3F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x01, cpu.getHL(), "The address should contain 0x01.");
+        assertEquals(0x01, memory.getByteAt(0xC000), "The address should contain 0x01.");
         assertEquals(0x105, cpu.getPC(), "PC should equal 0x105.");
     }
 
