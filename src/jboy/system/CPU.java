@@ -445,7 +445,11 @@ public class CPU {
     }
 
     /**
-     * OP codes 0x00, 0xD3, 0xDB, 0xDD, 0xE3, 0xE4, 0xEB, 0xEC, 0xED, 0xF4, 0xFC, 0xFD - No operation.
+     * OP codes
+     * 0x00, 0x40, 0x49, 0x52, 0x5B, 0x64, 0x6D, 0x7F,
+     * 0xD3, 0xDB, 0xDD, 0xE3, 0xE4, 0xEB, 0xEC, 0xED,
+     * 0xF4, 0xFC, 0xFD
+     * No operation.
      * @param ops unused
      */
     Void nop(int[] ops) {
@@ -1568,6 +1572,141 @@ public class CPU {
      */
     Void ld_l_a(int[] ops) {
         this.L = this.A;
+        return null;
+    }
+
+    /**
+     * OP code 0x70 - Load B into the memory address specified by HL.
+     * @param ops unused.
+     */
+    Void ld_hlp_b(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0x71 - Load C into the memory address specified by HL.
+     * @param ops unused.
+     */
+    Void ld_hlp_c(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0x72 - Load D into the memory address specified by HL.
+     * @param ops unused.
+     */
+    Void ld_hlp_d(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0x73 - Load E into the memory address specified by HL.
+     * @param ops unused.
+     */
+    Void ld_hlp_e(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0x74 - Load H into the memory address specified by HL.
+     * @param ops unused.
+     */
+    Void ld_hlp_h(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0x75 - Load L into the memory address specified by HL.
+     * @param ops unused.
+     */
+    Void ld_hlp_l(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0x76 - Halt the CPU.
+     * @param ops unused.
+     */
+    Void halt(int[] ops) {
+        // TODO: set halt to true and check it somewhere.
+        return null;
+    }
+
+    /**
+     * OP code 0x77 - Load A into the memory address specified by HL.
+     * @param ops unused.
+     */
+    Void ld_hlp_a(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0x78 - Load B into A.
+     * @param ops unused.
+     */
+    Void ld_a_b(int[] ops) {
+        this.A = this.B;
+        return null;
+    }
+
+    /**
+     * OP code 0x79 - Load C into A.
+     * @param ops unused.
+     */
+    Void ld_a_c(int[] ops) {
+        this.A = this.C;
+        return null;
+    }
+
+    /**
+     * OP code 0x7A - Load D into A.
+     * @param ops unused.
+     */
+    Void ld_a_d(int[] ops) {
+        this.A = this.D;
+        return null;
+    }
+
+    /**
+     * OP code 0x7B - Load E into A.
+     * @param ops unused.
+     */
+    Void ld_a_e(int[] ops) {
+        this.A = this.E;
+        return null;
+    }
+
+    /**
+     * OP code 0x7C - Load H into A.
+     * @param ops unused.
+     */
+    Void ld_a_h(int[] ops) {
+        this.A = this.H;
+        return null;
+    }
+
+    /**
+     * OP code 0x7D - Load L into A.
+     * @param ops unused.
+     */
+    Void ld_a_l(int[] ops) {
+        this.A = this.L;
+        return null;
+    }
+
+    /**
+     * OP code 0x7E - Load value at memory address specified by HL into A.
+     * @param ops unused.
+     */
+    Void ld_a_hlp(int[] ops) {
+        this.A = this.memory.getByteAt(this.getHL());
         return null;
     }
 }
