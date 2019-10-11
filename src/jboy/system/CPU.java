@@ -445,6 +445,37 @@ public class CPU {
     }
 
     /**
+     * Adds two 8-bit numbers with the current value of the carry flag and sets the necessary flags.
+     * @param num1 The first number.
+     * @param num2 The second number.
+     * @return The 8-bit result of the addition.
+     */
+    private int adc(int num1, int num2) {
+        int result = num1 + num2 + ((this.getF() & FLAG_CARRY) >> 4);
+
+        if((result & 0xFF00) != 0) {
+            this.setFlags(FLAG_CARRY);
+        } else {
+            this.resetFlags(FLAG_CARRY);
+        }
+
+        if((result & 0xFF) != 0) {
+            this.resetFlags(FLAG_ZERO);
+        } else {
+            this.setFlags(FLAG_ZERO);
+        }
+
+        if(((result & 0x0F) + (num2 & 0x0F)) > 0x0F) {
+            this.setFlags(FLAG_HALF);
+        } else {
+            this.resetFlags(FLAG_CARRY);
+        }
+
+        this.resetFlags(FLAG_SUB);
+        return result & 0xFF;
+    }
+
+    /**
      * OP codes
      * 0x00, 0x40, 0x49, 0x52, 0x5B, 0x64, 0x6D, 0x7F,
      * 0xD3, 0xDB, 0xDD, 0xE3, 0xE4, 0xEB, 0xEC, 0xED,
@@ -1707,6 +1738,150 @@ public class CPU {
      */
     Void ld_a_hlp(int[] ops) {
         this.A = this.memory.getByteAt(this.getHL());
+        return null;
+    }
+
+    /**
+     * OP code 0x80 - Add A and B and store the result in A.
+     * @param ops unused.
+     */
+    Void add_a_b(int[] ops) {
+        this.A = this.add8Bit(this.A, this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0x81 - Add A and C and store the result in A.
+     * @param ops unused.
+     */
+    Void add_a_c(int[] ops) {
+        this.A = this.add8Bit(this.A, this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0x82 - Add A and D and store the result in A.
+     * @param ops unused.
+     */
+    Void add_a_d(int[] ops) {
+        this.A = this.add8Bit(this.A, this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0x83 - Add A and E and store the result in A.
+     * @param ops unused.
+     */
+    Void add_a_e(int[] ops) {
+        this.A = this.add8Bit(this.A, this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0x84 - Add A and H and store the result in A.
+     * @param ops unused.
+     */
+    Void add_a_h(int[] ops) {
+        this.A = this.add8Bit(this.A, this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0x85 - Add A and L and store the result in A.
+     * @param ops unused.
+     */
+    Void add_a_l(int[] ops) {
+        this.A = this.add8Bit(this.A, this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0x86 - Add A and the value in memory pointed to by HL and store the result in A.
+     * @param ops unused.
+     */
+    Void add_a_hlp(int[] ops) {
+        this.A = this.add8Bit(this.A, this.memory.getByteAt(this.getHL()));
+        return null;
+    }
+
+    /**
+     * OP code 0x87 - Add A and A and store the result in A.
+     * @param ops unused.
+     */
+    Void add_a_a(int[] ops) {
+        this.A = this.add8Bit(this.A, this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0x88 - Add A, B and the value of the carry flag and store the results in A.
+     * @param ops unused.
+     */
+    Void adc_a_b(int[] ops) {
+        this.A = this.adc(this.A, this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0x89 - Add A, C and the value of the carry flag and store the results in A.
+     * @param ops unused.
+     */
+    Void adc_a_c(int[] ops) {
+        this.A = this.adc(this.A, this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0x8A - Add A, D and the value of the carry flag and store the results in A.
+     * @param ops unused.
+     */
+    Void adc_a_d(int[] ops) {
+        this.A = this.adc(this.A, this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0x8B - Add A, E and the value of the carry flag and store the results in A.
+     * @param ops unused.
+     */
+    Void adc_a_e(int[] ops) {
+        this.A = this.adc(this.A, this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0x8C - Add A, H and the value of the carry flag and store the results in A.
+     * @param ops unused.
+     */
+    Void adc_a_h(int[] ops) {
+        this.A = this.adc(this.A, this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0x8D - Add A, L and the value of the carry flag and store the results in A.
+     * @param ops unused.
+     */
+    Void adc_a_l(int[] ops) {
+        this.A = this.adc(this.A, this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0x8E - Add A, the value in memory pointed to by HL and the value of the carry flag and store the results in A.
+     * @param ops unused.
+     */
+    Void adc_a_hlp(int[] ops) {
+        this.A = this.adc(this.A, this.memory.getByteAt(this.getHL()));
+        return null;
+    }
+
+    /**
+     * OP code 0x8F - Add A, B and the value of the carry flag and store the results in A.
+     * @param ops unused.
+     */
+    Void adc_a_a(int[] ops) {
+        this.A = this.adc(this.A, this.A);
         return null;
     }
 }

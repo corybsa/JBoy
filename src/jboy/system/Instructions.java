@@ -140,22 +140,22 @@ class Instructions extends HashMap<Integer, Instruction> {
         this.put(0x7E, new Instruction(0x7E, 0, 1, cpu::ld_a_hlp));
         this.put(0x7F, new Instruction(0x7F, 0, 1, cpu::nop));
 
-//        this.put(0x80, new Instruction(0x80, 0, 1, cpu::add_a_b));
-//        this.put(0x81, new Instruction(0x81, 0, 1, cpu::add_a_c));
-//        this.put(0x82, new Instruction(0x82, 0, 1, cpu::add_a_d));
-//        this.put(0x83, new Instruction(0x83, 0, 1, cpu::add_a_e));
-//        this.put(0x84, new Instruction(0x84, 0, 1, cpu::add_a_h));
-//        this.put(0x85, new Instruction(0x85, 0, 1, cpu::add_a_l));
-//        this.put(0x86, new Instruction(0x86, 0, 1, cpu::add_a_hlp));
-//        this.put(0x87, new Instruction(0x87, 0, 1, cpu::add_a_a));
-//        this.put(0x88, new Instruction(0x88, 0, 1, cpu::adc_a_b));
-//        this.put(0x89, new Instruction(0x89, 0, 1, cpu::adc_a_c));
-//        this.put(0x8A, new Instruction(0x8A, 0, 1, cpu::adc_a_d));
-//        this.put(0x8B, new Instruction(0x8B, 0, 1, cpu::adc_a_e));
-//        this.put(0x8C, new Instruction(0x8C, 0, 1, cpu::adc_a_h));
-//        this.put(0x8D, new Instruction(0x8D, 0, 1, cpu::adc_a_l));
-//        this.put(0x8E, new Instruction(0x8E, 0, 1, cpu::adc_a_hlp));
-//        this.put(0x8F, new Instruction(0x8F, 0, 1, cpu::adc_a_a));
+        this.put(0x80, new Instruction(0x80, 0, 1, cpu::add_a_b));
+        this.put(0x81, new Instruction(0x81, 0, 1, cpu::add_a_c));
+        this.put(0x82, new Instruction(0x82, 0, 1, cpu::add_a_d));
+        this.put(0x83, new Instruction(0x83, 0, 1, cpu::add_a_e));
+        this.put(0x84, new Instruction(0x84, 0, 1, cpu::add_a_h));
+        this.put(0x85, new Instruction(0x85, 0, 1, cpu::add_a_l));
+        this.put(0x86, new Instruction(0x86, 0, 1, cpu::add_a_hlp));
+        this.put(0x87, new Instruction(0x87, 0, 1, cpu::add_a_a));
+        this.put(0x88, new Instruction(0x88, 0, 1, cpu::adc_a_b));
+        this.put(0x89, new Instruction(0x89, 0, 1, cpu::adc_a_c));
+        this.put(0x8A, new Instruction(0x8A, 0, 1, cpu::adc_a_d));
+        this.put(0x8B, new Instruction(0x8B, 0, 1, cpu::adc_a_e));
+        this.put(0x8C, new Instruction(0x8C, 0, 1, cpu::adc_a_h));
+        this.put(0x8D, new Instruction(0x8D, 0, 1, cpu::adc_a_l));
+        this.put(0x8E, new Instruction(0x8E, 0, 1, cpu::adc_a_hlp));
+        this.put(0x8F, new Instruction(0x8F, 0, 1, cpu::adc_a_a));
 
 //        this.put(0x90, new Instruction(0x90, 0, 1, cpu::sub_b));
 //        this.put(0x91, new Instruction(0x91, 0, 1, cpu::sub_c));
