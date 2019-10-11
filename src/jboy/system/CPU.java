@@ -1192,4 +1192,382 @@ public class CPU {
 
         return null;
     }
+
+    /**
+     * OP code 0x41 - Load C into B.
+     * @param ops unused.
+     */
+    Void ld_b_c(int[] ops) {
+        this.B = this.C;
+        return null;
+    }
+
+    /**
+     * OP code 0x42 - Load D into B.
+     * @param ops unused.
+     */
+    Void ld_b_d(int[] ops) {
+        this.B = this.D;
+        return null;
+    }
+
+    /**
+     * OP code 0x43 - Load E into B.
+     * @param ops unused.
+     */
+    Void ld_b_e(int[] ops) {
+        this.B = this.E;
+        return null;
+    }
+
+    /**
+     * OP code 0x44 - Load H into B.
+     * @param ops unused.
+     */
+    Void ld_b_h(int[] ops) {
+        this.B = this.H;
+        return null;
+    }
+
+    /**
+     * OP code 0x45 - Load L into B.
+     * @param ops unused.
+     */
+    Void ld_b_l(int[] ops) {
+        this.B = this.L;
+        return null;
+    }
+
+    /**
+     * OP code 0x46 - Load value at memory address specified by HL into B.
+     * @param ops unused.
+     */
+    Void ld_b_hlp(int[] ops) {
+        this.B = this.memory.getByteAt(this.getHL());
+        return null;
+    }
+
+    /**
+     * OP code 0x47 - Load A into B.
+     * @param ops unused.
+     */
+    Void ld_b_a(int[] ops) {
+        this.B = this.A;
+        return null;
+    }
+
+    /**
+     * OP code 0x48 - Load B into C.
+     * @param ops unused.
+     */
+    Void ld_c_b(int[] ops) {
+        this.C = this.B;
+        return null;
+    }
+
+    /**
+     * OP code 0x4A - Load D into C.
+     * @param ops unused.
+     */
+    Void ld_c_d(int[] ops) {
+        this.C = this.D;
+        return null;
+    }
+
+    /**
+     * OP code 0x4B - Load E into C.
+     * @param ops unused.
+     */
+    Void ld_c_e(int[] ops) {
+        this.C = this.E;
+        return null;
+    }
+
+    /**
+     * OP code 0x4C - Load H into C.
+     * @param ops unused.
+     */
+    Void ld_c_h(int[] ops) {
+        this.C = this.H;
+        return null;
+    }
+
+    /**
+     * OP code 0x4D - Load L into C.
+     * @param ops unused.
+     */
+    Void ld_c_l(int[] ops) {
+        this.C = this.L;
+        return null;
+    }
+
+    /**
+     * OP code 0x4E - Load value at memory address specified by HL into C.
+     * @param ops unused.
+     */
+    Void ld_c_hlp(int[] ops) {
+        this.C = this.memory.getByteAt(this.getHL());
+        return null;
+    }
+
+    /**
+     * OP code 0x4F - Load A into C.
+     * @param ops unused.
+     */
+    Void ld_c_a(int[] ops) {
+        this.C = this.A;
+        return null;
+    }
+
+    /**
+     * OP code 0x50 - Load B into D.
+     * @param ops unused.
+     */
+    Void ld_d_b(int[] ops) {
+        this.D = this.B;
+        return null;
+    }
+
+    /**
+     * OP code 0x51 - Load C into D.
+     * @param ops unused.
+     */
+    Void ld_d_c(int[] ops) {
+        this.D = this.C;
+        return null;
+    }
+
+    /**
+     * OP code 0x53 - Load E into D.
+     * @param ops unused.
+     */
+    Void ld_d_e(int[] ops) {
+        this.D = this.E;
+        return null;
+    }
+
+    /**
+     * OP code 0x54 - Load H into D.
+     * @param ops unused.
+     */
+    Void ld_d_h(int[] ops) {
+        this.D = this.H;
+        return null;
+    }
+
+    /**
+     * OP code 0x55 - Load L into D.
+     * @param ops unused.
+     */
+    Void ld_d_l(int[] ops) {
+        this.D = this.L;
+        return null;
+    }
+
+    /**
+     * OP code 0x56 - Load value at memory address specified by HL into D.
+     * @param ops unused.
+     */
+    Void ld_d_hlp(int[] ops) {
+        this.D = this.memory.getByteAt(this.getHL());
+        return null;
+    }
+
+    /**
+     * OP code 0x57 - Load A into D.
+     * @param ops unused.
+     */
+    Void ld_d_a(int[] ops) {
+        this.D = this.A;
+        return null;
+    }
+
+    /**
+     * OP code 0x58 - Load B into E.
+     * @param ops unused.
+     */
+    Void ld_e_b(int[] ops) {
+        this.E = this.B;
+        return null;
+    }
+
+    /**
+     * OP code 0x59 - Load C into E.
+     * @param ops unused.
+     */
+    Void ld_e_c(int[] ops) {
+        this.nop(null);
+        return null;
+    }
+
+    /**
+     * OP code 0x5A - Load D into E.
+     * @param ops unused.
+     */
+    Void ld_e_d(int[] ops) {
+        this.E = this.D;
+        return null;
+    }
+
+    /**
+     * OP code 0x5C - Load H into E.
+     * @param ops unused.
+     */
+    Void ld_e_h(int[] ops) {
+        this.E = this.H;
+        return null;
+    }
+
+    /**
+     * OP code 0x5D - Load L into E.
+     * @param ops unused.
+     */
+    Void ld_e_l(int[] ops) {
+        this.E = this.L;
+        return null;
+    }
+
+    /**
+     * OP code 0x5E - Load value at memory address specified by HL into E.
+     * @param ops unused.
+     */
+    Void ld_e_hlp(int[] ops) {
+        this.E = this.memory.getByteAt(this.getHL());
+        return null;
+    }
+
+    /**
+     * OP code 0x5F - Load A into E.
+     * @param ops unused.
+     */
+    Void ld_e_a(int[] ops) {
+        this.E = this.A;
+        return null;
+    }
+
+    /**
+     * OP code 0x60 - Load B into H.
+     * @param ops unused.
+     */
+    Void ld_h_b(int[] ops) {
+        this.H = this.B;
+        return null;
+    }
+
+    /**
+     * OP code 0x61 - Load C into H.
+     * @param ops unused.
+     */
+    Void ld_h_c(int[] ops) {
+        this.H = this.C;
+        return null;
+    }
+
+    /**
+     * OP code 0x62 - Load D into H.
+     * @param ops unused.
+     */
+    Void ld_h_d(int[] ops) {
+        this.H = this.D;
+        return null;
+    }
+
+    /**
+     * OP code 0x63 - Load E into H.
+     * @param ops unused.
+     */
+    Void ld_h_e(int[] ops) {
+        this.H = this.E;
+        return null;
+    }
+
+    /**
+     * OP code 0x65 - Load L into H.
+     * @param ops unused.
+     */
+    Void ld_h_l(int[] ops) {
+        this.H = this.L;
+        return null;
+    }
+
+    /**
+     * OP code 0x66 - Load value at memory address specified by HL into H.
+     * @param ops unused.
+     */
+    Void ld_h_hlp(int[] ops) {
+        this.H = this.memory.getByteAt(this.getHL());
+        return null;
+    }
+
+    /**
+     * OP code 0x67 - Load A into H.
+     * @param ops unused.
+     */
+    Void ld_h_a(int[] ops) {
+        this.H = this.A;
+        return null;
+    }
+
+    /**
+     * OP code 0x68 - Load B into L.
+     * @param ops unused.
+     */
+    Void ld_l_b(int[] ops) {
+        this.L = this.B;
+        return null;
+    }
+
+    /**
+     * OP code 0x69 - Load C into L.
+     * @param ops unused.
+     */
+    Void ld_l_c(int[] ops) {
+        this.L = this.C;
+        return null;
+    }
+
+    /**
+     * OP code 0x6A - Load D into L.
+     * @param ops unused.
+     */
+    Void ld_l_d(int[] ops) {
+        this.L = this.D;
+        return null;
+    }
+
+    /**
+     * OP code 0x6B - Load E into L.
+     * @param ops unused.
+     */
+    Void ld_l_e(int[] ops) {
+        this.L = this.E;
+        return null;
+    }
+
+    /**
+     * OP code 0x6C - Load H into L.
+     * @param ops unused.
+     */
+    Void ld_l_h(int[] ops) {
+        this.L = this.H;
+        return null;
+    }
+
+    /**
+     * OP code 0x6E - Load value at memory address specified by HL into L.
+     * @param ops unused.
+     */
+    Void ld_l_hlp(int[] ops) {
+        this.L = this.memory.getByteAt(this.getHL());
+        return null;
+    }
+
+    /**
+     * OP code 0x6F - Load A into L.
+     * @param ops unused.
+     */
+    Void ld_l_a(int[] ops) {
+        this.L = this.A;
+        return null;
+    }
 }
