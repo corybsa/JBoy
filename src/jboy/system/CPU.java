@@ -316,6 +316,7 @@ public class CPU {
         this.F = this.F & ~flags;
     }
 
+    // TODO: Delete this if my version of daa works.
     /**
      * Checks if flags are set. If multiple flags should be queried, then they should bitwise or'd together.
      * Example: if Z and H should be reset, then they should be passed in to this method like this: Z | H
@@ -473,6 +474,235 @@ public class CPU {
 
         this.resetFlags(FLAG_SUB);
         return result & 0xFF;
+    }
+
+    /**
+     * Shifts {@code value} left, sets the carry flag and the 0th bit to the value of the 7th bit. Sets the necessary flags.
+     * @param value The value to shift.
+     * @return The shifted value.
+     */
+    private int rlc(int value) {
+        // check the 7th bit of the value.
+        if((value & 0x80) == 0x80) {
+            this.setFlags(FLAG_CARRY);
+        } else {
+            this.resetFlags(FLAG_CARRY);
+        }
+
+        // subtraction and half carry flags are reset.
+        this.resetFlags(FLAG_SUB | FLAG_HALF);
+
+        // shift A left by 1 bit, change the 0th bit to whatever the carry flag was.
+        int result = (((value << 1) & (~0x01)) | ((value & 0x80) >> 7)) & 0xFF;
+
+        if(result == 0) {
+            this.setFlags(FLAG_ZERO);
+        } else {
+            this.resetFlags(FLAG_ZERO);
+        }
+
+        return result;
+    }
+
+    /**
+     * Shifts {@code value} right, sets the carry flag and the 7th bit to the value of the 0th bit. Sets the necessary flags.
+     * @param value The value to shift.
+     * @return The shifted value.
+     */
+    private int rrc(int value) {
+        // check the 0th bit of the value.
+        if((value & 0x01) == 0x01) {
+            this.setFlags(FLAG_CARRY);
+        } else {
+            this.resetFlags(FLAG_CARRY);
+        }
+
+        // subtraction and half carry flags are reset.
+        this.resetFlags(FLAG_SUB | FLAG_HALF);
+
+        // shift A left by 1 bit, change the 0th bit to whatever the carry flag was.
+        // (((0x01 >> 1) & (~0x01)) | ((0x01 & 0x01) << 7)) & 0xFF
+        int result = (((value >> 1) & (~0x01)) | ((value & 0x01) << 7)) & 0xFF;
+
+        if(result == 0) {
+            this.setFlags(FLAG_ZERO);
+        } else {
+            this.resetFlags(FLAG_ZERO);
+        }
+
+        return result;
+    }
+
+    /**
+     * Shifts {@code value} left, sets the 0th bit to the value of the carry flag. Sets the necessary flags.
+     * @param value The value to shift.
+     * @return The shifted value.
+     */
+    private int rl(int value) {
+        int carry = this.getF() & FLAG_CARRY;
+
+        if((value & 0x80) == 0x80) {
+            this.setFlags(FLAG_CARRY);
+        } else {
+            this.resetFlags(FLAG_CARRY);
+        }
+
+        int result = ((value << 1) | carry) & 0xFF;
+
+        if(result == 0) {
+            this.setFlags(FLAG_ZERO);
+        } else {
+            this.resetFlags(FLAG_ZERO);
+        }
+
+        return result;
+    }
+
+    /**
+     * Shifts {@code value} right, sets the 7th bit to the value of the carry flag. Sets the necessary flags.
+     * @param value The value to shift.
+     * @return The shifted value.
+     */
+    private int rr(int value) {
+        int carry = this.getF() & FLAG_CARRY;
+
+        if((value & 0x80) == 0x80) {
+            this.setFlags(FLAG_CARRY);
+        } else {
+            this.resetFlags(FLAG_CARRY);
+        }
+
+        int result = ((value >> 1) | (carry << 7)) & 0xFF;
+
+        if(result == 0) {
+            this.setFlags(FLAG_ZERO);
+        } else {
+            this.resetFlags(FLAG_ZERO);
+        }
+
+        return result;
+    }
+
+    /**
+     * Shifts {@code value} left, sets the carry flag to the value of the 7th bit, resets the 0th bit. Sets the necessary flags.
+     * @param value The value to shift.
+     * @return The shifted value.
+     */
+    private int sla(int value) {
+        if((value & 0x80) == 0x80) {
+            this.setFlags(FLAG_CARRY);
+        } else {
+            this.resetFlags(FLAG_CARRY);
+        }
+
+        int result = (value << 1) & 0xFF;
+
+        if(result == 0) {
+            this.setFlags(FLAG_ZERO);
+        } else {
+            this.resetFlags(FLAG_ZERO);
+        }
+
+        this.resetFlags(FLAG_SUB | FLAG_HALF);
+
+        return result;
+    }
+
+    /**
+     * Shifts {@code value} right, sets the carry flag to the value of the 0th bit, 7th bit is unchanged. Sets the necessary flags.
+     * @param value The value to shift.
+     * @return The shifted value.
+     */
+    private int sra(int value) {
+        if((value & 0x01) == 0x01) {
+            this.setFlags(FLAG_CARRY);
+        } else {
+            this.resetFlags(FLAG_CARRY);
+        }
+
+        int result = ((value >> 1) | (value & 0x80)) & 0xFF;
+
+        if(result == 0) {
+            this.setFlags(FLAG_ZERO);
+        } else {
+            this.resetFlags(FLAG_ZERO);
+        }
+
+        this.resetFlags(FLAG_SUB | FLAG_HALF);
+
+        return result;
+    }
+
+    /**
+     * Swaps the low and high nibbles.
+     * @param value The value to swap.
+     * @return The swapped value.
+     */
+    private int swap(int value) {
+        return ((value & 0x0F) << 4) + (value >> 4);
+    }
+
+    /**
+     * Shifts {@code value} right, sets the carry flag to the value of the 0th bit, resets the 7th bit. Sets the necessary flags.
+     * @param value The value to shift.
+     * @return The shifted value.
+     */
+    private int srl(int value) {
+        if((value & 0x01) == 0x01) {
+            this.setFlags(FLAG_CARRY);
+        } else {
+            this.resetFlags(FLAG_CARRY);
+        }
+
+        int result = (value >> 1) & 0xFF;
+
+        if(result == 0) {
+            this.setFlags(FLAG_ZERO);
+        } else {
+            this.resetFlags(FLAG_ZERO);
+        }
+
+        this.resetFlags(FLAG_SUB | FLAG_HALF);
+
+        return result;
+    }
+
+    /**
+     * Copies the compliment of the specified bit at {@code position}. Sets the necessary flags.
+     * @param position The bit to operate on.
+     * @param value The value to operate on.
+     */
+    private void bit(int position, int value) {
+        int result = ~(value >> position) & 0x01;
+
+        if(result == 1) {
+            this.setFlags(FLAG_ZERO);
+        } else {
+            this.resetFlags(FLAG_ZERO);
+        }
+
+        this.setFlags(FLAG_HALF);
+        this.resetFlags(FLAG_SUB);
+    }
+
+    /**
+     * Resets the bit at {@code position}.
+     * @param position The bit to operate on.
+     * @param value The value to operate on.
+     * @return The value with the specified bit reset.
+     */
+    private int res(int position, int value) {
+        return ((value & ~(0x01 << position)) | (0 << position)) & 0xFF;
+    }
+
+    /**
+     * Sets the bit at {@code position}.
+     * @param position The bit to operate on.
+     * @param value The value to operate on.
+     * @return The value with the specified bit set.
+     */
+    private int set(int position, int value) {
+        return ((value & ~(0x01 << position)) | (1 << position)) & 0xFF;
     }
 
     /**
@@ -926,7 +1156,41 @@ public class CPU {
      */
     Void daa(int[] ops) {
         // after an addition, adjust A if a HALF_CARRY or CARRY occurred or if the result is out of bounds.
-        if(!this.areFlagsSet(CPU.FLAG_ZERO)) {
+        // (this.F & FLAG_HALF) == FLAG_HALF
+        if((this.F & FLAG_ZERO) != FLAG_ZERO) {
+            if((this.F & FLAG_CARRY) == FLAG_CARRY || this.A > 0x99) {
+                this.A = (this.A + 0x60) & 0xFF;
+                this.setFlags(CPU.FLAG_CARRY);
+            }
+
+            if((this.F & FLAG_HALF) == FLAG_HALF || (this.A & 0x0F) > 0x09) {
+                this.A = (this.A + 0x06) & 0xFF;
+            }
+        } else {
+            // after a subtraction, only adjust if a HALF_CARRY or CARRY occurred.
+            if((this.F & FLAG_CARRY) == FLAG_CARRY) {
+                this.A -= 0x60;
+            }
+
+            if((this.F & FLAG_HALF) == FLAG_HALF) {
+                this.A -= 0x06;
+            }
+        }
+
+        // set zero flag if A register is zero.
+        if(this.A == 0) {
+            this.setFlags(CPU.FLAG_ZERO);
+        }
+
+        // half carry always reset.
+        this.setFlags(CPU.FLAG_HALF);
+
+        return null;
+
+
+        // TODO: This is the one from the internet. I'm keeping it just in case mine doesn't work.
+        // after an addition, adjust A if a HALF_CARRY or CARRY occurred or if the result is out of bounds.
+        /*if(!this.areFlagsSet(CPU.FLAG_ZERO)) {
             if(this.areFlagsSet(CPU.FLAG_CARRY) || this.A > 0x99) {
                 this.A = (this.A + 0x60) & 0xFF;
                 this.setFlags(CPU.FLAG_CARRY);
@@ -954,7 +1218,7 @@ public class CPU {
         // half carry always reset.
         this.setFlags(CPU.FLAG_HALF);
 
-        return null;
+        return null;*/
     }
 
     /**
@@ -1882,6 +2146,2317 @@ public class CPU {
      */
     Void adc_a_a(int[] ops) {
         this.A = this.adc(this.A, this.A);
+        return null;
+    }
+
+
+
+
+
+
+
+
+    /**
+     * OP code 0xCB00 - Rotates the contents of B to the left.
+     * @param ops unused.
+     */
+    Void rlc_b(int[] ops) {
+        this.B = this.rlc(this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB01 - Rotates the contents of C to the left.
+     * @param ops unused.
+     */
+    Void rlc_c(int[] ops) {
+        this.C = this.rlc(this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB02 - Rotates the contents of D to the left.
+     * @param ops unused.
+     */
+    Void rlc_d(int[] ops) {
+        this.D = this.rlc(this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB03 - Rotates the contents of E to the left.
+     * @param ops unused.
+     */
+    Void rlc_e(int[] ops) {
+        this.E = this.rlc(this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB04 - Rotates the contents of H to the left.
+     * @param ops unused.
+     */
+    Void rlc_h(int[] ops) {
+        this.H = this.rlc(this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB05 - Rotates the contents of L to the left.
+     * @param ops unused.
+     */
+    Void rlc_l(int[] ops) {
+        this.L = this.rlc(this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB06 - Rotates the contents of the value in memory pointed to by HL to the left.
+     * @param ops unused.
+     */
+    Void rlc_hlp(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.rlc(this.memory.getByteAt(this.getHL())));
+        return null;
+    }
+
+    /**
+     * OP code 0xCB07 - Rotates the contents of A to the left.
+     * @param ops unused.
+     */
+    Void rlc_a(int[] ops) {
+        this.A = this.rlc(this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB08 - Rotates the contents of B to the right.
+     * @param ops unused.
+     */
+    Void rrc_b(int[] ops) {
+        this.B = this.rrc(this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB09 - Rotates the contents of C to the right.
+     * @param ops unused.
+     */
+    Void rrc_c(int[] ops) {
+        this.C = this.rrc(this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB0A - Rotates the contents of D to the right.
+     * @param ops unused.
+     */
+    Void rrc_d(int[] ops) {
+        this.D = this.rrc(this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB0B - Rotates the contents of E to the right.
+     * @param ops unused.
+     */
+    Void rrc_e(int[] ops) {
+        this.E = this.rrc(this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB0C - Rotates the contents of H to the right.
+     * @param ops unused.
+     */
+    Void rrc_h(int[] ops) {
+        this.H = this.rrc(this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB0D - Rotates the contents of L to the right.
+     * @param ops unused.
+     */
+    Void rrc_l(int[] ops) {
+        this.L = this.rrc(this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB0E - Rotates the contents of the value in memory pointed to by HL to the right.
+     * @param ops unused.
+     */
+    Void rrc_hlp(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.rrc(this.memory.getByteAt(this.getHL())));
+        return null;
+    }
+
+    /**
+     * OP code 0xCB0F - Rotates the contents of A to the right.
+     * @param ops unused.
+     */
+    Void rrc_a(int[] ops) {
+        this.A = this.rrc(this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB10 - Rotates the contents of B to the left.
+     * @param ops unused.
+     */
+    Void rl_b(int[] ops) {
+        this.B = this.rl(this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB11 - Rotates the contents of C to the left.
+     * @param ops unused.
+     */
+    Void rl_c(int[] ops) {
+        this.C = this.rl(this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB12 - Rotates the contents of D to the left.
+     * @param ops unused.
+     */
+    Void rl_d(int[] ops) {
+        this.D = this.rl(this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB13 - Rotates the contents of E to the left.
+     * @param ops unused.
+     */
+    Void rl_e(int[] ops) {
+        this.E = this.rl(this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB14 - Rotates the contents of H to the left.
+     * @param ops unused.
+     */
+    Void rl_h(int[] ops) {
+        this.H = this.rl(this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB15 - Rotates the contents of L to the left.
+     * @param ops unused.
+     */
+    Void rl_l(int[] ops) {
+        this.L = this.rl(this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB16 - Rotates the contents of the value in memory pointed to by HL to the left.
+     * @param ops unused.
+     */
+    Void rl_hlp(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.rl(this.memory.getByteAt(this.getHL())));
+        return null;
+    }
+
+    /**
+     * OP code 0xCB17 - Rotates the contents of A to the left.
+     * @param ops unused.
+     */
+    Void rl_a(int[] ops) {
+        this.A = this.rl(this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB18 - Rotates the contents of B to the right.
+     * @param ops unused.
+     */
+    Void rr_b(int[] ops) {
+        this.B = this.rr(this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB19 - Rotates the contents of C to the right.
+     * @param ops unused.
+     */
+    Void rr_c(int[] ops) {
+        this.C = this.rr(this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB1A - Rotates the contents of D to the right.
+     * @param ops unused.
+     */
+    Void rr_d(int[] ops) {
+        this.D = this.rr(this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB1B - Rotates the contents of E to the right.
+     * @param ops unused.
+     */
+    Void rr_e(int[] ops) {
+        this.E = this.rr(this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB1C - Rotates the contents of H to the right.
+     * @param ops unused.
+     */
+    Void rr_h(int[] ops) {
+        this.H = this.rr(this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB1D - Rotates the contents of L to the right.
+     * @param ops unused.
+     */
+    Void rr_l(int[] ops) {
+        this.L = this.rr(this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB1E - Rotates the contents of the value in memory pointed to by HL to the right.
+     * @param ops unused.
+     */
+    Void rr_hlp(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.rr(this.memory.getByteAt(this.getHL())));
+        return null;
+    }
+
+    /**
+     * OP code 0xCB1F - Rotates the contents of A to the right.
+     * @param ops unused.
+     */
+    Void rr_a(int[] ops) {
+        this.A = this.rr(this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB20 - Shifts the contents of B to the left.
+     * @param ops unused.
+     */
+    Void sla_b(int[] ops) {
+        this.B = this.sla(this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB21 - Shifts the contents of C to the left.
+     * @param ops unused.
+     */
+    Void sla_c(int[] ops) {
+        this.C = this.sla(this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB22 - Shifts the contents of D to the left.
+     * @param ops unused.
+     */
+    Void sla_d(int[] ops) {
+        this.D = this.sla(this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB23 - Shifts the contents of E to the left.
+     * @param ops unused.
+     */
+    Void sla_e(int[] ops) {
+        this.E = this.sla(this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB24 - Shifts the contents of H to the left.
+     * @param ops unused.
+     */
+    Void sla_h(int[] ops) {
+        this.H = this.sla(this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB25 - Shifts the contents of L to the left.
+     * @param ops unused.
+     */
+    Void sla_l(int[] ops) {
+        this.L = this.sla(this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB26 - Shifts the contents of the value in memory pointed to by HL to the left.
+     * @param ops unused.
+     */
+    Void sla_hlp(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.sla(this.memory.getByteAt(this.getHL())));
+        return null;
+    }
+
+    /**
+     * OP code 0xCB27 - Shifts the contents of A to the left.
+     * @param ops unused.
+     */
+    Void sla_a(int[] ops) {
+        this.A = this.sla(this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB28 - Shifts the contents of B to the right.
+     * @param ops unused.
+     */
+    Void sra_b(int[] ops) {
+        this.B = this.sra(this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB29 - Shifts the contents of C to the right.
+     * @param ops unused.
+     */
+    Void sra_c(int[] ops) {
+        this.C = this.sra(this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB2A - Shifts the contents of D to the right.
+     * @param ops unused.
+     */
+    Void sra_d(int[] ops) {
+        this.D = this.sra(this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB2B - Shifts the contents of E to the right.
+     * @param ops unused.
+     */
+    Void sra_e(int[] ops) {
+        this.E = this.sra(this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB2C - Shifts the contents of H to the right.
+     * @param ops unused.
+     */
+    Void sra_h(int[] ops) {
+        this.H = this.sra(this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB2D - Shifts the contents of L to the right.
+     * @param ops unused.
+     */
+    Void sra_l(int[] ops) {
+        this.L = this.sra(this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB2E - Shifts the contents of the value in memory pointed to by HL to the right.
+     * @param ops unused.
+     */
+    Void sra_hlp(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.sra(this.memory.getByteAt(this.getHL())));
+        return null;
+    }
+
+    /**
+     * OP code 0xCB2F - Shifts the contents of A to the right.
+     * @param ops unused.
+     */
+    Void sra_a(int[] ops) {
+        this.A = this.sra(this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB30 - Swaps the nibbles of B.
+     * @param ops unused.
+     */
+    Void swap_b(int[] ops) {
+        this.B = this.swap(this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB31 - Swaps the nibbles of C.
+     * @param ops unused.
+     */
+    Void swap_c(int[] ops) {
+        this.C = this.swap(this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB32 - Swaps the nibbles of D.
+     * @param ops unused.
+     */
+    Void swap_d(int[] ops) {
+        this.D = this.swap(this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB33 - Swaps the nibbles of E.
+     * @param ops unused.
+     */
+    Void swap_e(int[] ops) {
+        this.E = this.swap(this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB34 - Swaps the nibbles of H.
+     * @param ops unused.
+     */
+    Void swap_h(int[] ops) {
+        this.H = this.swap(this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB35 - Swaps the nibbles of L.
+     * @param ops unused.
+     */
+    Void swap_l(int[] ops) {
+        this.L = this.swap(this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB36 - Swaps the nibbles of the value in memory pointed to by HL.
+     * @param ops unused.
+     */
+    Void swap_hlp(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.swap(this.memory.getByteAt(this.getHL())));
+        return null;
+    }
+
+    /**
+     * OP code 0xCB37 - Swaps the nibbles of A.
+     * @param ops unused.
+     */
+    Void swap_a(int[] ops) {
+        this.A = this.swap(this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB38 - Shifts the contents of B to the right.
+     * @param ops unused.
+     */
+    Void srl_b(int[] ops) {
+        this.B = this.srl(this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB39 - Shifts the contents of C to the right.
+     * @param ops unused.
+     */
+    Void srl_c(int[] ops) {
+        this.C = this.srl(this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB3A - Shifts the contents of D to the right.
+     * @param ops unused.
+     */
+    Void srl_d(int[] ops) {
+        this.D = this.srl(this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB3B - Shifts the contents of E to the right.
+     * @param ops unused.
+     */
+    Void srl_e(int[] ops) {
+        this.E = this.srl(this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB3C - Shifts the contents of H to the right.
+     * @param ops unused.
+     */
+    Void srl_h(int[] ops) {
+        this.H = this.srl(this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB3D - Shifts the contents of L to the right.
+     * @param ops unused.
+     */
+    Void srl_l(int[] ops) {
+        this.L = this.srl(this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB3E - Shifts the contents of the value in memory pointed to by HL to the right.
+     * @param ops unused.
+     */
+    Void srl_hlp(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.srl(this.memory.getByteAt(this.getHL())));
+        return null;
+    }
+
+    /**
+     * OP code 0xCB3F - Shifts the contents of A to the right.
+     * @param ops unused.
+     */
+    Void srl_a(int[] ops) {
+        this.A = this.srl(this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB40 - Sets the zero flag to the compliment of the 0th bit of B.
+     * @param ops unused.
+     */
+    Void bit_0_b(int[] ops) {
+        this.bit(0, this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB41 - Sets the zero flag to the compliment of the 0th bit of C.
+     * @param ops unused.
+     */
+    Void bit_0_c(int[] ops) {
+        this.bit(0, this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB42 - Sets the zero flag to the compliment of the 0th bit of D.
+     * @param ops unused.
+     */
+    Void bit_0_d(int[] ops) {
+        this.bit(0, this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB43 - Sets the zero flag to the compliment of the 0th bit of E.
+     * @param ops unused.
+     */
+    Void bit_0_e(int[] ops) {
+        this.bit(0, this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB44 - Sets the zero flag to the compliment of the 0th bit of H.
+     * @param ops unused.
+     */
+    Void bit_0_h(int[] ops) {
+        this.bit(0, this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB45 - Sets the zero flag to the compliment of the 0th bit of L.
+     * @param ops unused.
+     */
+    Void bit_0_l(int[] ops) {
+        this.bit(0, this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB46 - Sets the zero flag to the compliment of the 0th bit of the value in memory pointed to by HL.
+     * @param ops unused.
+     */
+    Void bit_0_hlp(int[] ops) {
+        this.bit(0, this.memory.getByteAt(this.getHL()));
+        return null;
+    }
+
+    /**
+     * OP code 0xCB47 - Sets the zero flag to the compliment of the 0th bit of A.
+     * @param ops unused.
+     */
+    Void bit_0_a(int[] ops) {
+        this.bit(0, this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB48 - Sets the zero flag to the compliment of the 1st bit of B.
+     * @param ops unused.
+     */
+    Void bit_1_b(int[] ops) {
+        this.bit(1, this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB49 - Sets the zero flag to the compliment of the 1st bit of C.
+     * @param ops unused.
+     */
+    Void bit_1_c(int[] ops) {
+        this.bit(1, this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB4A - Sets the zero flag to the compliment of the 1st bit of D.
+     * @param ops unused.
+     */
+    Void bit_1_d(int[] ops) {
+        this.bit(1, this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB4B - Sets the zero flag to the compliment of the 1st bit of E.
+     * @param ops unused.
+     */
+    Void bit_1_e(int[] ops) {
+        this.bit(1, this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB4C - Sets the zero flag to the compliment of the 1st bit of H.
+     * @param ops unused.
+     */
+    Void bit_1_h(int[] ops) {
+        this.bit(1, this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB4D - Sets the zero flag to the compliment of the 1st bit of L.
+     * @param ops unused.
+     */
+    Void bit_1_l(int[] ops) {
+        this.bit(1, this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB4E - Sets the zero flag to the compliment of the 1st bit of the value in memory pointed to by HL.
+     * @param ops unused.
+     */
+    Void bit_1_hlp(int[] ops) {
+        this.bit(1, this.memory.getByteAt(this.getHL()));
+        return null;
+    }
+
+    /**
+     * OP code 0xCB4F - Sets the zero flag to the compliment of the 1st bit of A.
+     * @param ops unused.
+     */
+    Void bit_1_a(int[] ops) {
+        this.bit(1, this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB50 - Sets the zero flag to the compliment of the 2nd bit of B.
+     * @param ops unused.
+     */
+    Void bit_2_b(int[] ops) {
+        this.bit(2, this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB51 - Sets the zero flag to the compliment of the 2nd bit of C.
+     * @param ops unused.
+     */
+    Void bit_2_c(int[] ops) {
+        this.bit(2, this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB52 - Sets the zero flag to the compliment of the 2nd bit of D.
+     * @param ops unused.
+     */
+    Void bit_2_d(int[] ops) {
+        this.bit(2, this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB53 - Sets the zero flag to the compliment of the 2nd bit of E.
+     * @param ops unused.
+     */
+    Void bit_2_e(int[] ops) {
+        this.bit(2, this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB54 - Sets the zero flag to the compliment of the 2nd bit of H.
+     * @param ops unused.
+     */
+    Void bit_2_h(int[] ops) {
+        this.bit(2, this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB55 - Sets the zero flag to the compliment of the 2nd bit of L.
+     * @param ops unused.
+     */
+    Void bit_2_l(int[] ops) {
+        this.bit(2, this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB56 - Sets the zero flag to the compliment of the 2nd bit of the value in memory pointed to by HL.
+     * @param ops unused.
+     */
+    Void bit_2_hlp(int[] ops) {
+        this.bit(2, this.memory.getByteAt(this.getHL()));
+        return null;
+    }
+
+    /**
+     * OP code 0xCB57 - Sets the zero flag to the compliment of the 2nd bit of A.
+     * @param ops unused.
+     */
+    Void bit_2_a(int[] ops) {
+        this.bit(2, this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB58 - Sets the zero flag to the compliment of the 3rd bit of B.
+     * @param ops unused.
+     */
+    Void bit_3_b(int[] ops) {
+        this.bit(3, this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB59 - Sets the zero flag to the compliment of the 3rd bit of C.
+     * @param ops unused.
+     */
+    Void bit_3_c(int[] ops) {
+        this.bit(3, this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB5A - Sets the zero flag to the compliment of the 3rd bit of D.
+     * @param ops unused.
+     */
+    Void bit_3_d(int[] ops) {
+        this.bit(3, this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB5B - Sets the zero flag to the compliment of the 3rd bit of E.
+     * @param ops unused.
+     */
+    Void bit_3_e(int[] ops) {
+        this.bit(3, this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB5C - Sets the zero flag to the compliment of the 3rd bit of H.
+     * @param ops unused.
+     */
+    Void bit_3_h(int[] ops) {
+        this.bit(3, this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB5D - Sets the zero flag to the compliment of the 3rd bit of L.
+     * @param ops unused.
+     */
+    Void bit_3_l(int[] ops) {
+        this.bit(3, this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB5E - Sets the zero flag to the compliment of the 3rd bit of the value in memory pointed to by HL.
+     * @param ops unused.
+     */
+    Void bit_3_hlp(int[] ops) {
+        this.bit(3, this.memory.getByteAt(this.getHL()));
+        return null;
+    }
+
+    /**
+     * OP code 0xCB5F - Sets the zero flag to the compliment of the 3rd bit of A.
+     * @param ops unused.
+     */
+    Void bit_3_a(int[] ops) {
+        this.bit(3, this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB60 - Sets the zero flag to the compliment of the 4th bit of B.
+     * @param ops unused.
+     */
+    Void bit_4_b(int[] ops) {
+        this.bit(4, this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB61 - Sets the zero flag to the compliment of the 4th bit of C.
+     * @param ops unused.
+     */
+    Void bit_4_c(int[] ops) {
+        this.bit(4, this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB62 - Sets the zero flag to the compliment of the 4th bit of D.
+     * @param ops unused.
+     */
+    Void bit_4_d(int[] ops) {
+        this.bit(4, this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB63 - Sets the zero flag to the compliment of the 4th bit of E.
+     * @param ops unused.
+     */
+    Void bit_4_e(int[] ops) {
+        this.bit(4, this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB64 - Sets the zero flag to the compliment of the 4th bit of H.
+     * @param ops unused.
+     */
+    Void bit_4_h(int[] ops) {
+        this.bit(4, this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB65 - Sets the zero flag to the compliment of the 4th bit of L.
+     * @param ops unused.
+     */
+    Void bit_4_l(int[] ops) {
+        this.bit(4, this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB66 - Sets the zero flag to the compliment of the 4th bit of the value in memory pointed to by HL.
+     * @param ops unused.
+     */
+    Void bit_4_hlp(int[] ops) {
+        this.bit(4, this.memory.getByteAt(this.getHL()));
+        return null;
+    }
+
+    /**
+     * OP code 0xCB67 - Sets the zero flag to the compliment of the 4th bit of A.
+     * @param ops unused.
+     */
+    Void bit_4_a(int[] ops) {
+        this.bit(4, this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB68 - Sets the zero flag to the compliment of the 5th bit of B.
+     * @param ops unused.
+     */
+    Void bit_5_b(int[] ops) {
+        this.bit(5, this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB69 - Sets the zero flag to the compliment of the 5th bit of C.
+     * @param ops unused.
+     */
+    Void bit_5_c(int[] ops) {
+        this.bit(5, this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB6A - Sets the zero flag to the compliment of the 5th bit of D.
+     * @param ops unused.
+     */
+    Void bit_5_d(int[] ops) {
+        this.bit(5, this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB6B - Sets the zero flag to the compliment of the 5th bit of E.
+     * @param ops unused.
+     */
+    Void bit_5_e(int[] ops) {
+        this.bit(5, this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB6C - Sets the zero flag to the compliment of the 5th bit of H.
+     * @param ops unused.
+     */
+    Void bit_5_h(int[] ops) {
+        this.bit(5, this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB6D - Sets the zero flag to the compliment of the 5th bit of L.
+     * @param ops unused.
+     */
+    Void bit_5_l(int[] ops) {
+        this.bit(5, this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB6E - Sets the zero flag to the compliment of the 5th bit of the value in memory pointed to by HL.
+     * @param ops unused.
+     */
+    Void bit_5_hlp(int[] ops) {
+        this.bit(5, this.memory.getByteAt(this.getHL()));
+        return null;
+    }
+
+    /**
+     * OP code 0xCB6F - Sets the zero flag to the compliment of the 5th bit of A.
+     * @param ops unused.
+     */
+    Void bit_5_a(int[] ops) {
+        this.bit(5, this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB70 - Sets the zero flag to the compliment of the 6th bit of B.
+     * @param ops unused.
+     */
+    Void bit_6_b(int[] ops) {
+        this.bit(6, this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB71 - Sets the zero flag to the compliment of the 6th bit of C.
+     * @param ops unused.
+     */
+    Void bit_6_c(int[] ops) {
+        this.bit(6, this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB72 - Sets the zero flag to the compliment of the 6th bit of D.
+     * @param ops unused.
+     */
+    Void bit_6_d(int[] ops) {
+        this.bit(6, this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB73 - Sets the zero flag to the compliment of the 6th bit of E.
+     * @param ops unused.
+     */
+    Void bit_6_e(int[] ops) {
+        this.bit(6, this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB74 - Sets the zero flag to the compliment of the 6th bit of H.
+     * @param ops unused.
+     */
+    Void bit_6_h(int[] ops) {
+        this.bit(6, this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB75 - Sets the zero flag to the compliment of the 6th bit of L.
+     * @param ops unused.
+     */
+    Void bit_6_l(int[] ops) {
+        this.bit(6, this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB76 - Sets the zero flag to the compliment of the 6th bit of the value in memory pointed to by HL.
+     * @param ops unused.
+     */
+    Void bit_6_hlp(int[] ops) {
+        this.bit(6, this.memory.getByteAt(this.getHL()));
+        return null;
+    }
+
+    /**
+     * OP code 0xCB77 - Sets the zero flag to the compliment of the 6th bit of A.
+     * @param ops unused.
+     */
+    Void bit_6_a(int[] ops) {
+        this.bit(6, this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB78 - Sets the zero flag to the compliment of the 7th bit of B.
+     * @param ops unused.
+     */
+    Void bit_7_b(int[] ops) {
+        this.bit(7, this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB79 - Sets the zero flag to the compliment of the 7th bit of C.
+     * @param ops unused.
+     */
+    Void bit_7_c(int[] ops) {
+        this.bit(7, this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB7A - Sets the zero flag to the compliment of the 7th bit of D.
+     * @param ops unused.
+     */
+    Void bit_7_d(int[] ops) {
+        this.bit(7, this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB7B - Sets the zero flag to the compliment of the 7th bit of E.
+     * @param ops unused.
+     */
+    Void bit_7_e(int[] ops) {
+        this.bit(7, this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB7C - Sets the zero flag to the compliment of the 7th bit of H.
+     * @param ops unused.
+     */
+    Void bit_7_h(int[] ops) {
+        this.bit(7, this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB7D - Sets the zero flag to the compliment of the 7th bit of L.
+     * @param ops unused.
+     */
+    Void bit_7_l(int[] ops) {
+        this.bit(7, this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB7E - Sets the zero flag to the compliment of the 7th bit of the value in memory pointed to by HL.
+     * @param ops unused.
+     */
+    Void bit_7_hlp(int[] ops) {
+        this.bit(7, this.memory.getByteAt(this.getHL()));
+        return null;
+    }
+
+    /**
+     * OP code 0xCB7F - Sets the zero flag to the compliment of the 7th bit of A.
+     * @param ops unused.
+     */
+    Void bit_7_a(int[] ops) {
+        this.bit(7, this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB80 - Resets the 0th bit of B.
+     * @param ops unused.
+     */
+    Void res_0_b(int[] ops) {
+        this.B = this.res(0, this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB81 - Resets the 0th bit of C.
+     * @param ops unused.
+     */
+    Void res_0_c(int[] ops) {
+        this.C = this.res(0, this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB82 - Resets the 0th bit of D.
+     * @param ops unused.
+     */
+    Void res_0_d(int[] ops) {
+        this.D = this.res(0, this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB83 - Resets the 0th bit of E.
+     * @param ops unused.
+     */
+    Void res_0_e(int[] ops) {
+        this.E = this.res(0, this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB84 - Resets the 0th bit of H.
+     * @param ops unused.
+     */
+    Void res_0_h(int[] ops) {
+        this.H = this.res(0, this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB85 - Resets the 0th bit of L.
+     * @param ops unused.
+     */
+    Void res_0_l(int[] ops) {
+        this.L = this.res(0, this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB86 - Resets the 0th bit of the value in memory pointed to by HL.
+     * @param ops unused.
+     */
+    Void res_0_hlp(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.res(0, this.memory.getByteAt(this.getHL())));
+        return null;
+    }
+
+    /**
+     * OP code 0xCB87 - Resets the 0th bit of A.
+     * @param ops unused.
+     */
+    Void res_0_a(int[] ops) {
+        this.A = this.res(0, this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB88 - Resets the 1st bit of B.
+     * @param ops unused.
+     */
+    Void res_1_b(int[] ops) {
+        this.B = this.res(1, this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB89 - Resets the 1st bit of C.
+     * @param ops unused.
+     */
+    Void res_1_c(int[] ops) {
+        this.C = this.res(1, this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB8A - Resets the 1st bit of D.
+     * @param ops unused.
+     */
+    Void res_1_d(int[] ops) {
+        this.D = this.res(1, this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB8B - Resets the 1st bit of E.
+     * @param ops unused.
+     */
+    Void res_1_e(int[] ops) {
+        this.E = this.res(1, this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB8C - Resets the 1st bit of H.
+     * @param ops unused.
+     */
+    Void res_1_h(int[] ops) {
+        this.H = this.res(1, this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB8D - Resets the 1st bit of L.
+     * @param ops unused.
+     */
+    Void res_1_l(int[] ops) {
+        this.L = this.res(1, this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB8E - Resets the 1st bit of the value in memory pointed to by HL.
+     * @param ops unused.
+     */
+    Void res_1_hlp(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.res(1, this.memory.getByteAt(this.getHL())));
+        return null;
+    }
+
+    /**
+     * OP code 0xCB8F - Resets the 1st bit of A.
+     * @param ops unused.
+     */
+    Void res_1_a(int[] ops) {
+        this.A = this.res(1, this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB90 - Resets the 2nd bit of B.
+     * @param ops unused.
+     */
+    Void res_2_b(int[] ops) {
+        this.B = this.res(2, this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB91 - Resets the 2nd bit of C.
+     * @param ops unused.
+     */
+    Void res_2_c(int[] ops) {
+        this.C = this.res(2, this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB92 - Resets the 2nd bit of D.
+     * @param ops unused.
+     */
+    Void res_2_d(int[] ops) {
+        this.D = this.res(2, this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB93 - Resets the 2nd bit of E.
+     * @param ops unused.
+     */
+    Void res_2_e(int[] ops) {
+        this.E = this.res(2, this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB94 - Resets the 2nd bit of H.
+     * @param ops unused.
+     */
+    Void res_2_h(int[] ops) {
+        this.H = this.res(2, this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB95 - Resets the 2nd bit of L.
+     * @param ops unused.
+     */
+    Void res_2_l(int[] ops) {
+        this.L = this.res(2, this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB96 - Resets the 2nd bit of the value in memory pointed to by HL.
+     * @param ops unused.
+     */
+    Void res_2_hlp(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.res(2, this.memory.getByteAt(this.getHL())));
+        return null;
+    }
+
+    /**
+     * OP code 0xCB97 - Resets the 2nd bit of A.
+     * @param ops unused.
+     */
+    Void res_2_a(int[] ops) {
+        this.A = this.res(2, this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB98 - Resets the 3rd bit of B.
+     * @param ops unused.
+     */
+    Void res_3_b(int[] ops) {
+        this.B = this.res(3, this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB99 - Resets the 3rd bit of C.
+     * @param ops unused.
+     */
+    Void res_3_c(int[] ops) {
+        this.C = this.res(3, this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB9A - Resets the 3rd bit of D.
+     * @param ops unused.
+     */
+    Void res_3_d(int[] ops) {
+        this.D = this.res(3, this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB9B - Resets the 3rd bit of E.
+     * @param ops unused.
+     */
+    Void res_3_e(int[] ops) {
+        this.E = this.res(3, this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB9C - Resets the 3rd bit of H.
+     * @param ops unused.
+     */
+    Void res_3_h(int[] ops) {
+        this.H = this.res(3, this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB9D - Resets the 3rd bit of L.
+     * @param ops unused.
+     */
+    Void res_3_l(int[] ops) {
+        this.L = this.res(3, this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCB9E - Resets the 3rd bit of the value in memory pointed to by HL.
+     * @param ops unused.
+     */
+    Void res_3_hlp(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.res(3, this.memory.getByteAt(this.getHL())));
+        return null;
+    }
+
+    /**
+     * OP code 0xCB9F - Resets the 3rd bit of A.
+     * @param ops unused.
+     */
+    Void res_3_a(int[] ops) {
+        this.A = this.res(3, this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBA0 - Resets the 4th bit of B.
+     * @param ops unused.
+     */
+    Void res_4_b(int[] ops) {
+        this.B = this.res(4, this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBA1 - Resets the 4th bit of C.
+     * @param ops unused.
+     */
+    Void res_4_c(int[] ops) {
+        this.C = this.res(4, this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBA2 - Resets the 4th bit of D.
+     * @param ops unused.
+     */
+    Void res_4_d(int[] ops) {
+        this.D = this.res(4, this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBA3 - Resets the 4th bit of E.
+     * @param ops unused.
+     */
+    Void res_4_e(int[] ops) {
+        this.E = this.res(4, this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBA4 - Resets the 4th bit of H.
+     * @param ops unused.
+     */
+    Void res_4_h(int[] ops) {
+        this.H = this.res(4, this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBA5 - Resets the 4th bit of L.
+     * @param ops unused.
+     */
+    Void res_4_l(int[] ops) {
+        this.L = this.res(4, this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBA6 - Resets the 4th bit of the value in memory pointed to by HL.
+     * @param ops unused.
+     */
+    Void res_4_hlp(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.res(4, this.memory.getByteAt(this.getHL())));
+        return null;
+    }
+
+    /**
+     * OP code 0xCBA7 - Resets the 4th bit of A.
+     * @param ops unused.
+     */
+    Void res_4_a(int[] ops) {
+        this.A = this.res(4, this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBA8 - Resets the 5th bit of B.
+     * @param ops unused.
+     */
+    Void res_5_b(int[] ops) {
+        this.B = this.res(5, this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBA9 - Resets the 5th bit of C.
+     * @param ops unused.
+     */
+    Void res_5_c(int[] ops) {
+        this.C = this.res(5, this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBAA - Resets the 5th bit of D.
+     * @param ops unused.
+     */
+    Void res_5_d(int[] ops) {
+        this.D = this.res(5, this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBAB - Resets the 5th bit of E.
+     * @param ops unused.
+     */
+    Void res_5_e(int[] ops) {
+        this.E = this.res(5, this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBAC - Resets the 5th bit of H.
+     * @param ops unused.
+     */
+    Void res_5_h(int[] ops) {
+        this.H = this.res(5, this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBAD - Resets the 5th bit of L.
+     * @param ops unused.
+     */
+    Void res_5_l(int[] ops) {
+        this.L = this.res(5, this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBAE - Resets the 5th bit of the value in memory pointed to by HL.
+     * @param ops unused.
+     */
+    Void res_5_hlp(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.res(5, this.memory.getByteAt(this.getHL())));
+        return null;
+    }
+
+    /**
+     * OP code 0xCBAF - Resets the 5th bit of A.
+     * @param ops unused.
+     */
+    Void res_5_a(int[] ops) {
+        this.A = this.res(5, this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBB0 - Resets the 6th bit of B.
+     * @param ops unused.
+     */
+    Void res_6_b(int[] ops) {
+        this.B = this.res(6, this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBB1 - Resets the 6th bit of C.
+     * @param ops unused.
+     */
+    Void res_6_c(int[] ops) {
+        this.C = this.res(6, this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBB2 - Resets the 6th bit of D.
+     * @param ops unused.
+     */
+    Void res_6_d(int[] ops) {
+        this.D = this.res(6, this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBB3 - Resets the 6th bit of E.
+     * @param ops unused.
+     */
+    Void res_6_e(int[] ops) {
+        this.E = this.res(6, this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBB4 - Resets the 6th bit of H.
+     * @param ops unused.
+     */
+    Void res_6_h(int[] ops) {
+        this.H = this.res(6, this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBB5 - Resets the 6th bit of L.
+     * @param ops unused.
+     */
+    Void res_6_l(int[] ops) {
+        this.L = this.res(6, this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBB6 - Resets the 6th bit of the value in memory pointed to by HL.
+     * @param ops unused.
+     */
+    Void res_6_hlp(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.res(6, this.memory.getByteAt(this.getHL())));
+        return null;
+    }
+
+    /**
+     * OP code 0xCBB7 - Resets the 6th bit of A.
+     * @param ops unused.
+     */
+    Void res_6_a(int[] ops) {
+        this.A = this.res(6, this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBB8 - Resets the 7th bit of B.
+     * @param ops unused.
+     */
+    Void res_7_b(int[] ops) {
+        this.B = this.res(7, this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBB9 - Resets the 7th bit of C.
+     * @param ops unused.
+     */
+    Void res_7_c(int[] ops) {
+        this.C = this.res(7, this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBBA - Resets the 7th bit of D.
+     * @param ops unused.
+     */
+    Void res_7_d(int[] ops) {
+        this.D = this.res(7, this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBBB - Resets the 7th bit of E.
+     * @param ops unused.
+     */
+    Void res_7_e(int[] ops) {
+        this.E = this.res(7, this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBBC - Resets the 7th bit of H.
+     * @param ops unused.
+     */
+    Void res_7_h(int[] ops) {
+        this.H = this.res(7, this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBBD - Resets the 7th bit of L.
+     * @param ops unused.
+     */
+    Void res_7_l(int[] ops) {
+        this.L = this.res(7, this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBBE - Resets the 7th bit of the value in memory pointed to by HL.
+     * @param ops unused.
+     */
+    Void res_7_hlp(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.res(7, this.memory.getByteAt(this.getHL())));
+        return null;
+    }
+
+    /**
+     * OP code 0xCBBF - Resets the 7th bit of A.
+     * @param ops unused.
+     */
+    Void res_7_a(int[] ops) {
+        this.A = this.res(7, this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBC0 - Sets the 0th bit of B.
+     * @param ops unused.
+     */
+    Void set_0_b(int[] ops) {
+        this.B = this.set(0, this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBC1 - Sets the 0th bit of C.
+     * @param ops unused.
+     */
+    Void set_0_c(int[] ops) {
+        this.C = this.set(0, this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBC2 - Sets the 0th bit of D.
+     * @param ops unused.
+     */
+    Void set_0_d(int[] ops) {
+        this.D = this.set(0, this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBC3 - Sets the 0th bit of E.
+     * @param ops unused.
+     */
+    Void set_0_e(int[] ops) {
+        this.E = this.set(0, this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBC4 - Sets the 0th bit of H.
+     * @param ops unused.
+     */
+    Void set_0_h(int[] ops) {
+        this.H = this.set(0, this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBC5 - Sets the 0th bit of L.
+     * @param ops unused.
+     */
+    Void set_0_l(int[] ops) {
+        this.L = this.set(0, this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBC6 - Sets the 0th bit of the value in memory pointed to by HL.
+     * @param ops unused.
+     */
+    Void set_0_hlp(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.set(0, this.memory.getByteAt(this.getHL())));
+        return null;
+    }
+
+    /**
+     * OP code 0xCBC7 - Sets the 0th bit of A.
+     * @param ops unused.
+     */
+    Void set_0_a(int[] ops) {
+        this.A = this.set(0, this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBC8 - Sets the 1st bit of B.
+     * @param ops unused.
+     */
+    Void set_1_b(int[] ops) {
+        this.B = this.set(1, this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBC9 - Sets the 1st bit of C.
+     * @param ops unused.
+     */
+    Void set_1_c(int[] ops) {
+        this.C = this.set(1, this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBCA - Sets the 1st bit of D.
+     * @param ops unused.
+     */
+    Void set_1_d(int[] ops) {
+        this.D = this.set(1, this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBCB - Sets the 1st bit of E.
+     * @param ops unused.
+     */
+    Void set_1_e(int[] ops) {
+        this.E = this.set(1, this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBCC - Sets the 1st bit of H.
+     * @param ops unused.
+     */
+    Void set_1_h(int[] ops) {
+        this.H = this.set(1, this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBCD - Sets the 1st bit of L.
+     * @param ops unused.
+     */
+    Void set_1_l(int[] ops) {
+        this.L = this.set(1, this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBCE - Sets the 1st bit of the value in memory pointed to by HL.
+     * @param ops unused.
+     */
+    Void set_1_hlp(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.set(1, this.memory.getByteAt(this.getHL())));
+        return null;
+    }
+
+    /**
+     * OP code 0xCBCF - Sets the 1st bit of A.
+     * @param ops unused.
+     */
+    Void set_1_a(int[] ops) {
+        this.A = this.set(1, this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBD0 - Sets the 2nd bit of B.
+     * @param ops unused.
+     */
+    Void set_2_b(int[] ops) {
+        this.B = this.set(2, this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBD1 - Sets the 2nd bit of C.
+     * @param ops unused.
+     */
+    Void set_2_c(int[] ops) {
+        this.C = this.set(2, this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBD2 - Sets the 2nd bit of D.
+     * @param ops unused.
+     */
+    Void set_2_d(int[] ops) {
+        this.D = this.set(2, this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBD3 - Sets the 2nd bit of E.
+     * @param ops unused.
+     */
+    Void set_2_e(int[] ops) {
+        this.E = this.set(2, this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBD4 - Sets the 2nd bit of H.
+     * @param ops unused.
+     */
+    Void set_2_h(int[] ops) {
+        this.H = this.set(2, this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBD5 - Sets the 2nd bit of L.
+     * @param ops unused.
+     */
+    Void set_2_l(int[] ops) {
+        this.L = this.set(2, this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBD6 - Sets the 2nd bit of the value in memory pointed to by HL.
+     * @param ops unused.
+     */
+    Void set_2_hlp(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.set(2, this.memory.getByteAt(this.getHL())));
+        return null;
+    }
+
+    /**
+     * OP code 0xCBD7 - Sets the 2nd bit of A.
+     * @param ops unused.
+     */
+    Void set_2_a(int[] ops) {
+        this.A = this.set(2, this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBD8 - Sets the 3rd bit of B.
+     * @param ops unused.
+     */
+    Void set_3_b(int[] ops) {
+        this.B = this.set(3, this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBD9 - Sets the 3rd bit of C.
+     * @param ops unused.
+     */
+    Void set_3_c(int[] ops) {
+        this.C = this.set(3, this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBDA - Sets the 3rd bit of D.
+     * @param ops unused.
+     */
+    Void set_3_d(int[] ops) {
+        this.D = this.set(3, this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBDB - Sets the 3rd bit of E.
+     * @param ops unused.
+     */
+    Void set_3_e(int[] ops) {
+        this.E = this.set(3, this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBDC - Sets the 3rd bit of H.
+     * @param ops unused.
+     */
+    Void set_3_h(int[] ops) {
+        this.H = this.set(3, this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBDD - Sets the 3rd bit of L.
+     * @param ops unused.
+     */
+    Void set_3_l(int[] ops) {
+        this.L = this.set(3, this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBDE - Sets the 3rd bit of the value in memory pointed to by HL.
+     * @param ops unused.
+     */
+    Void set_3_hlp(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.set(3, this.memory.getByteAt(this.getHL())));
+        return null;
+    }
+
+    /**
+     * OP code 0xCBDF - Sets the 3rd bit of A.
+     * @param ops unused.
+     */
+    Void set_3_a(int[] ops) {
+        this.A = this.set(3, this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBE0 - Sets the 4th bit of B.
+     * @param ops unused.
+     */
+    Void set_4_b(int[] ops) {
+        this.B = this.set(4, this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBE1 - Sets the 4th bit of C.
+     * @param ops unused.
+     */
+    Void set_4_c(int[] ops) {
+        this.C = this.set(4, this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBE2 - Sets the 4th bit of D.
+     * @param ops unused.
+     */
+    Void set_4_d(int[] ops) {
+        this.D = this.set(4, this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBE3 - Sets the 4th bit of E.
+     * @param ops unused.
+     */
+    Void set_4_e(int[] ops) {
+        this.E = this.set(4, this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBE4 - Sets the 4th bit of H.
+     * @param ops unused.
+     */
+    Void set_4_h(int[] ops) {
+        this.H = this.set(4, this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBE5 - Sets the 4th bit of L.
+     * @param ops unused.
+     */
+    Void set_4_l(int[] ops) {
+        this.L = this.set(4, this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBE6 - Sets the 4th bit of the value in memory pointed to by HL.
+     * @param ops unused.
+     */
+    Void set_4_hlp(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.set(4, this.memory.getByteAt(this.getHL())));
+        return null;
+    }
+
+    /**
+     * OP code 0xCBE7 - Sets the 4th bit of A.
+     * @param ops unused.
+     */
+    Void set_4_a(int[] ops) {
+        this.A = this.set(4, this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBE8 - Sets the 5th bit of B.
+     * @param ops unused.
+     */
+    Void set_5_b(int[] ops) {
+        this.B = this.set(5, this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBE9 - Sets the 5th bit of C.
+     * @param ops unused.
+     */
+    Void set_5_c(int[] ops) {
+        this.C = this.set(5, this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBEA - Sets the 5th bit of D.
+     * @param ops unused.
+     */
+    Void set_5_d(int[] ops) {
+        this.D = this.set(5, this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBEB - Sets the 5th bit of E.
+     * @param ops unused.
+     */
+    Void set_5_e(int[] ops) {
+        this.E = this.set(5, this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBEC - Sets the 5th bit of H.
+     * @param ops unused.
+     */
+    Void set_5_h(int[] ops) {
+        this.H = this.set(5, this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBED - Sets the 5th bit of L.
+     * @param ops unused.
+     */
+    Void set_5_l(int[] ops) {
+        this.L = this.set(5, this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBEE - Sets the 5th bit of the value in memory pointed to by HL.
+     * @param ops unused.
+     */
+    Void set_5_hlp(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.set(5, this.memory.getByteAt(this.getHL())));
+        return null;
+    }
+
+    /**
+     * OP code 0xCBEF - Sets the 5th bit of A.
+     * @param ops unused.
+     */
+    Void set_5_a(int[] ops) {
+        this.A = this.set(5, this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBF0 - Sets the 6th bit of B.
+     * @param ops unused.
+     */
+    Void set_6_b(int[] ops) {
+        this.B = this.set(6, this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBF1 - Sets the 6th bit of C.
+     * @param ops unused.
+     */
+    Void set_6_c(int[] ops) {
+        this.C = this.set(6, this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBF2 - Sets the 6th bit of D.
+     * @param ops unused.
+     */
+    Void set_6_d(int[] ops) {
+        this.D = this.set(6, this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBF3 - Sets the 6th bit of E.
+     * @param ops unused.
+     */
+    Void set_6_e(int[] ops) {
+        this.E = this.set(6, this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBF4 - Sets the 6th bit of H.
+     * @param ops unused.
+     */
+    Void set_6_h(int[] ops) {
+        this.H = this.set(6, this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBF5 - Sets the 6th bit of L.
+     * @param ops unused.
+     */
+    Void set_6_l(int[] ops) {
+        this.L = this.set(6, this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBF6 - Sets the 6th bit of the value in memory pointed to by HL.
+     * @param ops unused.
+     */
+    Void set_6_hlp(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.set(6, this.memory.getByteAt(this.getHL())));
+        return null;
+    }
+
+    /**
+     * OP code 0xCBF7 - Sets the 6th bit of A.
+     * @param ops unused.
+     */
+    Void set_6_a(int[] ops) {
+        this.A = this.set(6, this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBF8 - Sets the 7th bit of B.
+     * @param ops unused.
+     */
+    Void set_7_b(int[] ops) {
+        this.B = this.set(7, this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBF9 - Sets the 7th bit of C.
+     * @param ops unused.
+     */
+    Void set_7_c(int[] ops) {
+        this.C = this.set(7, this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBFA - Sets the 7th bit of D.
+     * @param ops unused.
+     */
+    Void set_7_d(int[] ops) {
+        this.D = this.set(7, this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBFB - Sets the 7th bit of E.
+     * @param ops unused.
+     */
+    Void set_7_e(int[] ops) {
+        this.E = this.set(7, this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBFC - Sets the 7th bit of H.
+     * @param ops unused.
+     */
+    Void set_7_h(int[] ops) {
+        this.H = this.set(7, this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBFD - Sets the 7th bit of L.
+     * @param ops unused.
+     */
+    Void set_7_l(int[] ops) {
+        this.L = this.set(7, this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0xCBFE - Sets the 7th bit of the value in memory pointed to by HL.
+     * @param ops unused.
+     */
+    Void set_7_hlp(int[] ops) {
+        this.memory.setByteAt(this.getHL(), this.set(7, this.memory.getByteAt(this.getHL())));
+        return null;
+    }
+
+    /**
+     * OP code 0xCBFF - Sets the 7th bit of A.
+     * @param ops unused.
+     */
+    Void set_7_a(int[] ops) {
+        this.A = this.set(7, this.A);
         return null;
     }
 }
