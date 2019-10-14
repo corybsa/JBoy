@@ -257,13 +257,13 @@ public class CPU {
      */
     private void execute(Instruction instruction) {
         switch(instruction.getOpSize()) {
-            case 1:
+            case 0:
                 instruction.getOperation().apply(null);
                 break;
-            case 2:
+            case 1:
                 instruction.getOperation().apply(this.getNextByte());
                 break;
-            case 3:
+            case 2:
                 instruction.getOperation().apply(this.getNext2Bytes());
                 break;
         }
