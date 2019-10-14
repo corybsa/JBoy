@@ -476,6 +476,70 @@ public class CPU {
     }
 
     /**
+     * Subtracts {@code value} from A and sets the necessary flags.
+     * @param value The value to subtract from A.
+     * @return The 8-bit result of the subtraction.
+     */
+    private int sub(int value) {
+        if(value > this.A) {
+            this.setFlags(FLAG_CARRY);
+        } else {
+            this.resetFlags(FLAG_CARRY);
+        }
+
+        if((value & 0x0F) > (this.A & 0x0F)) {
+            this.setFlags(FLAG_HALF);
+        } else {
+            this.resetFlags(FLAG_HALF);
+        }
+
+        int result = (this.A - value) & 0xFF;
+
+        if(this.A == 0) {
+            this.setFlags(FLAG_ZERO);
+        } else {
+            this.resetFlags(FLAG_ZERO);
+        }
+
+        this.setFlags(FLAG_SUB);
+
+        return result;
+    }
+
+    /**
+     * Subtracts {@code value} and the current value of the carry flag from A and sets the necessary flags.
+     * @param value The value to subtract from A.
+     * @return The 8-bit result of the subtraction.
+     */
+    private int sbc(int value) {
+        value += ((this.getF() & FLAG_CARRY) >> 4);
+
+        if(value > this.A) {
+            this.setFlags(FLAG_CARRY);
+        } else {
+            this.resetFlags(FLAG_CARRY);
+        }
+
+        if((value & 0x0F) > (this.A & 0x0F)) {
+            this.setFlags(FLAG_HALF);
+        } else {
+            this.resetFlags(FLAG_HALF);
+        }
+
+        int result = (this.A - value) & 0xFF;
+
+        if(this.A == 0) {
+            this.setFlags(FLAG_ZERO);
+        } else {
+            this.resetFlags(FLAG_ZERO);
+        }
+
+        this.setFlags(FLAG_SUB);
+
+        return result;
+    }
+
+    /**
      * OP codes
      * 0x00, 0x40, 0x49, 0x52, 0x5B, 0x64, 0x6D, 0x7F,
      * 0xD3, 0xDB, 0xDD, 0xE3, 0xE4, 0xEB, 0xEC, 0xED,
@@ -1882,6 +1946,150 @@ public class CPU {
      */
     Void adc_a_a(int[] ops) {
         this.A = this.adc(this.A, this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0x90 - Subtract B from A and store the result in A.
+     * @param ops unused.
+     */
+    Void sub_b(int[] ops) {
+        this.A = this.sub(this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0x91 - Subtract C from A and store the result in A.
+     * @param ops unused.
+     */
+    Void sub_c(int[] ops) {
+        this.A = this.sub(this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0x92 - Subtract D from A and store the result in A.
+     * @param ops unused.
+     */
+    Void sub_d(int[] ops) {
+        this.A = this.sub(this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0x93 - Subtract E from A and store the result in A.
+     * @param ops unused.
+     */
+    Void sub_e(int[] ops) {
+        this.A = this.sub(this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0x94 - Subtract H from A and store the result in A.
+     * @param ops unused.
+     */
+    Void sub_h(int[] ops) {
+        this.A = this.sub(this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0x95 - Subtract L from A and store the result in A.
+     * @param ops unused.
+     */
+    Void sub_l(int[] ops) {
+        this.A = this.sub(this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0x96 - Subtract the value in memory pointed to by HL from A and store the result in A.
+     * @param ops unused.
+     */
+    Void sub_hlp(int[] ops) {
+        this.A = this.sub(this.memory.getByteAt(this.getHL()));
+        return null;
+    }
+
+    /**
+     * OP code 0x97 - Subtract A from A and store the result in A.
+     * @param ops unused.
+     */
+    Void sub_a(int[] ops) {
+        this.A = this.sub(this.A);
+        return null;
+    }
+
+    /**
+     * OP code 0x98 - Subtract B from A and store the result in A.
+     * @param ops unused.
+     */
+    Void sbc_b(int[] ops) {
+        this.A = this.sbc(this.B);
+        return null;
+    }
+
+    /**
+     * OP code 0x99 - Subtract C from A and store the result in A.
+     * @param ops unused.
+     */
+    Void sbc_c(int[] ops) {
+        this.A = this.sbc(this.C);
+        return null;
+    }
+
+    /**
+     * OP code 0x9A - Subtract D from A and store the result in A.
+     * @param ops unused.
+     */
+    Void sbc_d(int[] ops) {
+        this.A = this.sbc(this.D);
+        return null;
+    }
+
+    /**
+     * OP code 0x9B - Subtract E from A and store the result in A.
+     * @param ops unused.
+     */
+    Void sbc_e(int[] ops) {
+        this.A = this.sbc(this.E);
+        return null;
+    }
+
+    /**
+     * OP code 0x9C - Subtract H from A and store the result in A.
+     * @param ops unused.
+     */
+    Void sbc_h(int[] ops) {
+        this.A = this.sbc(this.H);
+        return null;
+    }
+
+    /**
+     * OP code 0x9D - Subtract L from A and store the result in A.
+     * @param ops unused.
+     */
+    Void sbc_l(int[] ops) {
+        this.A = this.sbc(this.L);
+        return null;
+    }
+
+    /**
+     * OP code 0x9E - Subtract the value in memory pointed to by HL from A and store the result in A.
+     * @param ops unused.
+     */
+    Void sbc_hlp(int[] ops) {
+        this.A = this.sbc(this.memory.getByteAt(this.getHL()));
+        return null;
+    }
+
+    /**
+     * OP code 0x9F- Subtract A from A and store the result in A.
+     * @param ops unused.
+     */
+    Void sbc_a(int[] ops) {
+        this.A = this.sbc(this.A);
         return null;
     }
 }
