@@ -188,7 +188,7 @@ public class CPU {
 
     public void setAF(int n) {
         this.A = (n & 0xFF00) >> 8;
-        this.F = n & 0x00FF;
+        this.F = n & 0x00F0;
     }
 
     public void setBC(int n) {
@@ -767,6 +767,65 @@ public class CPU {
      */
     private int set(int position, int value) {
         return ((value & ~(0x01 << position)) | (1 << position)) & 0xFF;
+    }
+
+    private void and(int value) {
+        this.A &= value;
+
+        if(this.A == 0) {
+            this.setFlags(FLAG_ZERO);
+        } else {
+            this.resetFlags(FLAG_ZERO);
+        }
+
+        this.resetFlags(FLAG_SUB | FLAG_CARRY);
+        this.setFlags(FLAG_HALF);
+    }
+
+    private void xor(int value) {
+        this.A ^= value;
+
+        if(this.A == 0) {
+            this.setFlags(FLAG_ZERO);
+        } else {
+            this.resetFlags(FLAG_ZERO);
+        }
+
+        this.resetFlags(FLAG_SUB | FLAG_HALF | FLAG_CARRY);
+    }
+
+    private void or(int value) {
+        this.A |= value;
+
+        if(this.A == 0) {
+            this.setFlags(FLAG_ZERO);
+        } else {
+            this.resetFlags(FLAG_ZERO);
+        }
+
+        this.resetFlags(FLAG_SUB | FLAG_HALF | FLAG_CARRY);
+    }
+
+    private void cp(int value) {
+        if((this.A & FLAG_ZERO) == (value & FLAG_ZERO)) {
+            this.setFlags(FLAG_ZERO);
+        } else {
+            this.resetFlags(FLAG_ZERO);
+        }
+
+        if((this.A & FLAG_HALF) == (value & FLAG_HALF)) {
+            this.setFlags(FLAG_HALF);
+        } else {
+            this.resetFlags(FLAG_HALF);
+        }
+
+        if((this.A & FLAG_CARRY) == (value & FLAG_CARRY)) {
+            this.setFlags(FLAG_CARRY);
+        } else {
+            this.resetFlags(FLAG_CARRY);
+        }
+
+        this.setFlags(FLAG_SUB);
     }
 
     /**
@@ -2357,10 +2416,325 @@ public class CPU {
         return null;
     }
 
-    /* and */
-    /* xor */
-    /* or  */
-    /* cp  */
+    /**
+     * OP code 0xA0 - Bitwise and A and B.
+     * @param ops Immediate 1 byte.
+     */
+    Void and_b(int[] ops) {
+        this.and(this.B);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xA1 - Bitwise and A and C.
+     * @param ops Immediate 1 byte.
+     */
+    Void and_c(int[] ops) {
+        this.and(this.C);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xA2 - Bitwise and A and D.
+     * @param ops Immediate 1 byte.
+     */
+    Void and_d(int[] ops) {
+        this.and(this.D);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xA3 - Bitwise and A and E.
+     * @param ops Immediate 1 byte.
+     */
+    Void and_e(int[] ops) {
+        this.and(this.E);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xA4 - Bitwise and A and H.
+     * @param ops Immediate 1 byte.
+     */
+    Void and_h(int[] ops) {
+        this.and(this.H);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xA5 - Bitwise and A and L.
+     * @param ops Immediate 1 byte.
+     */
+    Void and_l(int[] ops) {
+        this.and(this.L);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xA6 - Bitwise and A and the value in memory pointed to by HL.
+     * @param ops Immediate 1 byte.
+     */
+    Void and_hlp(int[] ops) {
+        this.and(this.memory.getByteAt(this.getHL()));
+
+        return null;
+    }
+
+    /**
+     * OP code 0xA7 - Bitwise and A and L.
+     * @param ops Immediate 1 byte.
+     */
+    Void and_a(int[] ops) {
+        this.and(this.A);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xA8 - Bitwise xor A and B.
+     * @param ops Immediate 1 byte.
+     */
+    Void xor_b(int[] ops) {
+        this.xor(this.B);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xA9 - Bitwise xor A and C.
+     * @param ops Immediate 1 byte.
+     */
+    Void xor_c(int[] ops) {
+        this.xor(this.C);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xAA - Bitwise xor A and D.
+     * @param ops Immediate 1 byte.
+     */
+    Void xor_d(int[] ops) {
+        this.xor(this.D);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xAB - Bitwise xor A and E.
+     * @param ops Immediate 1 byte.
+     */
+    Void xor_e(int[] ops) {
+        this.xor(this.E);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xAC - Bitwise xor A and H.
+     * @param ops Immediate 1 byte.
+     */
+    Void xor_h(int[] ops) {
+        this.xor(this.H);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xAD - Bitwise xor A and L.
+     * @param ops Immediate 1 byte.
+     */
+    Void xor_l(int[] ops) {
+        this.xor(this.L);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xAE - Bitwise xor A and the value in memory pointed to by HL.
+     * @param ops Immediate 1 byte.
+     */
+    Void xor_hlp(int[] ops) {
+        this.xor(this.memory.getByteAt(this.getHL()));
+
+        return null;
+    }
+
+    /**
+     * OP code 0xAF - Bitwise xor A and L.
+     * @param ops Immediate 1 byte.
+     */
+    Void xor_a(int[] ops) {
+        this.xor(this.A);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xB0 - Bitwise or A and B.
+     * @param ops Immediate 1 byte.
+     */
+    Void or_b(int[] ops) {
+        this.or(this.B);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xB1 - Bitwise or A and C.
+     * @param ops Immediate 1 byte.
+     */
+    Void or_c(int[] ops) {
+        this.or(this.C);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xB2 - Bitwise or A and D.
+     * @param ops Immediate 1 byte.
+     */
+    Void or_d(int[] ops) {
+        this.or(this.D);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xB3 - Bitwise or A and E.
+     * @param ops Immediate 1 byte.
+     */
+    Void or_e(int[] ops) {
+        this.or(this.E);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xB4 - Bitwise or A and H.
+     * @param ops Immediate 1 byte.
+     */
+    Void or_h(int[] ops) {
+        this.or(this.H);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xB5 - Bitwise or A and L.
+     * @param ops Immediate 1 byte.
+     */
+    Void or_l(int[] ops) {
+        this.or(this.L);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xB6 - Bitwise or A and the value in memory pointed to by HL.
+     * @param ops Immediate 1 byte.
+     */
+    Void or_hlp(int[] ops) {
+        this.or(this.memory.getByteAt(this.getHL()));
+
+        return null;
+    }
+
+    /**
+     * OP code 0xB7 - Bitwise or A and L.
+     * @param ops Immediate 1 byte.
+     */
+    Void or_a(int[] ops) {
+        this.or(this.A);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xB8 - Bitwise cp A and B.
+     * @param ops Immediate 1 byte.
+     */
+    Void cp_b(int[] ops) {
+        this.cp(this.B);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xB9 - Bitwise cp A and C.
+     * @param ops Immediate 1 byte.
+     */
+    Void cp_c(int[] ops) {
+        this.cp(this.C);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xBA - Bitwise cp A and D.
+     * @param ops Immediate 1 byte.
+     */
+    Void cp_d(int[] ops) {
+        this.cp(this.D);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xBB - Bitwise cp A and E.
+     * @param ops Immediate 1 byte.
+     */
+    Void cp_e(int[] ops) {
+        this.cp(this.E);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xBC - Bitwise cp A and H.
+     * @param ops Immediate 1 byte.
+     */
+    Void cp_h(int[] ops) {
+        this.cp(this.H);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xBD - Bitwise cp A and L.
+     * @param ops Immediate 1 byte.
+     */
+    Void cp_l(int[] ops) {
+        this.cp(this.L);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xBE - Bitwise cp A and the value in memory pointed to by HL.
+     * @param ops Immediate 1 byte.
+     */
+    Void cp_hlp(int[] ops) {
+        this.cp(this.memory.getByteAt(this.getHL()));
+
+        return null;
+    }
+
+    /**
+     * OP code 0xBF - Bitwise cp A and L.
+     * @param ops Immediate 1 byte.
+     */
+    Void cp_a(int[] ops) {
+        this.cp(this.A);
+
+        return null;
+    }
 
     /**
      * OP code 0xC0 - If zero is not set, pop two bytes off the stack and return them to the PC.
@@ -2749,6 +3123,59 @@ public class CPU {
     }
 
     /**
+     * OP code 0xE0 - Load A into the value at memory address specified by 0xFF00 + immediate byte.
+     * @param ops Immediate 1 byte.
+     */
+    Void ld_xp_a(int[] ops) {
+        this.memory.setByteAt(0xFF00 + ops[0], this.A);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xE1 - Pop two bytes off the stack and return them to the HL.
+     * @param ops unused.
+     */
+    Void pop_hl(int[] ops) {
+        this.setHL(this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP)));
+        this.SP += 2;
+
+        return null;
+    }
+
+    /**
+     * OP code 0xE2 - Load A into the value at memory address specified by 0xFF00 + C.
+     * @param ops unused.
+     */
+    Void ld_cp_a(int[] ops) {
+        this.memory.setByteAt(0xFF00 + (this.C & 0xFF), this.A);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xE5 - Push the contents of HL onto the stack.
+     * @param ops unused.
+     */
+    Void push_hl(int[] ops) {
+        this.memory.setByteAt(this.SP - 1, (this.getHL() >> 8) & 0xFF);
+        this.memory.setByteAt(this.SP - 2, (this.getHL()) & 0xFF);
+        this.SP -= 2;
+
+        return null;
+    }
+
+    /**
+     * OP code 0xE6 - Bitwise and A and immediate byte.
+     * @param ops Immediate 1 byte.
+     */
+    Void and_x(int[] ops) {
+        this.and(ops[0]);
+
+        return null;
+    }
+
+    /**
      * OP code 0xE7 - Push PC onto stack and reset PC to 0x20.
      * @param ops unused.
      */
@@ -2757,6 +3184,46 @@ public class CPU {
         this.memory.setByteAt(this.SP - 2, this.PC & 0xFF);
         this.SP -= 2;
         this.PC = 0x20;
+        return null;
+    }
+
+    /**
+     * OP code 0xE8 - Add immediate byte to SP.
+     * @param ops Immediate 1 byte.
+     */
+    Void add_sp_x(int[] ops) {
+        this.SP = this.add16Bit(this.SP, ops[0]);
+        this.setFlags(FLAG_ZERO);
+        return null;
+    }
+
+    /**
+     * OP code 0xE9 - Jump to the address pointed to by HL.
+     * @param ops unused.
+     */
+    Void jp_hlp(int[] ops) {
+        this.PC = this.getHL();
+
+        return null;
+    }
+
+    /**
+     * OP code 0xEA - Load A into the value at memory address specified by immediate 2 bytes.
+     * @param ops Immediate 2 bytes.
+     */
+    Void ld_xxp_a(int[] ops) {
+        this.memory.setByteAt(this.combineBytes(ops[0], ops[1]), this.A);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xEE - Bitwise xor A and immediate byte.
+     * @param ops Immediate 1 byte.
+     */
+    Void xor_x(int[] ops) {
+        this.xor(ops[0]);
+
         return null;
     }
 
@@ -2773,6 +3240,68 @@ public class CPU {
     }
 
     /**
+     * OP code 0xF0 - Load value at memory address specified by 0xFF00 + immediate byte into A.
+     * @param ops Immediate 1 byte.
+     */
+    Void ld_a_xp(int[] ops) {
+        this.A = this.memory.getByteAt(0xFF00 + ops[0]);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xF1 - Pop two bytes off the stack and return them to the AF.
+     * @param ops unused.
+     */
+    Void pop_af(int[] ops) {
+        this.setAF(this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP)));
+        this.SP += 2;
+
+        return null;
+    }
+
+    /**
+     * OP code 0xF2 - Load A into the value at memory address specified by 0xFF00 + C.
+     * @param ops unused.
+     */
+    Void ld_a_cp(int[] ops) {
+        this.A = this.memory.getByteAt(0xFF00 + (this.C & 0xFF));
+
+        return null;
+    }
+
+    /**
+     * OP code 0xF3 - Disables the IME
+     * @param ops unused.
+     */
+    Void di(int[] ops) {
+        // TODO: disable IME
+        return null;
+    }
+
+    /**
+     * OP code 0xF5 - Push the contents of AF onto the stack.
+     * @param ops unused.
+     */
+    Void push_af(int[] ops) {
+        this.memory.setByteAt(this.SP - 1, (this.getAF() >> 8) & 0xFF);
+        this.memory.setByteAt(this.SP - 2, (this.getAF()) & 0xFF);
+        this.SP -= 2;
+
+        return null;
+    }
+
+    /**
+     * OP code 0xF6 - Bitwise or A and immediate byte.
+     * @param ops Immediate 1 byte.
+     */
+    Void or_x(int[] ops) {
+        this.or(ops[0]);
+
+        return null;
+    }
+
+    /**
      * OP code 0xF7 - Push PC onto stack and reset PC to 0x30.
      * @param ops unused.
      */
@@ -2781,6 +3310,67 @@ public class CPU {
         this.memory.setByteAt(this.SP - 2, this.PC & 0xFF);
         this.SP -= 2;
         this.PC = 0x30;
+        return null;
+    }
+
+    /**
+     * OP code 0xF8 - Immediate byte is added to SP and the result is stored in HL.
+     * @param ops Immediate 1 byte.
+     */
+    Void ld_hl_sp_x(int[] ops) {
+        int result = this.SP + ops[0];
+
+        if((result & 0xFFFF0000) != 0) {
+            this.setFlags(FLAG_CARRY);
+        } else {
+            this.resetFlags(FLAG_CARRY);
+        }
+
+        if(((result & 0x0F) + (ops[0] & 0x0F)) > 0x0F) {
+            this.setFlags(FLAG_HALF);
+        } else {
+            this.resetFlags(FLAG_HALF);
+        }
+
+        this.resetFlags(FLAG_ZERO | FLAG_SUB);
+
+        this.setHL(result & 0xFFFF);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xF9 - Loads HL into SP.
+     * @param ops unused.
+     */
+    Void ld_sp_hl(int[] ops) {
+        this.SP = this.getHL();
+
+        return null;
+    }
+
+    /**
+     * OP code 0xFA - Loads the value in memory specified by the immediate 2 bytes into A.
+     * @param ops Immediate 2 bytes.
+     */
+    Void ld_a_xxp(int[] ops) {
+        this.A = this.memory.getByteAt(this.combineBytes(ops[0], ops[1]));
+
+        return null;
+    }
+
+    /**
+     * OP code 0xFB - Enables the IME
+     * @param ops unused.
+     */
+    Void ei(int[] ops) {
+        // TODO: enable IME
+        return null;
+    }
+
+    Void cp_x(int[] ops) {
+        this.cp(ops[0]);
+
         return null;
     }
 
