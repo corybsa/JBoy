@@ -756,7 +756,7 @@ public class CPU {
      * @return The value with the specified bit reset.
      */
     private int res(int position, int value) {
-        return ((value & ~(0x01 << position)) | (0 << position)) & 0xFF;
+        return (value & ~(0x01 << position)) & 0xFF;
     }
 
     /**
@@ -784,7 +784,7 @@ public class CPU {
 
     /**
      * OP code 0x01 - Load immediate 2 bytes into BC.
-     * @param ops the two immediate 8 byte chunks.
+     * @param ops Immediate 2 bytes
      */
     Void ld_bc_xx(int[] ops) {
         this.setBC(this.combineBytes(ops[0], ops[1]));
@@ -830,7 +830,7 @@ public class CPU {
 
     /**
      * OP code 0x06 - Load immediate byte into B.
-     * @param ops An 8 bit immediate value.
+     * @param ops Immediate 1 byte.
      */
     Void ld_b_x(int[] ops) {
         this.B = ops[0];
@@ -860,7 +860,7 @@ public class CPU {
 
     /**
      * OP code 0x08 - Load value of SP into address at xx.
-     * @param ops the two immediate 8 byte chunks.
+     * @param ops Immediate 2 bytes
      */
     Void ld_xxp_sp(int[] ops) {
         this.memory.setByteAt(this.combineBytes(ops[1], ops[0]), this.SP);
@@ -915,7 +915,7 @@ public class CPU {
 
     /**
      * OP code 0x0E - Load immediate byte into C.
-     * @param ops An 8 bit immediate value.
+     * @param ops Immediate 1 byte.
      */
     Void ld_c_x(int[] ops) {
         this.C = ops[0];
@@ -966,7 +966,7 @@ public class CPU {
 
     /**
      * OP code 0x11 - Load immediate 2 bytes into DE.
-     * @param ops the two immediate 8 byte chunks.
+     * @param ops Immediate 2 bytes
      */
     Void ld_de_xx(int[] ops) {
         this.setDE(this.combineBytes(ops[0], ops[1]));
@@ -1011,7 +1011,7 @@ public class CPU {
 
     /**
      * OP code 0x16 - Load immediate byte into D.
-     * @param ops An 8 bit immediate value.
+     * @param ops Immediate 1 byte.
      */
     Void ld_d_x(int[] ops) {
         this.D = ops[0];
@@ -1043,7 +1043,7 @@ public class CPU {
 
     /**
      * OP code 0x18 - Increments PC by the amount of the next byte (between -128 and 127)
-     * @param ops An 8 bit immediate value.
+     * @param ops Immediate 1 byte.
      */
     Void jr_x(int[] ops) {
         this.incrementPC((byte)ops[0]);
@@ -1105,7 +1105,7 @@ public class CPU {
 
     /**
      * OP code 0x1E - Load immediate byte into E.
-     * @param ops An 8 bit immediate value.
+     * @param ops Immediate 1 byte.
      */
     Void ld_e_x(int[] ops) {
         this.E = ops[0];
@@ -1150,17 +1150,17 @@ public class CPU {
                 this.incrementPC(ops[0] - 127);
             }*/
 
-            // TODO: this takes 12 clock cycles
+            // TODO: this takes 3 clock cycles
         } else {
-            // TODO: this takes 8 clock cycles
+            // TODO: this takes 2 clock cycles
         }
 
         return null;
     }
 
     /**
-     * OP code 0x21 - Load immediate 16 bits into HL register.
-     * @param ops The immediate 16 bits.
+     * OP code 0x21 - Load immediate 2 bytes into HL register.
+     * @param ops Immediate 2 bytes.
      */
     Void ld_hl_xx(int[] ops) {
         this.setHL(this.combineBytes(ops[0], ops[1]));
@@ -1206,7 +1206,7 @@ public class CPU {
 
     /**
      * OP code 0x26 - Load immediate byte into H.
-     * @param ops An 8 bit immediate value.
+     * @param ops Immediate 1 byte.
      */
     Void ld_h_x(int[] ops) {
         this.H = ops[0];
@@ -1300,9 +1300,9 @@ public class CPU {
                 this.incrementPC(ops[0] - 127);
             }*/
 
-            // TODO: this takes 12 clock cycles
+            // TODO: this takes 3 clock cycles
         } else {
-            // TODO: this takes 8 clock cycles
+            // TODO: this takes 2 clock cycles
         }
 
         return null;
@@ -1356,7 +1356,7 @@ public class CPU {
 
     /**
      * OP code 0x2E - Load immediate byte into L.
-     * @param ops An 8 bit immediate value.
+     * @param ops Immediate 1 byte.
      */
     Void ld_l_x(int[] ops) {
         this.L = ops[0];
@@ -1387,17 +1387,17 @@ public class CPU {
                 this.incrementPC(ops[0] - 127);
             }*/
 
-            // TODO: this takes 12 clock cycles
+            // TODO: this takes 3 clock cycles
         } else {
-            // TODO: this takes 8 clock cycles
+            // TODO: this takes 2 clock cycles
         }
 
         return null;
     }
 
     /**
-     * OP code 0x31 - Load immediate 16 bits into SP.
-     * @param ops Immediate 16 bits
+     * OP code 0x31 - Load immediate 2 bytes into SP.
+     * @param ops Immediate 2 bytes
      */
     Void ld_sp_xx(int[] ops) {
         this.setSP(this.combineBytes(ops[0], ops[1]));
@@ -1444,8 +1444,8 @@ public class CPU {
     }
 
     /**
-     * OP code 0x36 - Load immediate 8 bits into memory address pointed to by HL.
-     * @param ops Immediate 8 bit value.
+     * OP code 0x36 - Load immediate byte into memory address pointed to by HL.
+     * @param ops Immediate 1 byte.
      */
     Void ld_hlp_x(int[] ops) {
         this.memory.setByteAt(this.getHL(), ops[0]);
@@ -1477,9 +1477,9 @@ public class CPU {
                 this.incrementPC(ops[0] - 127);
             }*/
 
-            // TODO: this takes 12 clock cycles
+            // TODO: this takes 3 clock cycles
         } else {
-            // TODO: this takes 8 clock cycles
+            // TODO: this takes 2 clock cycles
         }
 
         return null;
@@ -1533,7 +1533,7 @@ public class CPU {
 
     /**
      * OP code 0x3E - Load immediate byte into A.
-     * @param ops An 8 bit immediate value.
+     * @param ops Immediate 1 byte.
      */
     Void ld_a_x(int[] ops) {
         this.A = ops[0];
@@ -2349,7 +2349,7 @@ public class CPU {
     }
 
     /**
-     * OP code 0x9F- Subtract A from A and store the result in A.
+     * OP code 0x9F - Subtract A from A and store the result in A.
      * @param ops unused.
      */
     Void sbc_a_a(int[] ops) {
@@ -2357,10 +2357,444 @@ public class CPU {
         return null;
     }
 
+    /* and */
+    /* xor */
+    /* or  */
+    /* cp  */
 
+    /**
+     * OP code 0xC0 - If zero is not set, pop two bytes off the stack and return them to the PC.
+     * @param ops unused.
+     */
+    Void ret_nz(int[] ops) {
+        if((this.F & FLAG_ZERO) != FLAG_ZERO) {
+            this.PC = this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP));
+            this.SP += 2;
 
+            // TODO: this takes 5 cycles.
+        } else {
+            // TODO: this takes 2 cycles.
+        }
 
+        return null;
+    }
 
+    /**
+     * OP code 0xC1 - Pop two bytes off the stack and return them to the BC.
+     * @param ops unused.
+     */
+    Void pop_bc(int[] ops) {
+        this.setBC(this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP)));
+        this.SP += 2;
+
+        return null;
+    }
+
+    /**
+     * OP code 0xC2 - If the zero flag is not set, jump to the specified address.
+     * @param ops Immediate 2 bytes.
+     */
+    Void jp_nz_xx(int[] ops) {
+        if((this.F & FLAG_ZERO) != FLAG_ZERO) {
+            this.PC = this.combineBytes(ops[0], ops[1]);
+
+            // TODO: this takes 4 cycles
+        } else {
+            // TODO: this takes 3 cycles
+        }
+
+        return null;
+    }
+
+    /**
+     * OP code 0xC3 - Jump to the specified address.
+     * @param ops Immediate 2 bytes.
+     */
+    Void jp_xx(int[] ops) {
+        this.PC = this.combineBytes(ops[0], ops[1]);
+
+        return null;
+    }
+
+    /**
+     * OP code 0xC4 - If the zero is not set, call the specified address.
+     * @param ops Immediate 2 bytes.
+     */
+    Void call_nz_xx(int[] ops) {
+        if((this.F & FLAG_ZERO) != FLAG_ZERO) {
+            this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
+            this.memory.setByteAt(this.SP - 2, (this.PC) & 0xFF);
+
+            this.PC = this.combineBytes(ops[0], ops[1]);
+            this.SP -= 2;
+            // TODO: this takes 6 cycles
+        } else {
+            // TODO: this takes 3 cycles
+        }
+
+        return null;
+    }
+
+    /**
+     * OP code 0xC5 - Push the contents of BC onto the stack.
+     * @param ops unused.
+     */
+    Void push_bc(int[] ops) {
+        this.memory.setByteAt(this.SP - 1, (this.getBC() >> 8) & 0xFF);
+        this.memory.setByteAt(this.SP - 2, (this.getBC()) & 0xFF);
+        this.SP -= 2;
+
+        return null;
+    }
+
+    /**
+     * OP code 0xC6 - Add A and an 8-bit number.
+     * @param ops Immediate 1 byte.
+     */
+    Void add_a_x(int[] ops) {
+        this.A = this.add8Bit(this.A, ops[0]);
+        return null;
+    }
+
+    /**
+     * OP code 0xC7 - Push PC onto stack and reset PC to 0x00.
+     * @param ops unused.
+     */
+    Void rst_00(int[] ops) {
+        this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
+        this.memory.setByteAt(this.SP - 2, this.PC & 0xFF);
+        this.SP -= 2;
+        this.PC = 0x00;
+        return null;
+    }
+
+    /**
+     * OP code 0xC8 - If zero is set, pop two bytes off the stack and return them to the PC.
+     * @param ops unused.
+     */
+    Void ret_z(int[] ops) {
+        if((this.F & FLAG_ZERO) == FLAG_ZERO) {
+            this.PC = this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP));
+            this.SP += 2;
+
+            // TODO: this takes 5 cycles.
+        } else {
+            // TODO: this takes 2 cycles.
+        }
+
+        return null;
+    }
+
+    /**
+     * OP code 0xC9 - Pop two bytes off the stack and return them to the PC.
+     * @param ops unused.
+     */
+    Void ret(int[] ops) {
+        this.PC = this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP));
+        this.SP += 2;
+
+        return null;
+    }
+
+    /**
+     * OP code 0xCA - If the zero flag is set, jump to the specified address.
+     * @param ops Immediate 2 bytes.
+     */
+    Void jp_z_xx(int[] ops) {
+        if((this.F & FLAG_ZERO) == FLAG_ZERO) {
+            this.PC = this.combineBytes(ops[0], ops[1]);
+
+            // TODO: this takes 4 cycles
+        } else {
+            // TODO: this takes 3 cycles
+        }
+
+        return null;
+    }
+
+    /**
+     * OP code 0xCC - If the zero is set, call the specified address.
+     * @param ops Immediate 2 bytes.
+     */
+    Void call_z_xx(int[] ops) {
+        if((this.F & FLAG_ZERO) == FLAG_ZERO) {
+            this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
+            this.memory.setByteAt(this.SP - 2, (this.PC) & 0xFF);
+
+            this.PC = this.combineBytes(ops[0], ops[1]);
+            this.SP -= 2;
+            // TODO: this takes 6 cycles
+        } else {
+            // TODO: this takes 3 cycles
+        }
+
+        return null;
+    }
+
+    /**
+     * OP code 0xCD - Call the specified address.
+     * @param ops Immediate 2 bytes.
+     */
+    Void call_xx(int[] ops) {
+        this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
+        this.memory.setByteAt(this.SP - 2, (this.PC) & 0xFF);
+
+        this.PC = this.combineBytes(ops[0], ops[1]);
+        this.SP -= 2;
+
+        return null;
+    }
+
+    /**
+     * OP code 0xCE - Add A, an 8-bit value and the value of the carry flag and store the results in A.
+     * @param ops Immediate 1 byte.
+     */
+    Void adc_a_x(int[] ops) {
+        this.A = this.adc(this.A, ops[0]);
+        return null;
+    }
+
+    /**
+     * OP code 0xCF - Push PC onto stack and reset PC to 0x08.
+     * @param ops unused.
+     */
+    Void rst_08(int[] ops) {
+        this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
+        this.memory.setByteAt(this.SP - 2, this.PC & 0xFF);
+        this.SP -= 2;
+        this.PC = 0x08;
+        return null;
+    }
+
+    /**
+     * OP code 0xD0 - If carry is not set, pop two bytes off the stack and return them to the PC.
+     * @param ops unused.
+     */
+    Void ret_nc(int[] ops) {
+        if((this.F & FLAG_CARRY) != FLAG_CARRY) {
+            this.PC = this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP));
+            this.SP += 2;
+
+            // TODO: this takes 5 cycles.
+        } else {
+            // TODO: this takes 2 cycles.
+        }
+
+        return null;
+    }
+
+    /**
+     * OP code 0xD1 - Pop two bytes off the stack and return them to the DE.
+     * @param ops unused.
+     */
+    Void pop_de(int[] ops) {
+        this.setDE(this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP)));
+        this.SP += 2;
+
+        return null;
+    }
+
+    /**
+     * OP code 0xD2 - If the carry flag is not set, jump to the specified address.
+     * @param ops Immediate 2 bytes.
+     */
+    Void jp_nc_xx(int[] ops) {
+        if((this.F & FLAG_CARRY) != FLAG_CARRY) {
+            this.PC = this.combineBytes(ops[0], ops[1]);
+
+            // TODO: this takes 4 cycles
+        } else {
+            // TODO: this takes 3 cycles
+        }
+
+        return null;
+    }
+
+    /**
+     * OP code 0xD4 - If the carry not is set, call the specified address.
+     * @param ops Immediate 2 bytes.
+     */
+    Void call_nc_xx(int[] ops) {
+        if((this.F & FLAG_CARRY) != FLAG_CARRY) {
+            this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
+            this.memory.setByteAt(this.SP - 2, (this.PC) & 0xFF);
+
+            this.PC = this.combineBytes(ops[0], ops[1]);
+            this.SP -= 2;
+            // TODO: this takes 6 cycles
+        } else {
+            // TODO: this takes 3 cycles
+        }
+
+        return null;
+    }
+
+    /**
+     * OP code 0xD5 - Push the contents of DE onto the stack.
+     * @param ops unused.
+     */
+    Void push_de(int[] ops) {
+        this.memory.setByteAt(this.SP - 1, (this.getDE() >> 8) & 0xFF);
+        this.memory.setByteAt(this.SP - 2, (this.getDE()) & 0xFF);
+        this.SP -= 2;
+
+        return null;
+    }
+
+    /**
+     * OP code 0xD6 - Subtract immediate byte from A and store the result in A.
+     * @param ops Immediate 1 byte.
+     */
+    Void sub_x(int[] ops) {
+        this.A = this.sub(ops[0]);
+        return null;
+    }
+
+    /**
+     * OP code 0xD7 - Push PC onto stack and reset PC to 0x10.
+     * @param ops unused.
+     */
+    Void rst_10(int[] ops) {
+        this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
+        this.memory.setByteAt(this.SP - 2, this.PC & 0xFF);
+        this.SP -= 2;
+        this.PC = 0x10;
+        return null;
+    }
+
+    /**
+     * OP code 0xD8 - If carry is set, pop two bytes off the stack and return them to the PC.
+     * @param ops unused.
+     */
+    Void ret_c(int[] ops) {
+        if((this.F & FLAG_CARRY) == FLAG_CARRY) {
+            this.PC = this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP));
+            this.SP += 2;
+
+            // TODO: this takes 5 cycles.
+        } else {
+            // TODO: this takes 2 cycles.
+        }
+
+        return null;
+    }
+
+    /**
+     * OP code 0xD9 - Pop two bytes off the stack and return them to the PC and enable the IME.
+     * @param ops unused.
+     */
+    Void reti(int[] ops) {
+        this.PC = this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP));
+        this.SP += 2;
+
+        // TODO: set the IME flag
+
+        return null;
+    }
+
+    /**
+     * OP code 0xDA - If the carry flag is set, jump to the specified address.
+     * @param ops Immediate 2 bytes.
+     */
+    Void jp_c_xx(int[] ops) {
+        if((this.F & FLAG_CARRY) == FLAG_CARRY) {
+            this.PC = this.combineBytes(ops[0], ops[1]);
+
+            // TODO: this takes 4 cycles
+        } else {
+            // TODO: this takes 3 cycles
+        }
+
+        return null;
+    }
+
+    /**
+     * OP code 0xDC - If the carry is set, call the specified address.
+     * @param ops Immediate 2 bytes.
+     */
+    Void call_c_xx(int[] ops) {
+        if((this.F & FLAG_CARRY) == FLAG_CARRY) {
+            this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
+            this.memory.setByteAt(this.SP - 2, (this.PC) & 0xFF);
+
+            this.PC = this.combineBytes(ops[0], ops[1]);
+            this.SP -= 2;
+            // TODO: this takes 6 cycles
+        } else {
+            // TODO: this takes 3 cycles
+        }
+
+        return null;
+    }
+
+    /**
+     * OP code 0xDE - Subtract immediate byte from A and store the result in A.
+     * @param ops unused.
+     */
+    Void sbc_a_x(int[] ops) {
+        this.A = this.sbc(ops[0]);
+        return null;
+    }
+
+    /**
+     * OP code 0xDF - Push PC onto stack and reset PC to 0x18.
+     * @param ops unused.
+     */
+    Void rst_18(int[] ops) {
+        this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
+        this.memory.setByteAt(this.SP - 2, this.PC & 0xFF);
+        this.SP -= 2;
+        this.PC = 0x18;
+        return null;
+    }
+
+    /**
+     * OP code 0xE7 - Push PC onto stack and reset PC to 0x20.
+     * @param ops unused.
+     */
+    Void rst_20(int[] ops) {
+        this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
+        this.memory.setByteAt(this.SP - 2, this.PC & 0xFF);
+        this.SP -= 2;
+        this.PC = 0x20;
+        return null;
+    }
+
+    /**
+     * OP code 0xEF - Push PC onto stack and reset PC to 0x28.
+     * @param ops unused.
+     */
+    Void rst_28(int[] ops) {
+        this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
+        this.memory.setByteAt(this.SP - 2, this.PC & 0xFF);
+        this.SP -= 2;
+        this.PC = 0x28;
+        return null;
+    }
+
+    /**
+     * OP code 0xF7 - Push PC onto stack and reset PC to 0x30.
+     * @param ops unused.
+     */
+    Void rst_30(int[] ops) {
+        this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
+        this.memory.setByteAt(this.SP - 2, this.PC & 0xFF);
+        this.SP -= 2;
+        this.PC = 0x30;
+        return null;
+    }
+
+    /**
+     * OP code 0xFF - Push PC onto stack and reset PC to 0x38.
+     * @param ops unused.
+     */
+    Void rst_38(int[] ops) {
+        this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
+        this.memory.setByteAt(this.SP - 2, this.PC & 0xFF);
+        this.SP -= 2;
+        this.PC = 0x38;
+        return null;
+    }
 
     /**
      * OP code 0xCB00 - Rotates the contents of B to the left.
