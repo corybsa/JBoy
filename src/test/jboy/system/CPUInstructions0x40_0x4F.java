@@ -25,12 +25,12 @@ class CPUInstructions0x40_0x4F {
         cpu.setPC(0x100);
         cpu.setSP(0xFFFE);
         rom = new int[0x7FFF];
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
     }
 
     @AfterEach
     void tearDown() {
         rom = null;
-        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
     }
 
     // op code 0x40
@@ -131,14 +131,14 @@ class CPUInstructions0x40_0x4F {
         rom[0x100] = 0x21; // ld hl,0xC000
         rom[0x101] = 0x00;
         rom[0x102] = 0xC0;
-        rom[0x102] = 0x46; // ld b,(hl)
+        rom[0x103] = 0x46; // ld b,(hl)
 
         memory.loadROM(rom);
 
         cpu.tick();
         cpu.tick();
         assertEquals(0x50, cpu.getB(), "The B register should equal 0x50.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
     }
 
     // op code 0x47
@@ -254,14 +254,14 @@ class CPUInstructions0x40_0x4F {
         rom[0x100] = 0x21; // ld hl,0xC000
         rom[0x101] = 0x00;
         rom[0x102] = 0xC0;
-        rom[0x102] = 0x4E; // ld c,(hl)
+        rom[0x103] = 0x4E; // ld c,(hl)
 
         memory.loadROM(rom);
 
         cpu.tick();
         cpu.tick();
         assertEquals(0x50, cpu.getC(), "The C register should equal 0x50.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
     }
 
     // op code 0x4F

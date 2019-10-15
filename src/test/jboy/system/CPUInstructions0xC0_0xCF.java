@@ -25,12 +25,12 @@ class CPUInstructions0xC0_0xCF {
         cpu.setPC(0x100);
         cpu.setSP(0xFFFE);
         rom = new int[0x7FFF];
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
     }
 
     @AfterEach
     void tearDown() {
         rom = null;
-        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
     }
 
     // op code 0xC0
@@ -40,6 +40,7 @@ class CPUInstructions0xC0_0xCF {
         memory.setByteAt(0xFFFC, 0x03);
 
         cpu.setFlags(CPU.FLAG_ZERO);
+        cpu.setSP(0xFFFC);
         cpu.setPC(0x1234);
 
         rom[0x1234] = 0xC0; // ret nz
@@ -47,7 +48,7 @@ class CPUInstructions0xC0_0xCF {
         memory.loadROM(rom);
 
         cpu.tick();
-        assertEquals(0xFFFC, cpu.getSP(), "The SP should equal 0xFFFE");
+        assertEquals(0xFFFC, cpu.getSP(), "The SP should equal 0xFFFC");
         assertEquals(0x1235, cpu.getPC(), "The PC should equal 0x1235");
 
         cpu.resetFlags(CPU.FLAG_ZERO);
@@ -60,8 +61,8 @@ class CPUInstructions0xC0_0xCF {
     // op code 0xC1
     @Test
     void pop_bc_test() {
-        memory.setByteAt(0xFFFD, 0xEF);
-        memory.setByteAt(0xFFFC, 0xBE);
+        memory.setByteAt(0xFFFD, 0xBE);
+        memory.setByteAt(0xFFFC, 0xEF);
         cpu.setSP(0xFFFC);
 
         rom[0x100] = 0xC1; // pop bc

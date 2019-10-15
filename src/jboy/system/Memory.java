@@ -66,26 +66,37 @@ public class Memory {
     }
 
     public int getByteAt(int address) {
+        int addr;
+
         if(address <= 0x7FFF) {
             return this.cartridge[address];
         } else if(address <= 0x9FFF) {
-            return this.vram[address];
+            addr = (0x1FFF - (0x9FFF - address)) & 0xFFFF;
+            return this.vram[addr];
         } else if(address <= 0xBFFF) {
-            return this.sram[address];
+            addr = (0x1FFF - (0xBFFF - address)) & 0xFFFF;
+            return this.sram[addr];
         } else if(address <= 0xDFFF) {
-            return this.wram[address];
+            addr = (0x1FFF - (0xDFFF - address)) & 0xFFFF;
+            return this.wram[addr];
         } else if(address <= 0xFDFF) {
-            return this.eram[address];
+            addr = (0x1DFF - (0xFDFF - address)) & 0xFFFF;
+            return this.eram[addr];
         } else if(address <= 0xFE9F) {
-            return this.oam[address];
+            addr = (0x9F - (0xFE9F - address)) & 0xFFFF;
+            return this.oam[addr];
         } else if(address <= 0xFEFF) {
-            return this.fea0_feff[address];
+            addr = (0x5F - (0xFEFF - address)) & 0xFFFF;
+            return this.fea0_feff[addr];
         } else if(address <= 0xFF48) {
-            return this.io[address];
+            addr = (0x48 - (0xFF48 - address)) & 0xFFFF;
+            return this.io[addr];
         } else if(address <= 0xFF7F) {
-            return this.ff4c_ff7f[address];
+            addr = (0x33 - (0xFF7F - address)) & 0xFFFF;
+            return this.ff4c_ff7f[addr];
         } else if(address <= 0xFFFE) {
-            return this.hram[address];
+            addr = (0x7E - (0xFFFE - address)) & 0xFFFF;
+            return this.hram[addr];
         } else {
             return this.ime[0];
         }
@@ -93,25 +104,37 @@ public class Memory {
 
     public void setByteAt(int address, int value) {
         // can't modify the ROM (0x0000 through 0x7FFF)
+        int addr;
 
-        if(address >= 0x8000 && address <= 0x9FFF) {
-            this.vram[address] = value;
+        if(address <= 0x7FFF) {
+            // nothing
+        } else if(address <= 0x9FFF) {
+            addr = (0x1FFF - (0x9FFF - address)) & 0xFFFF;
+            this.vram[addr] = value;
         } else if(address <= 0xBFFF) {
-            this.sram[address] = value;
+            addr = (0x1FFF - (0xBFFF - address)) & 0xFFFF;
+            this.sram[addr] = value;
         } else if(address <= 0xDFFF) {
-            this.wram[address] = value;
+            addr = (0x1FFF - (0xDFFF - address)) & 0xFFFF;
+            this.wram[addr] = value;
         } else if(address <= 0xFDFF) {
-            this.eram[address] = value;
+            addr = (0x1DFF - (0xFDFF - address)) & 0xFFFF;
+            this.eram[addr] = value;
         } else if(address <= 0xFE9F) {
-            this.oam[address] = value;
+            addr = (0x9F - (0xFE9F - address)) & 0xFFFF;
+            this.oam[addr] = value;
         } else if(address <= 0xFEFF) {
-            this.fea0_feff[address] = value;
+            addr = (0x5F - (0xFEFF - address)) & 0xFFFF;
+            this.fea0_feff[addr] = value;
         } else if(address <= 0xFF48) {
-            this.io[address] = value;
+            addr = (0x48 - (0xFF48 - address)) & 0xFFFF;
+            this.io[addr] = value;
         } else if(address <= 0xFF7F) {
-            this.ff4c_ff7f[address] = value;
+            addr = (0x33 - (0xFF7F - address)) & 0xFFFF;
+            this.ff4c_ff7f[addr] = value;
         } else if(address <= 0xFFFE) {
-            this.hram[address] = value;
+            addr = (0x7E - (0xFFFE - address)) & 0xFFFF;
+            this.hram[addr] = value;
         } else {
             this.ime[0] = value;
         }

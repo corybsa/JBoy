@@ -25,12 +25,12 @@ class CPUInstructions0x30_0x3F {
         cpu.setPC(0x100);
         cpu.setSP(0xFFFE);
         rom = new int[0x7FFF];
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
     }
 
     @AfterEach
     void tearDown() {
         rom = null;
-        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
     }
 
     // op code 0x30
@@ -43,7 +43,7 @@ class CPUInstructions0x30_0x3F {
 
         cpu.resetFlags(CPU.FLAG_CARRY);
         cpu.tick();
-        assertEquals(0x106, cpu.getPC(), "PC should equal 0x106.");
+        assertEquals(0x107, cpu.getPC(), "PC should equal 0x106.");
 
         cpu.setPC(0x100);
         cpu.setFlags(CPU.FLAG_CARRY);
@@ -110,16 +110,16 @@ class CPUInstructions0x30_0x3F {
         memory.setByteAt(0xC000, 0x00); // The value HL will point to.
 
         rom[0x100] = 0x21; // ld hl,0xC000
-        rom[0x102] = 0x00;
-        rom[0x103] = 0xC0;
-        rom[0x104] = 0x34; // inc (hl)
+        rom[0x101] = 0x00;
+        rom[0x102] = 0xC0;
+        rom[0x103] = 0x34; // inc (hl)
 
         memory.loadROM(rom);
 
         cpu.tick();
         cpu.tick();
         assertEquals(0x01, memory.getByteAt(0xC000), "The address should contain 0x01.");
-        assertEquals(0x105, cpu.getPC(), "PC should equal 0x105.");
+        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
     }
 
     // op code 0x35
@@ -128,33 +128,33 @@ class CPUInstructions0x30_0x3F {
         memory.setByteAt(0xC000, 0x01); // The value HL will point to.
 
         rom[0x100] = 0x21; // ld hl,0xC000
-        rom[0x102] = 0x00;
-        rom[0x103] = 0xC0;
-        rom[0x104] = 0x35; // dec (hl)
+        rom[0x101] = 0x00;
+        rom[0x102] = 0xC0;
+        rom[0x103] = 0x35; // dec (hl)
 
         memory.loadROM(rom);
 
         cpu.tick();
         cpu.tick();
         assertEquals(0x00, memory.getByteAt(0xC000), "The address should contain 0x00.");
-        assertEquals(0x105, cpu.getPC(), "PC should equal 0x105.");
+        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
     }
 
     // op code 0x36
     @Test
     void ld_hlp_x_test() {
         rom[0x100] = 0x21; // ld hl,0xC000
-        rom[0x102] = 0x00;
-        rom[0x103] = 0xC0;
-        rom[0x104] = 0x36; // ld (hl),0x50
-        rom[0x105] = 0x50;
+        rom[0x101] = 0x00;
+        rom[0x102] = 0xC0;
+        rom[0x103] = 0x36; // ld (hl),0x50
+        rom[0x104] = 0x50;
 
         memory.loadROM(rom);
 
         cpu.tick();
         cpu.tick();
         assertEquals(0x50, memory.getByteAt(0xC000), "The address should contain 0x50.");
-        assertEquals(0x106, cpu.getPC(), "PC should equal 0x106.");
+        assertEquals(0x105, cpu.getPC(), "PC should equal 0x106.");
     }
 
     // op code 0x37
@@ -184,7 +184,7 @@ class CPUInstructions0x30_0x3F {
         cpu.setFlags(CPU.FLAG_CARRY);
 
         cpu.tick();
-        assertEquals(0x106, cpu.getPC(), "PC should equal 0x106.");
+        assertEquals(0x107, cpu.getPC(), "PC should equal 0x106.");
     }
 
     // op code 0x39
@@ -208,18 +208,18 @@ class CPUInstructions0x30_0x3F {
         assertEquals(0x107, cpu.getPC(), "PC should equal 0x107.");
 
         cpu.setPC(0x100);
-        rom[0x100] = 0x31; // ld sp,0x0605
-        rom[0x101] = 0x05;
-        rom[0x102] = 0x06;
-        rom[0x103] = 0x21; // ld hl,0x0605
-        rom[0x104] = 0x05;
-        rom[0x105] = 0x06;
+        rom[0x100] = 0x31; // ld sp,0xFFFF
+        rom[0x101] = 0xFF;
+        rom[0x102] = 0xFF;
+        rom[0x103] = 0x21; // ld hl,0xFFFF
+        rom[0x104] = 0xFF;
+        rom[0x105] = 0xFF;
         rom[0x106] = 0x39; // add hl,sp
 
         cpu.tick();
         cpu.tick();
         cpu.tick();
-        assertEquals(0x1446, cpu.getHL(), "The HL register should equal 0x1446.");
+        assertEquals(0xFFFE, cpu.getHL(), "The HL register should equal 0x0C0A.");
         assertEquals(CPU.FLAG_HALF | CPU.FLAG_CARRY, cpu.getF(), "The HALF_CARRY and CARRY flag should be set.");
         assertEquals(0x107, cpu.getPC(), "PC should equal 0x107.");
     }
@@ -239,8 +239,8 @@ class CPUInstructions0x30_0x3F {
         cpu.tick();
         cpu.tick();
         assertEquals(0x3C, cpu.getA(), "The A register should equal 0x3C.");
-        assertEquals(0xC001, cpu.getHL(), "The HL register should equal 0xC001.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0xBFFF, cpu.getHL(), "The HL register should equal 0xBFFF.");
+        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
     }
 
     // op code 0x3B

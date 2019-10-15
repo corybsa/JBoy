@@ -25,12 +25,12 @@ class CPUInstructions0x20_0x2F {
         cpu.setPC(0x100);
         cpu.setSP(0xFFFE);
         rom = new int[0x7FFF];
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
     }
 
     @AfterEach
     void tearDown() {
         rom = null;
-        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
     }
 
     // op code 0x20
@@ -43,7 +43,7 @@ class CPUInstructions0x20_0x2F {
 
         cpu.resetFlags(CPU.FLAG_ZERO);
         cpu.tick();
-        assertEquals(0x106, cpu.getPC(), "PC should equal 0x106.");
+        assertEquals(0x107, cpu.getPC(), "PC should equal 0x106.");
 
         cpu.setPC(0x100);
         cpu.setFlags(CPU.FLAG_ZERO);
@@ -73,15 +73,19 @@ class CPUInstructions0x20_0x2F {
 
         rom[0x100] = 0x3E; // ld a,0x56;
         rom[0x101] = 0x56;
-        rom[0x102] = 0x22; // ld (hl+),a
+        rom[0x102] = 0x21; // ld hl,0xC000
+        rom[0x103] = 0x00;
+        rom[0x104] = 0xC0;
+        rom[0x105] = 0x22; // ld (hl+),a
 
         memory.loadROM(rom);
 
         cpu.tick();
         cpu.tick();
+        cpu.tick();
         assertEquals(0x56, memory.getByteAt(0xC000), "The address 0xC000 should contain the value 0x56.");
         assertEquals(0xC001, cpu.getHL(), "The HL register should equal 0xC001.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x106, cpu.getPC(), "PC should equal 0x106.");
     }
 
     // op code 0x23
@@ -269,7 +273,7 @@ class CPUInstructions0x20_0x2F {
         cpu.setFlags(CPU.FLAG_ZERO);
 
         cpu.tick();
-        assertEquals(0x106, cpu.getPC(), "PC should equal 0x106.");
+        assertEquals(0x107, cpu.getPC(), "PC should equal 0x106.");
     }
 
     // op code 0x29
@@ -312,7 +316,8 @@ class CPUInstructions0x20_0x2F {
     // op code 0x2B
     @Test
     void dec_hl_test() {
-        rom[0x100] = 0x21; // ld hl,0x20
+        rom[0x100] = 0x21; // ld hl,0x2000
+        rom[0x101] = 0x00;
         rom[0x102] = 0x20;
         rom[0x103] = 0x2B; // dec hl
 
@@ -320,7 +325,7 @@ class CPUInstructions0x20_0x2F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x21, cpu.getHL(), "The HL register should equal 0x21.");
+        assertEquals(0x1FFF, cpu.getHL(), "The HL register should equal 0x1FFF.");
         assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
     }
 
@@ -443,9 +448,11 @@ class CPUInstructions0x20_0x2F {
     // op code 0x2F
     @Test
     void cpl_test() {
-        rom[0x100] = 0x00; // ls a,0x35
+        rom[0x100] = 0x3E; // ld a,0x35
         rom[0x101] = 0x35;
         rom[0x102] = 0x2F; // cpl
+
+        memory.loadROM(rom);
 
         cpu.tick();
         cpu.tick();

@@ -25,12 +25,12 @@ class CPUInstructions0x90_0x9F {
         cpu.setPC(0x100);
         cpu.setSP(0xFFFE);
         rom = new int[0x7FFF];
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
     }
 
     @AfterEach
     void tearDown() {
         rom = null;
-        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
     }
 
     // op code 0x90
@@ -380,7 +380,6 @@ class CPUInstructions0x90_0x9F {
 
         memory.loadROM(rom);
 
-        cpu.tick();
         cpu.tick();
         cpu.tick();
         assertEquals(0x00, cpu.getA(), "The A register should equal 0x00.");
@@ -759,9 +758,8 @@ class CPUInstructions0x90_0x9F {
 
         cpu.tick();
         cpu.tick();
-        cpu.tick();
         assertEquals(0xFF, cpu.getA(), "The A register should equal 0xFF.");
-        assertEquals(CPU.FLAG_SUB, cpu.getF(), "The SUB flag should be set.");
+        assertEquals(CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY, cpu.getF(), "The SUB flag should be set.");
         assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
 
         cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
@@ -772,7 +770,6 @@ class CPUInstructions0x90_0x9F {
 
         memory.loadROM(rom);
 
-        cpu.tick();
         cpu.tick();
         cpu.tick();
         assertEquals(0x00, cpu.getA(), "The A register should equal 0x00.");

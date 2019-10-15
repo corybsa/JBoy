@@ -25,12 +25,12 @@ class CPUInstructions0xB0_0xBF {
         cpu.setPC(0x100);
         cpu.setSP(0xFFFE);
         rom = new int[0x7FFF];
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
     }
 
     @AfterEach
     void tearDown() {
         rom = null;
-        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
     }
 
     // op code 0xB0
@@ -254,9 +254,9 @@ class CPUInstructions0xB0_0xBF {
         cpu.tick();
         cpu.tick();
         cpu.tick();
-        assertEquals(0x00, cpu.getA(), "The A register should equal 0x00.");
-        assertEquals(CPU.FLAG_ZERO, cpu.getF(), "The ZERO flag should be set.");
-        assertEquals(0x105, cpu.getPC(), "PC should equal 0x105.");
+        assertEquals(0x5A, cpu.getA(), "The A register should equal 0x00.");
+        assertEquals(0x00, cpu.getF(), "The ZERO flag should be set.");
+        assertEquals(0x106, cpu.getPC(), "PC should equal 0x106.");
 
         cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
         cpu.setPC(0x100);
@@ -267,7 +267,7 @@ class CPUInstructions0xB0_0xBF {
         cpu.tick();
         assertEquals(0x5F, cpu.getA(), "The A register should equal 0x5F.");
         assertEquals(0x00, cpu.getF(), "No flags should be set.");
-        assertEquals(0x105, cpu.getPC(), "PC should equal 0x105.");
+        assertEquals(0x106, cpu.getPC(), "PC should equal 0x106.");
     }
 
     // op code 0xB7
@@ -281,9 +281,8 @@ class CPUInstructions0xB0_0xBF {
 
         cpu.tick();
         cpu.tick();
-        cpu.tick();
         assertEquals(0x5A, cpu.getA(), "The A register should equal 0x5A.");
-        assertEquals(CPU.FLAG_ZERO, cpu.getF(), "The ZERO flag should be set.");
+        assertEquals(0x00, cpu.getF(), "The ZERO flag should be set.");
         assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
     }
 
@@ -568,8 +567,8 @@ class CPUInstructions0xB0_0xBF {
     void cp_hlp_test() {
         memory.setByteAt(0xC000, 0x2F);
 
-        rom[0x100] = 0x3E; // ld a,0x5A
-        rom[0x101] = 0x5A;
+        rom[0x100] = 0x3E; // ld a,0x3C
+        rom[0x101] = 0x3C;
         rom[0x102] = 0x21; // ld hl,0xC000
         rom[0x103] = 0x00;
         rom[0x104] = 0xC0;

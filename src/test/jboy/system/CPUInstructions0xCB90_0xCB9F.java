@@ -25,12 +25,12 @@ class CPUInstructions0xCB90_0xCB9F {
         cpu.setPC(0x100);
         cpu.setSP(0xFFFE);
         rom = new int[0x7FFF];
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
     }
 
     @AfterEach
     void tearDown() {
         rom = null;
-        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
     }
 
     // op code 0xCB90
@@ -144,7 +144,7 @@ class CPUInstructions0xCB90_0xCB9F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0xFB, cpu.getHL(), "The value pointed to by the HL register should equal 0xFB.");
+        assertEquals(0xFB, memory.getByteAt(cpu.getHL()), "The value pointed to by the HL register should equal 0xFB.");
         assertEquals(0x105, cpu.getPC(), "PC should equal 0x105.");
     }
 
@@ -275,7 +275,7 @@ class CPUInstructions0xCB90_0xCB9F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0xF7, cpu.getHL(), "The value pointed to by the HL register should equal 0xF7.");
+        assertEquals(0xF7, memory.getByteAt(cpu.getHL()), "The value pointed to by the HL register should equal 0xF7.");
         assertEquals(0x105, cpu.getPC(), "PC should equal 0x105.");
     }
 

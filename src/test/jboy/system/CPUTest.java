@@ -20,10 +20,6 @@ class CPUTest {
     void setUp() {
         cpu.setPC(0x100);
         cpu.setSP(0xFFFE);
-    }
-
-    @AfterEach
-    void tearDown() {
         cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
     }
 

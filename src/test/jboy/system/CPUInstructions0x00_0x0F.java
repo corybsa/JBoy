@@ -25,12 +25,12 @@ class CPUInstructions0x00_0x0F {
         cpu.setPC(0x100);
         cpu.setSP(0xFFFE);
         rom = new int[0x7FFF];
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
     }
 
     @AfterEach
     void tearDown() {
         rom = null;
-        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
     }
 
     // op code 0x00
@@ -61,9 +61,9 @@ class CPUInstructions0x00_0x0F {
     // op code 0x02
     @Test
     void ld_bcp_a_test() {
-        rom[0x100] = 0x01; // ld bc,0x7F50
-        rom[0x101] = 0x50;
-        rom[0x102] = 0x7F;
+        rom[0x100] = 0x01; // ld bc,0xC000
+        rom[0x101] = 0x00;
+        rom[0x102] = 0xC0;
         rom[0x103] = 0x3E; // ld a,0x50
         rom[0x104] = 0x50;
         rom[0x105] = 0x02; // ld (bc),a
@@ -71,11 +71,7 @@ class CPUInstructions0x00_0x0F {
         memory.loadROM(rom);
 
         cpu.tick();
-        assertEquals(0x7F50, cpu.getBC(), "The BC register should equal 0x7F50.");
-
         cpu.tick();
-        assertEquals(0x50, cpu.getA(), "The A register should equal 0x50.");
-
         cpu.tick();
         assertEquals(0x50, memory.getByteAt(cpu.getBC()), "The memory address pointed to by BC should equal 0x50.");
         assertEquals(0x106, cpu.getPC(), "PC should equal 0x106.");
@@ -91,6 +87,7 @@ class CPUInstructions0x00_0x0F {
 
         memory.loadROM(rom);
 
+        cpu.tick();
         cpu.tick();
         assertEquals(0x0002, cpu.getBC(), "The BC register should equal 0x0002.");
         assertEquals(0x104, cpu.getPC(), "PC should equal 0x101.");
@@ -234,15 +231,15 @@ class CPUInstructions0x00_0x0F {
         rom[0x100] = 0x31; // ld sp,0xFFF8
         rom[0x101] = 0xF8;
         rom[0x102] = 0xFF;
-        rom[0x103] = 0x08; // ld (0xC100),sp
+        rom[0x103] = 0x08; // ld (0xC000),sp
         rom[0x104] = 0x00;
-        rom[0x105] = 0xC1;
+        rom[0x105] = 0xC0;
 
         memory.loadROM(rom);
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0xFFF8, memory.getByteAt(0xC100), "The memory address pointed to by xx should equal 0xFFF8");
+        assertEquals(0xFFF8, memory.getByteAt(0xC000), "The memory address pointed to by xx should equal 0xFFF8");
         assertEquals(0x106, cpu.getPC(), "PC should equal 0x106");
     }
 
@@ -264,7 +261,7 @@ class CPUInstructions0x00_0x0F {
         cpu.tick();
         assertEquals(0x9028, cpu.getHL(), "The HL register should equal 0x9028.");
         assertEquals(CPU.FLAG_HALF, cpu.getF(), "The HALF_CARRY flag should be set.");
-        assertEquals(0x106, cpu.getPC(), "PC should equal 0x106");
+        assertEquals(0x107, cpu.getPC(), "PC should equal 0x107");
     }
 
     // op code 0x0A
@@ -295,6 +292,7 @@ class CPUInstructions0x00_0x0F {
 
         memory.loadROM(rom);
 
+        cpu.tick();
         cpu.tick();
         assertEquals(0x0000, cpu.getBC(), "The BC register should equal 0x0000");
         assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
@@ -422,6 +420,8 @@ class CPUInstructions0x00_0x0F {
         rom[0x100] = 0x3E; // ld a,0x3B
         rom[0x101] = 0x3B;
         rom[0x102] = 0x0F; // rrca
+
+        memory.loadROM(rom);
 
         cpu.tick();
         cpu.tick();

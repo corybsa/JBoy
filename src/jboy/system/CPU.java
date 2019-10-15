@@ -404,7 +404,7 @@ public class CPU {
             this.resetFlags(FLAG_CARRY);
         }
 
-        if(((result & 0x0F) + (num2 & 0x0F)) > 0x0F) {
+        if(((num1 & 0x0F00) + (num2 & 0x0F00)) > 0x0F00) {
             this.setFlags(FLAG_HALF);
         } else {
             this.resetFlags(FLAG_HALF);
@@ -435,10 +435,10 @@ public class CPU {
             this.setFlags(FLAG_ZERO);
         }
 
-        if(((result & 0x0F) + (num2 & 0x0F)) > 0x0F) {
+        if(((num1 & 0x0F) + (num2 & 0x0F)) > 0x0F) {
             this.setFlags(FLAG_HALF);
         } else {
-            this.resetFlags(FLAG_CARRY);
+            this.resetFlags(FLAG_HALF);
         }
 
         this.resetFlags(FLAG_SUB);
@@ -452,7 +452,8 @@ public class CPU {
      * @return The 8-bit result of the addition.
      */
     private int adc(int num1, int num2) {
-        int result = num1 + num2 + ((this.getF() & FLAG_CARRY) >> 4);
+        int carry = (this.getF() & FLAG_CARRY) >> 4;
+        int result = num1 + num2 + carry;
 
         if((result & 0xFF00) != 0) {
             this.setFlags(FLAG_CARRY);
@@ -466,10 +467,10 @@ public class CPU {
             this.setFlags(FLAG_ZERO);
         }
 
-        if(((result & 0x0F) + (num2 & 0x0F)) > 0x0F) {
+        if(((num1 & 0x0F) + (num2 & 0x0F) + carry) > 0x0F) {
             this.setFlags(FLAG_HALF);
         } else {
-            this.resetFlags(FLAG_CARRY);
+            this.resetFlags(FLAG_HALF);
         }
 
         this.resetFlags(FLAG_SUB);
@@ -496,7 +497,7 @@ public class CPU {
 
         int result = (this.A - value) & 0xFF;
 
-        if(this.A == 0) {
+        if(result == 0) {
             this.setFlags(FLAG_ZERO);
         } else {
             this.resetFlags(FLAG_ZERO);
@@ -513,26 +514,27 @@ public class CPU {
      * @return The 8-bit result of the subtraction.
      */
     private int sbc(int value) {
-        value += ((this.getF() & FLAG_CARRY) >> 4);
+        int result = this.A - value;
+        result = result - ((this.getF() & FLAG_CARRY) >> 4);
 
-        if(value > this.A) {
+        if(result < 0) {
             this.setFlags(FLAG_CARRY);
         } else {
             this.resetFlags(FLAG_CARRY);
         }
 
-        if((value & 0x0F) > (this.A & 0x0F)) {
-            this.setFlags(FLAG_HALF);
-        } else {
-            this.resetFlags(FLAG_HALF);
-        }
+        result &= 0xFF;
 
-        int result = (this.A - value) & 0xFF;
-
-        if(this.A == 0) {
+        if(result == 0) {
             this.setFlags(FLAG_ZERO);
         } else {
             this.resetFlags(FLAG_ZERO);
+        }
+
+        if(((result ^ value ^ this.A) & 0x10) == 0x10) {
+            this.setFlags(FLAG_HALF);
+        } else {
+            this.resetFlags(FLAG_HALF);
         }
 
         this.setFlags(FLAG_SUB);
@@ -703,7 +705,16 @@ public class CPU {
      * @return The swapped value.
      */
     private int swap(int value) {
-        return ((value & 0x0F) << 4) + (value >> 4);
+        int result = ((value & 0x0F) << 4) + (value >> 4);
+
+        if(result == 0) {
+            this.setFlags(FLAG_ZERO);
+        } else {
+            this.resetFlags(FLAG_ZERO);
+        }
+
+        this.resetFlags(FLAG_SUB | FLAG_HALF | FLAG_CARRY);
+        return result;
     }
 
     /**
@@ -769,6 +780,10 @@ public class CPU {
         return ((value & ~(0x01 << position)) | (1 << position)) & 0xFF;
     }
 
+    /**
+     * Performs a bitwise and operation on A and {@code value}.
+     * @param value The value to bitwise and with A
+     */
     private void and(int value) {
         this.A &= value;
 
@@ -782,6 +797,10 @@ public class CPU {
         this.setFlags(FLAG_HALF);
     }
 
+    /**
+     * Performs a bitwise xor operation on A and {@code value}.
+     * @param value The value to bitwise xor with A
+     */
     private void xor(int value) {
         this.A ^= value;
 
@@ -794,6 +813,10 @@ public class CPU {
         this.resetFlags(FLAG_SUB | FLAG_HALF | FLAG_CARRY);
     }
 
+    /**
+     * Performs a bitwise or operation on A and {@code value}.
+     * @param value The value to bitwise or with A
+     */
     private void or(int value) {
         this.A |= value;
 
@@ -806,20 +829,24 @@ public class CPU {
         this.resetFlags(FLAG_SUB | FLAG_HALF | FLAG_CARRY);
     }
 
+    /**
+     * Compares the contents of A and {@code value} and sets flags if they are equal.
+     * @param value The value to bitwise and with A
+     */
     private void cp(int value) {
-        if((this.A & FLAG_ZERO) == (value & FLAG_ZERO)) {
+        if(this.A == value) {
             this.setFlags(FLAG_ZERO);
         } else {
             this.resetFlags(FLAG_ZERO);
         }
 
-        if((this.A & FLAG_HALF) == (value & FLAG_HALF)) {
+        if((this.A & 0x0F) < (value & 0x0F)) {
             this.setFlags(FLAG_HALF);
         } else {
             this.resetFlags(FLAG_HALF);
         }
 
-        if((this.A & FLAG_CARRY) == (value & FLAG_CARRY)) {
+        if(this.A < value) {
             this.setFlags(FLAG_CARRY);
         } else {
             this.resetFlags(FLAG_CARRY);
@@ -922,7 +949,7 @@ public class CPU {
      * @param ops Immediate 2 bytes
      */
     Void ld_xxp_sp(int[] ops) {
-        this.memory.setByteAt(this.combineBytes(ops[1], ops[0]), this.SP);
+        this.memory.setByteAt(this.combineBytes(ops[0], ops[1]), this.SP);
         return null;
     }
 
@@ -931,8 +958,7 @@ public class CPU {
      * @param ops unused
      */
     Void add_hl_bc(int[] ops) {
-        // TODO: Flags are affected by this operation. Need to figure that out.
-        this.setHL(this.getHL() + this.getBC());
+        this.setHL(this.add16Bit(this.getHL(), this.getBC()));
         return null;
     }
 
@@ -995,9 +1021,6 @@ public class CPU {
         }
 
         // set the 7th bit to whatever was at the 0th bit.
-        // TODO: This might be right
-        // https://www.geeksforgeeks.org/modify-bit-given-position/
-        // (n & ~mask) | ((b << p) & mask)
         this.A = (((this.A >> 1) & (~0x80)) | (carry << 7)) & 0xFF;
 
         this.resetFlags(FLAG_ZERO | FLAG_SUB | FLAG_HALF);
@@ -1083,7 +1106,7 @@ public class CPU {
      */
     Void rla(int[] ops) {
         // get current state of carry flag.
-        int carry = this.F & FLAG_CARRY;
+        int carry = (this.F & FLAG_CARRY) >> 4;
 
         // check the 7th bit of A.
         if((this.A & 0x80) == 0x80) {
@@ -1177,7 +1200,7 @@ public class CPU {
      */
     Void rra(int[] ops) {
         // get current state of carry flag.
-        int carry = this.F & FLAG_CARRY;
+        int carry = (this.F & FLAG_CARRY) >> 4;
 
         // check the 0th bit of A.
         if((this.A & 0x01) == 0x01) {
@@ -1428,6 +1451,7 @@ public class CPU {
      */
     Void cpl(int[] ops) {
         this.A = (~this.A) & 0xFF;
+        this.setFlags(FLAG_SUB | FLAG_HALF);
         return null;
     }
 

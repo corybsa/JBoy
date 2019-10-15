@@ -25,12 +25,12 @@ class CPUInstructions0x70_0x7F {
         cpu.setPC(0x100);
         cpu.setSP(0xFFFE);
         rom = new int[0x7FFF];
+        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
     }
 
     @AfterEach
     void tearDown() {
         rom = null;
-        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
     }
 
     // op code 0x70
@@ -125,17 +125,14 @@ class CPUInstructions0x70_0x7F {
         rom[0x100] = 0x21; // ld hl,0xC000
         rom[0x101] = 0x00;
         rom[0x102] = 0xC0;
-        rom[0x103] = 0x26; // ld h,0xFF
-        rom[0x104] = 0xFF;
-        rom[0x105] = 0x74; // ld (hl),h
+        rom[0x103] = 0x74; // ld (hl),h
 
         memory.loadROM(rom);
 
         cpu.tick();
         cpu.tick();
-        cpu.tick();
-        assertEquals(0xFF, memory.getByteAt(0xC000), "The value at 0xC000 should equal 0xFF.");
-        assertEquals(0x106, cpu.getPC(), "The PC register should equal 0x106.");
+        assertEquals(0xC0, memory.getByteAt(0xC000), "The value at 0xC000 should equal 0xC0.");
+        assertEquals(0x104, cpu.getPC(), "The PC register should equal 0x104.");
     }
 
     // op code 0x75
@@ -146,17 +143,14 @@ class CPUInstructions0x70_0x7F {
         rom[0x100] = 0x21; // ld hl,0xC000
         rom[0x101] = 0x00;
         rom[0x102] = 0xC0;
-        rom[0x103] = 0x2E; // ld l,0xFF
-        rom[0x104] = 0xFF;
-        rom[0x105] = 0x75; // ld (hl),l
+        rom[0x103] = 0x75; // ld (hl),l
 
         memory.loadROM(rom);
 
         cpu.tick();
         cpu.tick();
-        cpu.tick();
-        assertEquals(0xFF, memory.getByteAt(0xC000), "The value at 0xC000 should equal 0xFF.");
-        assertEquals(0x106, cpu.getPC(), "The PC register should equal 0x106.");
+        assertEquals(0x00, memory.getByteAt(0xC000), "The value at 0xC000 should equal 0x00.");
+        assertEquals(0x104, cpu.getPC(), "The PC register should equal 0x104.");
     }
 
     // op code 0x76
@@ -282,14 +276,14 @@ class CPUInstructions0x70_0x7F {
         rom[0x100] = 0x21; // ld hl,0xC000
         rom[0x101] = 0x00;
         rom[0x102] = 0xC0;
-        rom[0x102] = 0x7E; // ld a,(hl)
+        rom[0x103] = 0x7E; // ld a,(hl)
 
         memory.loadROM(rom);
 
         cpu.tick();
         cpu.tick();
         assertEquals(0x50, cpu.getA(), "The A register should equal 0x50.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
     }
 
     // op code 0x7F
