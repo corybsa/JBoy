@@ -632,7 +632,7 @@ public class CPU {
     private int rr(int value) {
         int carry = this.getF() & FLAG_CARRY;
 
-        if((value & 0x80) == 0x80) {
+        if((value & 0x01) == 0x01) {
             this.setFlags(FLAG_CARRY);
         } else {
             this.resetFlags(FLAG_CARRY);
@@ -2681,7 +2681,7 @@ public class CPU {
     }
 
     /**
-     * OP code 0xB8 - Bitwise cp A and B.
+     * OP code 0xB8 - Compare A and B.
      * @param ops Immediate 1 byte.
      */
     Void cp_b(int[] ops) {
@@ -2691,7 +2691,7 @@ public class CPU {
     }
 
     /**
-     * OP code 0xB9 - Bitwise cp A and C.
+     * OP code 0xB9 - Compare A and C.
      * @param ops Immediate 1 byte.
      */
     Void cp_c(int[] ops) {
@@ -2701,7 +2701,7 @@ public class CPU {
     }
 
     /**
-     * OP code 0xBA - Bitwise cp A and D.
+     * OP code 0xBA - Compare A and D.
      * @param ops Immediate 1 byte.
      */
     Void cp_d(int[] ops) {
@@ -2711,7 +2711,7 @@ public class CPU {
     }
 
     /**
-     * OP code 0xBB - Bitwise cp A and E.
+     * OP code 0xBB - Compare A and E.
      * @param ops Immediate 1 byte.
      */
     Void cp_e(int[] ops) {
@@ -2721,7 +2721,7 @@ public class CPU {
     }
 
     /**
-     * OP code 0xBC - Bitwise cp A and H.
+     * OP code 0xBC - Compare A and H.
      * @param ops Immediate 1 byte.
      */
     Void cp_h(int[] ops) {
@@ -2731,7 +2731,7 @@ public class CPU {
     }
 
     /**
-     * OP code 0xBD - Bitwise cp A and L.
+     * OP code 0xBD - Compare A and L.
      * @param ops Immediate 1 byte.
      */
     Void cp_l(int[] ops) {
@@ -2741,7 +2741,7 @@ public class CPU {
     }
 
     /**
-     * OP code 0xBE - Bitwise cp A and the value in memory pointed to by HL.
+     * OP code 0xBE - Compare A and the value in memory pointed to by HL.
      * @param ops Immediate 1 byte.
      */
     Void cp_hlp(int[] ops) {
@@ -2751,7 +2751,7 @@ public class CPU {
     }
 
     /**
-     * OP code 0xBF - Bitwise cp A and L.
+     * OP code 0xBF - Compare A and L.
      * @param ops Immediate 1 byte.
      */
     Void cp_a(int[] ops) {
@@ -2794,7 +2794,7 @@ public class CPU {
      */
     Void jp_nz_xx(int[] ops) {
         if((this.F & FLAG_ZERO) != FLAG_ZERO) {
-            this.PC = this.combineBytes(ops[0], ops[1]);
+            this.PC = this.combineBytes(ops[0], ops[1]) - 2;
 
             // TODO: this takes 4 cycles
         } else {
@@ -2809,7 +2809,7 @@ public class CPU {
      * @param ops Immediate 2 bytes.
      */
     Void jp_xx(int[] ops) {
-        this.PC = this.combineBytes(ops[0], ops[1]);
+        this.PC = this.combineBytes(ops[0], ops[1]) - 2;
 
         return null;
     }
@@ -2820,10 +2820,11 @@ public class CPU {
      */
     Void call_nz_xx(int[] ops) {
         if((this.F & FLAG_ZERO) != FLAG_ZERO) {
+            this.PC += 2;
             this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
             this.memory.setByteAt(this.SP - 2, (this.PC) & 0xFF);
 
-            this.PC = this.combineBytes(ops[0], ops[1]);
+            this.PC = this.combineBytes(ops[0], ops[1]) - 2;
             this.SP -= 2;
             // TODO: this takes 6 cycles
         } else {
@@ -2900,7 +2901,7 @@ public class CPU {
      */
     Void jp_z_xx(int[] ops) {
         if((this.F & FLAG_ZERO) == FLAG_ZERO) {
-            this.PC = this.combineBytes(ops[0], ops[1]);
+            this.PC = this.combineBytes(ops[0], ops[1]) - 2;
 
             // TODO: this takes 4 cycles
         } else {
@@ -2916,10 +2917,11 @@ public class CPU {
      */
     Void call_z_xx(int[] ops) {
         if((this.F & FLAG_ZERO) == FLAG_ZERO) {
+            this.PC += 2;
             this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
             this.memory.setByteAt(this.SP - 2, (this.PC) & 0xFF);
 
-            this.PC = this.combineBytes(ops[0], ops[1]);
+            this.PC = this.combineBytes(ops[0], ops[1]) - 2;
             this.SP -= 2;
             // TODO: this takes 6 cycles
         } else {
@@ -2934,10 +2936,11 @@ public class CPU {
      * @param ops Immediate 2 bytes.
      */
     Void call_xx(int[] ops) {
+        this.PC += 2;
         this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
         this.memory.setByteAt(this.SP - 2, (this.PC) & 0xFF);
 
-        this.PC = this.combineBytes(ops[0], ops[1]);
+        this.PC = this.combineBytes(ops[0], ops[1]) - 2;
         this.SP -= 2;
 
         return null;
@@ -2998,7 +3001,7 @@ public class CPU {
      */
     Void jp_nc_xx(int[] ops) {
         if((this.F & FLAG_CARRY) != FLAG_CARRY) {
-            this.PC = this.combineBytes(ops[0], ops[1]);
+            this.PC = this.combineBytes(ops[0], ops[1]) - 2;
 
             // TODO: this takes 4 cycles
         } else {
@@ -3014,10 +3017,11 @@ public class CPU {
      */
     Void call_nc_xx(int[] ops) {
         if((this.F & FLAG_CARRY) != FLAG_CARRY) {
+            this.PC += 2;
             this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
             this.memory.setByteAt(this.SP - 2, (this.PC) & 0xFF);
 
-            this.PC = this.combineBytes(ops[0], ops[1]);
+            this.PC = this.combineBytes(ops[0], ops[1]) - 2;
             this.SP -= 2;
             // TODO: this takes 6 cycles
         } else {
@@ -3096,7 +3100,7 @@ public class CPU {
      */
     Void jp_c_xx(int[] ops) {
         if((this.F & FLAG_CARRY) == FLAG_CARRY) {
-            this.PC = this.combineBytes(ops[0], ops[1]);
+            this.PC = this.combineBytes(ops[0], ops[1]) - 2;
 
             // TODO: this takes 4 cycles
         } else {
@@ -3112,10 +3116,11 @@ public class CPU {
      */
     Void call_c_xx(int[] ops) {
         if((this.F & FLAG_CARRY) == FLAG_CARRY) {
+            this.PC += 2;
             this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
             this.memory.setByteAt(this.SP - 2, (this.PC) & 0xFF);
 
-            this.PC = this.combineBytes(ops[0], ops[1]);
+            this.PC = this.combineBytes(ops[0], ops[1]) - 2;
             this.SP -= 2;
             // TODO: this takes 6 cycles
         } else {
@@ -3350,7 +3355,7 @@ public class CPU {
             this.resetFlags(FLAG_CARRY);
         }
 
-        if(((result & 0x0F) + (ops[0] & 0x0F)) > 0x0F) {
+        if(((this.SP & 0x0F) + (ops[0] & 0x0F)) > 0x0F) {
             this.setFlags(FLAG_HALF);
         } else {
             this.resetFlags(FLAG_HALF);
@@ -3392,6 +3397,10 @@ public class CPU {
         return null;
     }
 
+    /**
+     * OP code 0xFE - Compare A and immediate byte.
+     * @param ops Immediate 1 byte.
+     */
     Void cp_x(int[] ops) {
         this.cp(ops[0]);
 

@@ -144,7 +144,7 @@ class CPUInstructions0xCBB0_0xCBBF {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0xBF, cpu.getHL(), "The value pointed to by the HL register should equal 0xBF.");
+        assertEquals(0xBF, memory.getByteAt(cpu.getHL()), "The value pointed to by the HL register should equal 0xBF.");
         assertEquals(0x105, cpu.getPC(), "PC should equal 0x105.");
     }
 
@@ -275,7 +275,7 @@ class CPUInstructions0xCBB0_0xCBBF {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x7F, cpu.getHL(), "The value pointed to by the HL register should equal 0x7F.");
+        assertEquals(0x7F, memory.getByteAt(cpu.getHL()), "The value pointed to by the HL register should equal 0x7F.");
         assertEquals(0x105, cpu.getPC(), "PC should equal 0x105.");
     }
 

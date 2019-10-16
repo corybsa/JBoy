@@ -244,7 +244,7 @@ class Instructions extends HashMap<Integer, Instruction> {
 
         this.put(0xE0, new Instruction(0xE0, 1, 1, cpu::ld_xp_a));
         this.put(0xE1, new Instruction(0xE1, 0, 1, cpu::pop_hl));
-        this.put(0xE2, new Instruction(0xE2, 1, 1, cpu::ld_cp_a));
+        this.put(0xE2, new Instruction(0xE2, 0, 1, cpu::ld_cp_a));
         this.put(0xE3, new Instruction(0xE3, 0, 1, cpu::nop));
         this.put(0xE4, new Instruction(0xE4, 0, 1, cpu::nop));
         this.put(0xE5, new Instruction(0xE5, 0, 1, cpu::push_hl));
@@ -261,7 +261,7 @@ class Instructions extends HashMap<Integer, Instruction> {
 
         this.put(0xF0, new Instruction(0xF0, 1, 1, cpu::ld_a_xp));
         this.put(0xF1, new Instruction(0xF1, 0, 1, cpu::pop_af));
-        this.put(0xF2, new Instruction(0xF2, 1, 1, cpu::ld_a_cp));
+        this.put(0xF2, new Instruction(0xF2, 0, 1, cpu::ld_a_cp));
         this.put(0xF3, new Instruction(0xF3, 0, 1, cpu::di));
         this.put(0xF4, new Instruction(0xF4, 0, 1, cpu::nop));
         this.put(0xF5, new Instruction(0xF5, 0, 1, cpu::push_af));

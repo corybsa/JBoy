@@ -46,14 +46,14 @@ class CPUInstructions0xE0_0xEF {
         cpu.tick();
         cpu.tick();
         assertEquals(0x50, memory.getByteAt(0xFF10), "The value at address 0xFF10 should be 0x50.");
-        assertEquals(0x105, cpu.getPC(), "The PC should equal 0x105.");
+        assertEquals(0x104, cpu.getPC(), "The PC should equal 0x104.");
     }
 
     // op code 0xE1
     @Test
     void pop_hl_test() {
-        memory.setByteAt(0xFFFD, 0xEF);
-        memory.setByteAt(0xFFFC, 0xBE);
+        memory.setByteAt(0xFFFD, 0xBE);
+        memory.setByteAt(0xFFFC, 0xEF);
         cpu.setSP(0xFFFC);
 
         rom[0x100] = 0xE1; // pop hl
@@ -81,7 +81,7 @@ class CPUInstructions0xE0_0xEF {
         cpu.tick();
         cpu.tick();
         assertEquals(0x50, memory.getByteAt(0xFF10), "The value at address 0xFF10 should be 0x50.");
-        assertEquals(0x106, cpu.getPC(), "The PC should equal 0x105.");
+        assertEquals(0x105, cpu.getPC(), "The PC should equal 0x105.");
     }
 
     // op code 0xE5
@@ -97,8 +97,8 @@ class CPUInstructions0xE0_0xEF {
         cpu.tick();
         cpu.tick();
         assertEquals(0xFFFC, cpu.getSP(), "The SP should equal 0xFFFC");
-        assertEquals(0xEF, memory.getByteAt(0xFFFD), "The value at address 0xFFFD should equal 0xEF");
-        assertEquals(0xBE, memory.getByteAt(0xFFFC), "The value at address 0xFFFC should equal 0xBE");
+        assertEquals(0xBE, memory.getByteAt(0xFFFD), "The value at address 0xFFFD should equal 0xEF");
+        assertEquals(0xEF, memory.getByteAt(0xFFFC), "The value at address 0xFFFC should equal 0xBE");
         assertEquals(0x104, cpu.getPC(), "The PC should equal 0x104.");
     }
 
@@ -114,7 +114,6 @@ class CPUInstructions0xE0_0xEF {
 
         cpu.tick();
         cpu.tick();
-        cpu.tick();
         assertEquals(0x1A, cpu.getA(), "The A register should equal 0x1A.");
         assertEquals(CPU.FLAG_HALF, cpu.getF(), "The HALF_CARRY flag should be set.");
         assertEquals(0x104, cpu.getPC(), "The PC should equal 0x104.");
@@ -126,7 +125,6 @@ class CPUInstructions0xE0_0xEF {
         rom[0x102] = 0xE6; // and 0x00
         rom[0x103] = 0x00;
 
-        cpu.tick();
         cpu.tick();
         cpu.tick();
         assertEquals(0x00, cpu.getA(), "The A register should equal 0x00.");
@@ -144,7 +142,7 @@ class CPUInstructions0xE0_0xEF {
         cpu.tick();
         assertEquals(0xFFFC, cpu.getSP(), "The SP should equal 0xFFFC.");
         assertEquals(0x01, memory.getByteAt(0xFFFD), "The value at address 0xFFFD should equal 0x01.");
-        assertEquals(0x00, memory.getByteAt(0xFFFC), "The value at address 0xFFFD should equal 0x00.");
+        assertEquals(0x01, memory.getByteAt(0xFFFC), "The value at address 0xFFFD should equal 0x00.");
         assertEquals(0x20, cpu.getPC(), "The PC should equal 0x20.");
     }
 
@@ -166,14 +164,16 @@ class CPUInstructions0xE0_0xEF {
     // op code 0xE9
     @Test
     void jp_hlp_test() {
-        rom[0x100] = 0x21; // ld hl,0x200
+        rom[0x100] = 0x21; // ld hl,0x2000
         rom[0x101] = 0x00;
-        rom[0x102] = 0x02;
+        rom[0x102] = 0x20;
         rom[0x103] = 0xE9; // jp (hl)
+
+        memory.loadROM(rom);
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x200, cpu.getPC(), "PC should equal 0x200.");
+        assertEquals(0x2000, cpu.getPC(), "PC should equal 0x2000.");
     }
 
     // op code 0xEA
@@ -205,7 +205,6 @@ class CPUInstructions0xE0_0xEF {
 
         cpu.tick();
         cpu.tick();
-        cpu.tick();
         assertEquals(0x00, cpu.getA(), "The A register should equal 0x00.");
         assertEquals(CPU.FLAG_ZERO, cpu.getF(), "The ZERO flag should be set.");
         assertEquals(0x104, cpu.getPC(), "The PC should equal 0x104.");
@@ -218,7 +217,6 @@ class CPUInstructions0xE0_0xEF {
         rom[0x102] = 0xEE; // xor 0x0F
         rom[0x103] = 0x0F;
 
-        cpu.tick();
         cpu.tick();
         cpu.tick();
         assertEquals(0xF0, cpu.getA(), "The A register should equal 0x00.");
@@ -236,7 +234,7 @@ class CPUInstructions0xE0_0xEF {
         cpu.tick();
         assertEquals(0xFFFC, cpu.getSP(), "The SP should equal 0xFFFC.");
         assertEquals(0x01, memory.getByteAt(0xFFFD), "The value at address 0xFFFD should equal 0x01.");
-        assertEquals(0x00, memory.getByteAt(0xFFFC), "The value at address 0xFFFD should equal 0x00.");
+        assertEquals(0x01, memory.getByteAt(0xFFFC), "The value at address 0xFFFD should equal 0x00.");
         assertEquals(0x28, cpu.getPC(), "The PC should equal 0x28.");
     }
 }
