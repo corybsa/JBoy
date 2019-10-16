@@ -223,9 +223,7 @@ class CPUInstructions0x20_0x2F {
     // op code 0x27
     @Test
     void daa_test() {
-        // ?????????????????????????????????????????????????????
-        // TODO: dunno how to test this...
-        /*rom[0x100] = 0x3E; // ld a,0x45
+        rom[0x100] = 0x3E; // ld a,0x45
         rom[0x101] = 0x45;
         rom[0x102] = 0xC6; // add a,0x38
         rom[0x103] = 0x38;
@@ -236,7 +234,7 @@ class CPUInstructions0x20_0x2F {
         cpu.tick();
         cpu.tick();
         cpu.tick();
-        assertEquals(0x83, cpu.getA(), "The A register should equal 0x02.");
+        assertEquals(0x83, cpu.getA(), "The A register should equal 0x25.");
         assertEquals(0x105, cpu.getPC(), "PC should equal 0x105.");
 
         cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
@@ -253,8 +251,8 @@ class CPUInstructions0x20_0x2F {
         cpu.tick();
         cpu.tick();
         cpu.tick();
-        assertEquals(0x45, cpu.getA(), "The A register should equal 0x45.");
-        assertEquals(0x106, cpu.getPC(), "PC should equal 0x106.");*/
+        assertEquals(0x13, cpu.getA(), "The A register should equal 0x13.");
+        assertEquals(0x106, cpu.getPC(), "PC should equal 0x106.");
     }
 
     // op code 0x28

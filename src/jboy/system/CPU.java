@@ -1302,7 +1302,6 @@ public class CPU {
      */
     Void daa(int[] ops) {
         // after an addition, adjust A if a HALF_CARRY or CARRY occurred or if the result is out of bounds.
-        // (this.F & FLAG_HALF) == FLAG_HALF
         if((this.F & FLAG_ZERO) != FLAG_ZERO) {
             if((this.F & FLAG_CARRY) == FLAG_CARRY || this.A > 0x99) {
                 this.A = (this.A + 0x60) & 0xFF;
@@ -1315,11 +1314,11 @@ public class CPU {
         } else {
             // after a subtraction, only adjust if a HALF_CARRY or CARRY occurred.
             if((this.F & FLAG_CARRY) == FLAG_CARRY) {
-                this.A -= 0x60;
+                this.A = (this.A - 0x60) & 0xFF;
             }
 
             if((this.F & FLAG_HALF) == FLAG_HALF) {
-                this.A -= 0x06;
+                this.A = (this.A - 0x06) & 0xFF;
             }
         }
 
