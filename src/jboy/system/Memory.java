@@ -49,16 +49,16 @@ package jboy.system;
  *                        - It's here because of how the CPU works internally.
  */
 public class Memory {
-    private int[] cartridge = new int[0x7FFF];
-    private int[] vram = new int[0x1FFF];
-    private int[] sram = new int[0x1FFF];
-    private int[] wram = new int[0x1FFF];
-    private int[] eram = new int[0x1DFF];
-    private int[] oam = new int[0x9F];
-    private int[] fea0_feff = new int[0x5F];
-    private int[] io = new int[0x48];
-    private int[] ff4c_ff7f = new int[0x33];
-    private int[] hram = new int[0x7E];
+    private int[] cartridge = new int[0x8000];
+    private int[] vram = new int[0x2000];
+    private int[] sram = new int[0x2000];
+    private int[] wram = new int[0x2000];
+    private int[] eram = new int[0x1E00];
+    private int[] oam = new int[0xA0];
+    private int[] fea0_feff = new int[0x60];
+    private int[] io = new int[0x4C];
+    private int[] ff4c_ff7f = new int[0x34];
+    private int[] hram = new int[0x7F];
     private int[] ime = new int[1];
 
     public void loadROM(int[] rom) {
@@ -88,8 +88,8 @@ public class Memory {
         } else if(address <= 0xFEFF) {
             addr = (0x5F - (0xFEFF - address)) & 0xFFFF;
             return this.fea0_feff[addr];
-        } else if(address <= 0xFF48) {
-            addr = (0x48 - (0xFF48 - address)) & 0xFFFF;
+        } else if(address <= 0xFF4B) {
+            addr = (0x4B - (0xFF4B - address)) & 0xFFFF;
             return this.io[addr];
         } else if(address <= 0xFF7F) {
             addr = (0x33 - (0xFF7F - address)) & 0xFFFF;
@@ -126,8 +126,8 @@ public class Memory {
         } else if(address <= 0xFEFF) {
             addr = (0x5F - (0xFEFF - address)) & 0xFFFF;
             this.fea0_feff[addr] = value;
-        } else if(address <= 0xFF48) {
-            addr = (0x48 - (0xFF48 - address)) & 0xFFFF;
+        } else if(address <= 0xFF4B) {
+            addr = (0x4B - (0xFF4B - address)) & 0xFFFF;
             this.io[addr] = value;
         } else if(address <= 0xFF7F) {
             addr = (0x33 - (0xFF7F - address)) & 0xFFFF;
