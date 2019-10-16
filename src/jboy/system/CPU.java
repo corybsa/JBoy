@@ -92,6 +92,8 @@ public class CPU {
     private int SP;
     private int PC;
 
+    private boolean isStopped = false;
+
     private final Memory memory;
     private final HashMap<Integer, Instruction> instructions;
 
@@ -104,6 +106,38 @@ public class CPU {
         this.setHL(0x014D);
         this.setSP(0xFFFE);
         this.setPC(0x100);
+
+        this.memory.setByteAt(0xFF05, 0x00);
+        this.memory.setByteAt(0xFF06, 0x00);
+        this.memory.setByteAt(0xFF07, 0x00);
+        this.memory.setByteAt(0xFF10, 0x80);
+        this.memory.setByteAt(0xFF11, 0xBF);
+        this.memory.setByteAt(0xFF12, 0xF3);
+        this.memory.setByteAt(0xFF14, 0xBF);
+        this.memory.setByteAt(0xFF16, 0x3F);
+        this.memory.setByteAt(0xFF17, 0x00);
+        this.memory.setByteAt(0xFF19, 0xBF);
+        this.memory.setByteAt(0xFF1A, 0x7F);
+        this.memory.setByteAt(0xFF1B, 0xFF);
+        this.memory.setByteAt(0xFF1C, 0x9F);
+        this.memory.setByteAt(0xFF1E, 0xBF);
+        this.memory.setByteAt(0xFF20, 0xFF);
+        this.memory.setByteAt(0xFF21, 0x00);
+        this.memory.setByteAt(0xFF22, 0x00);
+        this.memory.setByteAt(0xFF23, 0xBF);
+        this.memory.setByteAt(0xFF24, 0x77);
+        this.memory.setByteAt(0xFF25, 0xF3);
+        this.memory.setByteAt(0xFF26, 0xF1);
+        this.memory.setByteAt(0xFF40, 0x91);
+        this.memory.setByteAt(0xFF42, 0x00);
+        this.memory.setByteAt(0xFF43, 0x00);
+        this.memory.setByteAt(0xFF45, 0x00);
+        this.memory.setByteAt(0xFF47, 0xFC);
+        this.memory.setByteAt(0xFF48, 0xFF);
+        this.memory.setByteAt(0xFF49, 0xFF);
+        this.memory.setByteAt(0xFF4A, 0x00);
+        this.memory.setByteAt(0xFF4B, 0x00);
+        this.memory.setByteAt(0xFFFF, 0x00);
     }
 
     public int getA() {
@@ -226,8 +260,10 @@ public class CPU {
      * Tick one clock cycle
      */
     public void tick() {
-        Instruction instruction = this.getInstruction(this.memory.getByteAt(this.PC++));
-        this.execute(instruction);
+        if(!isStopped) {
+            Instruction instruction = this.getInstruction(this.memory.getByteAt(this.PC++));
+            this.execute(instruction);
+        }
     }
 
     private void incrementPC(int n) {
@@ -325,6 +361,16 @@ public class CPU {
      */
     public boolean areFlagsSet(int flags) {
         return (this.F & flags) == flags;
+    }
+
+    public byte[] getSprites() {
+        byte[] sprites = new byte[0xA0];
+
+        for(int i = 0; i < 0x9F; i++) {
+            sprites[i] = (byte)this.memory.getByteAt(0xFF00 + i);
+        }
+
+        return sprites;
     }
 
     /**
@@ -855,6 +901,14 @@ public class CPU {
         this.setFlags(FLAG_SUB);
     }
 
+    private void disableInterrupts() {
+        this.memory.setByteAt(0xFFFF, 0x00);
+    }
+
+    private void enableInterrupts() {
+        this.memory.setByteAt(0xFFFF, 0x01);
+    }
+
     /**
      * OP codes
      * 0x00, 0x40, 0x49, 0x52, 0x5B, 0x64, 0x6D, 0x7F,
@@ -1043,6 +1097,8 @@ public class CPU {
         // TODO: figure out what to do with this.
         // I guess reset the IE flag, but how do I implement STOP in the CPU?
         // I think just a boolean, and check if it's set in the tick method.
+        this.isStopped = true;
+        this.disableInterrupts();
         return null;
     }
 
@@ -2076,6 +2132,7 @@ public class CPU {
      */
     Void halt(int[] ops) {
         // TODO: set halt to true and check it somewhere.
+        this.isStopped = true;
         return null;
     }
 

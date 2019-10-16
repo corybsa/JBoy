@@ -12,8 +12,12 @@ public class GameBoy {
     public void loadROM(int[] rom) {
         this.memory.loadROM(rom);
 
-        while(true) {
+        /*while(true) {
             this.cpu.tick();
-        }
+        }*/
+    }
+
+    public byte[] getSprites() {
+        return this.cpu.getSprites();
     }
 }

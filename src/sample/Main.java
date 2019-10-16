@@ -3,13 +3,20 @@ package sample;
 import javafx.application.Application;
 import javafx.concurrent.Task;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.ListView;
+import javafx.scene.control.Menu;
+import javafx.scene.control.MenuBar;
+import javafx.scene.control.MenuItem;
+import javafx.scene.image.Image;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import jboy.disassembler.Disassembler;
 import jboy.system.GameBoy;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -20,6 +27,7 @@ public class Main extends Application {
     private Stage stage;
     private ListView<String> listView;
     private GameBoy gameBoy;
+    private GraphicsContext graphicsContext;
 
     @Override
     public void start(Stage primaryStage) throws Exception{
@@ -32,7 +40,10 @@ public class Main extends Application {
         this.listView = new ListView<>();
 
         vbox.getChildren().add(menuBar);
-        vbox.getChildren().add(this.listView);
+        Canvas canvas = new Canvas(250,250);
+        this.graphicsContext = canvas.getGraphicsContext2D();
+        vbox.getChildren().add(canvas);
+//        this.vbox.getChildren().add(this.listView);
         Scene scene = new Scene(vbox, 300, 275);
 
         primaryStage.setScene(scene);
@@ -99,6 +110,10 @@ public class Main extends Application {
             }
 
             this.gameBoy.loadROM(rom);
+
+            byte[] sprites = this.gameBoy.getSprites();
+            Image img = new Image(new ByteArrayInputStream(sprites));
+            this.graphicsContext.drawImage(img, 100, 100, 250, 250);
         } catch (IOException e) {
             e.printStackTrace();
         }

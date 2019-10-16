@@ -4,7 +4,6 @@ import java.util.HashMap;
 
 class Instructions extends HashMap<Integer, Instruction> {
     Instructions(CPU cpu) {
-        // TODO: fix cycles
         this.put(0x00, new Instruction(0x00, 0, 1, cpu::nop));
         this.put(0x01, new Instruction(0x01, 2, 3, cpu::ld_bc_xx));
         this.put(0x02, new Instruction(0x02, 0, 2, cpu::ld_bcp_a));
