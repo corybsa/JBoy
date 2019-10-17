@@ -92,6 +92,7 @@ public class CPU {
     private int SP;
     private int PC;
 
+    private int timer = 0;
     private boolean isStopped = false;
 
     private final Memory memory;
@@ -310,6 +311,7 @@ public class CPU {
         }
 
         this.incrementPC(instruction.getOpSize());
+        this.timer += instruction.getOpCycles();
     }
 
     /**
@@ -1089,9 +1091,6 @@ public class CPU {
      * @param ops unused.
      */
     Void stop(int[] ops) {
-        // TODO: figure out what to do with this.
-        // I guess reset the IE flag, but how do I implement STOP in the CPU?
-        // I think just a boolean, and check if it's set in the tick method.
         this.isStopped = true;
         this.disableInterrupts();
         return null;
@@ -1283,9 +1282,9 @@ public class CPU {
                 this.incrementPC(ops[0] - 127);
             }*/
 
-            // TODO: this takes 3 clock cycles
+            this.timer += 3;
         } else {
-            // TODO: this takes 2 clock cycles
+            this.timer += 2;
         }
 
         return null;
@@ -1432,9 +1431,9 @@ public class CPU {
                 this.incrementPC(ops[0] - 127);
             }*/
 
-            // TODO: this takes 3 clock cycles
+            this.timer += 3;
         } else {
-            // TODO: this takes 2 clock cycles
+            this.timer += 2;
         }
 
         return null;
@@ -1520,9 +1519,9 @@ public class CPU {
                 this.incrementPC(ops[0] - 127);
             }*/
 
-            // TODO: this takes 3 clock cycles
+            this.timer += 3;
         } else {
-            // TODO: this takes 2 clock cycles
+            this.timer += 2;
         }
 
         return null;
@@ -1610,9 +1609,9 @@ public class CPU {
                 this.incrementPC(ops[0] - 127);
             }*/
 
-            // TODO: this takes 3 clock cycles
+            this.timer += 3;
         } else {
-            // TODO: this takes 2 clock cycles
+            this.timer += 2;
         }
 
         return null;
@@ -2126,7 +2125,6 @@ public class CPU {
      * @param ops unused.
      */
     Void halt(int[] ops) {
-        // TODO: set halt to true and check it somewhere.
         this.isStopped = true;
         return null;
     }
@@ -2820,9 +2818,9 @@ public class CPU {
             this.PC = this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP));
             this.SP += 2;
 
-            // TODO: this takes 5 cycles.
+            this.timer += 5;
         } else {
-            // TODO: this takes 2 cycles.
+            this.timer += 2;
         }
 
         return null;
@@ -2847,9 +2845,9 @@ public class CPU {
         if((this.F & FLAG_ZERO) != FLAG_ZERO) {
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
 
-            // TODO: this takes 4 cycles
+            this.timer += 4;
         } else {
-            // TODO: this takes 3 cycles
+            this.timer += 3;
         }
 
         return null;
@@ -2877,9 +2875,9 @@ public class CPU {
 
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
             this.SP -= 2;
-            // TODO: this takes 6 cycles
+            this.timer += 6;
         } else {
-            // TODO: this takes 3 cycles
+            this.timer += 3;
         }
 
         return null;
@@ -2927,9 +2925,9 @@ public class CPU {
             this.PC = this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP));
             this.SP += 2;
 
-            // TODO: this takes 5 cycles.
+            this.timer += 5;
         } else {
-            // TODO: this takes 2 cycles.
+            this.timer += 2;
         }
 
         return null;
@@ -2954,9 +2952,9 @@ public class CPU {
         if((this.F & FLAG_ZERO) == FLAG_ZERO) {
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
 
-            // TODO: this takes 4 cycles
+            this.timer += 4;
         } else {
-            // TODO: this takes 3 cycles
+            this.timer += 3;
         }
 
         return null;
@@ -2974,9 +2972,9 @@ public class CPU {
 
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
             this.SP -= 2;
-            // TODO: this takes 6 cycles
+            this.timer += 6;
         } else {
-            // TODO: this takes 3 cycles
+            this.timer += 3;
         }
 
         return null;
@@ -3027,9 +3025,9 @@ public class CPU {
             this.PC = this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP));
             this.SP += 2;
 
-            // TODO: this takes 5 cycles.
+            this.timer += 5;
         } else {
-            // TODO: this takes 2 cycles.
+            this.timer += 2;
         }
 
         return null;
@@ -3054,9 +3052,9 @@ public class CPU {
         if((this.F & FLAG_CARRY) != FLAG_CARRY) {
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
 
-            // TODO: this takes 4 cycles
+            this.timer += 4;
         } else {
-            // TODO: this takes 3 cycles
+            this.timer += 3;
         }
 
         return null;
@@ -3074,9 +3072,9 @@ public class CPU {
 
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
             this.SP -= 2;
-            // TODO: this takes 6 cycles
+            this.timer += 6;
         } else {
-            // TODO: this takes 3 cycles
+            this.timer += 3;
         }
 
         return null;
@@ -3124,9 +3122,9 @@ public class CPU {
             this.PC = this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP));
             this.SP += 2;
 
-            // TODO: this takes 5 cycles.
+            this.timer += 5;
         } else {
-            // TODO: this takes 2 cycles.
+            this.timer += 2;
         }
 
         return null;
@@ -3140,7 +3138,7 @@ public class CPU {
         this.PC = this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP));
         this.SP += 2;
 
-        // TODO: set the IME flag
+        this.enableInterrupts();
 
         return null;
     }
@@ -3153,9 +3151,9 @@ public class CPU {
         if((this.F & FLAG_CARRY) == FLAG_CARRY) {
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
 
-            // TODO: this takes 4 cycles
+            this.timer += 4;
         } else {
-            // TODO: this takes 3 cycles
+            this.timer += 3;
         }
 
         return null;
@@ -3173,9 +3171,9 @@ public class CPU {
 
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
             this.SP -= 2;
-            // TODO: this takes 6 cycles
+            this.timer += 6;
         } else {
-            // TODO: this takes 3 cycles
+            this.timer += 3;
         }
 
         return null;
@@ -3355,7 +3353,7 @@ public class CPU {
      * @param ops unused.
      */
     Void di(int[] ops) {
-        // TODO: disable IME
+        this.disableInterrupts();
         return null;
     }
 
@@ -3444,7 +3442,7 @@ public class CPU {
      * @param ops unused.
      */
     Void ei(int[] ops) {
-        // TODO: enable IME
+        this.enableInterrupts();
         return null;
     }
 
