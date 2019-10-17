@@ -1,5 +1,7 @@
 package jboy.system;
 
+import jboy.other.CpuInfo;
+
 import java.util.HashMap;
 
 /**
@@ -269,6 +271,12 @@ public class CPU {
         if(!isStopped) {
             Instruction instruction = this.getInstruction(this.memory.getByteAt(this.PC++));
             this.execute(instruction);
+        }
+    }
+
+    public void run() {
+        while(!this.isStopped) {
+            this.tick();
         }
     }
 

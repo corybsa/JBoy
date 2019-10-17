@@ -1,5 +1,8 @@
 package jboy.system;
 
+import jboy.other.CpuInfo;
+import jboy.other.GameBoyInfo;
+
 public class GameBoy {
     private CPU cpu;
     private Memory memory;
@@ -13,9 +16,7 @@ public class GameBoy {
         this.memory.loadROM(rom);
         this.getCartridgeInfo();
 
-        /*while(true) {
-            this.cpu.tick();
-        }*/
+        this.cpu.run();
     }
 
     public int[] getSprites() {
@@ -40,5 +41,17 @@ public class GameBoy {
 
     public String getCartridgeInfo() {
         return new Cartridge(this.memory.getROM()).toString();
+    }
+
+    public GameBoyInfo getInfo() {
+        return new GameBoyInfo(this);
+    }
+
+    public CPU getCpu() {
+        return this.cpu;
+    }
+
+    public Memory getMemory() {
+        return this.memory;
     }
 }

@@ -90,8 +90,9 @@ public class Cartridge {
         sb.append("Ram Size: ").append(this.ramSize).append("\n");
         sb.append("Destination Code: ").append(this.destinationCode).append("\n");
         sb.append("ROM Version: ").append(this.romVersionNumber).append("\n");
-        // TODO: implement these.
+        // TODO: is this right?
         sb.append("Header Checksum: ").append(this.headerChecksum).append("\n");
+        // TODO: implement this.
         sb.append("Global Checksum: ").append("Not implemented.").append("\n");
 
         return sb.toString();
