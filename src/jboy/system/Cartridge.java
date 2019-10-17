@@ -13,6 +13,7 @@ public class Cartridge {
     private String ramSize;
     private String destinationCode;
     private int romVersionNumber;
+    private int headerChecksum;
 
     Cartridge(int[] rom) {
         this.rom = rom;
@@ -67,6 +68,15 @@ public class Cartridge {
         }
     }
 
+    private void getHeaderChecksum() {
+        // x=0:FOR i=0134h TO 014Ch:x=x-MEM[i]-1:NEXT
+        this.headerChecksum = 0;
+
+        for(int i = 0x0134; i <= 0x014C; i++) {
+            this.headerChecksum = this.headerChecksum - this.rom[i] - 1;
+        }
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -81,7 +91,7 @@ public class Cartridge {
         sb.append("Destination Code: ").append(this.destinationCode).append("\n");
         sb.append("ROM Version: ").append(this.romVersionNumber).append("\n");
         // TODO: implement these.
-        sb.append("Header Checksum: ").append("Not implemented.").append("\n");
+        sb.append("Header Checksum: ").append(this.headerChecksum).append("\n");
         sb.append("Global Checksum: ").append("Not implemented.").append("\n");
 
         return sb.toString();
