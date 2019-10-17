@@ -11,13 +11,34 @@ public class GameBoy {
 
     public void loadROM(int[] rom) {
         this.memory.loadROM(rom);
+        this.getCartridgeInfo();
 
         /*while(true) {
             this.cpu.tick();
         }*/
     }
 
-    public byte[] getSprites() {
-        return this.cpu.getSprites();
+    public int[] getSprites() {
+        int[] sprites = new int[0xA0];
+
+        for(int i = 0; i < 0x9F; i++) {
+            sprites[i] = this.memory.getByteAt(0xFF00 + i);
+        }
+
+        return sprites;
+    }
+
+    public int[] getNintendo() {
+        int[] nintendo = new int[0x30];
+
+        for(int i = 0; i < 0x2F; i++) {
+            nintendo[i] = this.memory.getByteAt(i);
+        }
+
+        return nintendo;
+    }
+
+    public String getCartridgeInfo() {
+        return new Cartridge(this.memory.getROM()).toString();
     }
 }

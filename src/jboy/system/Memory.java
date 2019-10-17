@@ -65,6 +65,10 @@ public class Memory {
         this.cartridge = rom;
     }
 
+    public int[] getROM() {
+        return this.cartridge;
+    }
+
     public int getByteAt(int address) {
         int addr;
 

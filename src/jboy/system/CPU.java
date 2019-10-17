@@ -363,16 +363,6 @@ public class CPU {
         return (this.F & flags) == flags;
     }
 
-    public byte[] getSprites() {
-        byte[] sprites = new byte[0xA0];
-
-        for(int i = 0; i < 0x9F; i++) {
-            sprites[i] = (byte)this.memory.getByteAt(0xFF00 + i);
-        }
-
-        return sprites;
-    }
-
     /**
      * Increments a {@code value} by 1 and sets the necessary flags.
      * @param value The value to increment.
