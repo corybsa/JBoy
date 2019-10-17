@@ -100,6 +100,11 @@ public class CPU {
     public CPU(Memory memory) {
         this.instructions = new Instructions(this);
         this.memory = memory;
+
+        this.reset();
+    }
+
+    private void reset() {
         this.setAF(0x01B0);
         this.setBC(0x0013);
         this.setDE(0x00D8);
