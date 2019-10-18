@@ -1,5 +1,8 @@
 package jboy.system;
 
+import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.Observer;
 import jboy.other.CpuInfo;
 
 import java.util.HashMap;
@@ -70,7 +73,7 @@ import java.util.HashMap;
  *     </li>
  * </ul>
  */
-public class CPU {
+public class CPU extends Observable<CpuInfo> {
     // Value of the Zero flag is 0b10000000
     public static final int FLAG_ZERO = 0x80;
 
@@ -94,6 +97,7 @@ public class CPU {
     private int SP;
     private int PC;
 
+    private Observer<? super CpuInfo> observer;
     private int timer = 0;
     private boolean isStopped = false;
 
@@ -272,6 +276,8 @@ public class CPU {
             Instruction instruction = this.getInstruction(this.memory.getByteAt(this.PC++));
             this.execute(instruction);
         }
+
+        this.observer.onNext(new CpuInfo(this));
     }
 
     public void run() {
@@ -5778,5 +5784,10 @@ public class CPU {
     Void set_7_a(int[] ops) {
         this.A = this.set(7, this.A);
         return null;
+    }
+
+    @Override
+    protected void subscribeActual(Observer<? super CpuInfo> observer) {
+        this.observer = observer;
     }
 }

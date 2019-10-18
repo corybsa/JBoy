@@ -1,10 +1,13 @@
 package sample;
 
+import io.reactivex.Observable;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
@@ -12,14 +15,15 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.image.PixelFormat;
 import javafx.scene.image.PixelWriter;
 import javafx.scene.image.WritableImage;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 import jboy.disassembler.Disassembler;
+import jboy.other.GameBoyInfo;
 import jboy.system.GameBoy;
 
-import java.awt.*;
-import java.awt.image.MemoryImageSource;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -32,6 +36,7 @@ public class Main extends Application {
     private ListView<String> listView;
     private GameBoy gameBoy;
     private GraphicsContext graphicsContext;
+    private Thread gameThread;
 
     @Override
     public void start(Stage primaryStage) throws Exception{
@@ -54,6 +59,12 @@ public class Main extends Application {
         primaryStage.setScene(scene);
         primaryStage.show();
         this.gameBoy = new GameBoy();
+    }
+
+    @Override
+    public void stop() throws Exception {
+        this.gameThread.interrupt();
+        super.stop();
     }
 
     public static void main(String[] args) {
@@ -90,6 +101,7 @@ public class Main extends Application {
     private Menu createActionsMenu() {
         Menu mActions = new Menu("Actions");
         MenuItem miDisassemble = new MenuItem("Disassemble...");
+        MenuItem miDebug = new MenuItem("Debug");
 
         miDisassemble.setOnAction(x -> {
             FileChooser chooser = new FileChooser();
@@ -100,7 +112,12 @@ public class Main extends Application {
             }
         });
 
+        miDebug.setOnAction(x -> {
+            this.openDebugWindow();
+        });
+
         mActions.getItems().add(miDisassemble);
+        mActions.getItems().add(miDebug);
 
         return mActions;
     }
@@ -115,6 +132,10 @@ public class Main extends Application {
             }
 
             this.gameBoy.loadROM(rom);
+
+            gameThread = new Thread(this.gameBoy);
+            gameThread.start();
+
             System.out.println(this.gameBoy.getCartridgeInfo());
 
             int[] nintendo = this.gameBoy.getNintendo();
@@ -150,5 +171,48 @@ public class Main extends Application {
         } catch(IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void openDebugWindow() {
+        GridPane layout = new GridPane();
+        Label pc = new Label("PC: 0");
+        Scene debugScene = new Scene(layout);
+        Stage debugWindow = new Stage();
+
+        debugWindow.setTitle("Debugger");
+        debugWindow.setScene(debugScene);
+        debugWindow.setHeight(200);
+        debugWindow.setWidth(200);
+
+        debugWindow.setX(Screen.getPrimary().getVisualBounds().getWidth() / 2);
+        debugWindow.setY(Screen.getPrimary().getVisualBounds().getHeight() / 2);
+
+        GameBoyInfo gbInfo = this.gameBoy.getInfo();
+        gbInfo.subscribe(info -> {
+            Platform.runLater(() -> {
+                pc.setText(Integer.toString(info.getCpuInfo().getCpu().getPC(), 16));
+            });
+        });
+        /*Observable<GameBoyInfo> stream = Observable.create(subscriber -> {
+            while(true) {
+                if(subscriber.isDisposed()) {
+                    break;
+                }
+
+                subscriber.onNext(gbInfo);
+            }
+        });
+
+        stream.subscribe(
+                info -> {
+                    System.out.println(info.getCpuInfo().getCpu().getPC());
+                },
+                err -> {},
+                () -> System.out.println("Complete")
+        );*/
+
+        layout.add(pc, 0, 0);
+
+        debugWindow.show();
     }
 }

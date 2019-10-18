@@ -1,21 +1,25 @@
 package jboy.system;
 
-import jboy.other.CpuInfo;
 import jboy.other.GameBoyInfo;
 
-public class GameBoy {
+public class GameBoy implements Runnable {
     private CPU cpu;
     private Memory memory;
+    private GameBoyInfo info;
 
     public GameBoy() {
         this.memory = new Memory();
         this.cpu = new CPU(this.memory);
+        this.info = new GameBoyInfo(this);
     }
 
     public void loadROM(int[] rom) {
         this.memory.loadROM(rom);
         this.getCartridgeInfo();
+    }
 
+    @Override
+    public void run() {
         this.cpu.run();
     }
 
@@ -44,7 +48,7 @@ public class GameBoy {
     }
 
     public GameBoyInfo getInfo() {
-        return new GameBoyInfo(this);
+        return this.info;
     }
 
     public CPU getCpu() {

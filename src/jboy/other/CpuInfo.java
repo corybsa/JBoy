@@ -5,7 +5,11 @@ import jboy.system.CPU;
 public class CpuInfo {
     private CPU cpu;
 
-    CpuInfo(CPU cpu) {
+    public CpuInfo(CPU cpu) {
         this.cpu = cpu;
+    }
+
+    public CPU getCpu() {
+        return cpu;
     }
 }
