@@ -17,7 +17,7 @@ class CPUInstructions0x80_0x8F {
     @BeforeAll
     static void testBeforeAll() {
         memory = new Memory();
-        cpu = new CPU(memory);
+        cpu = new CPU(memory, null);
     }
 
     @BeforeEach

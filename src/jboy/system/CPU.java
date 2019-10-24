@@ -1,7 +1,6 @@
 package jboy.system;
 
 import io.reactivex.Observable;
-import io.reactivex.ObservableEmitter;
 import io.reactivex.Observer;
 import jboy.other.CpuInfo;
 
@@ -74,6 +73,9 @@ import java.util.HashMap;
  * </ul>
  */
 public class CPU extends Observable<CpuInfo> {
+    // The frequency of the clock in MHz.
+    public static final int FREQUENCY = 1048576;
+
     // Value of the Zero flag is 0b10000000
     public static final int FLAG_ZERO = 0x80;
 
@@ -98,15 +100,18 @@ public class CPU extends Observable<CpuInfo> {
     private int PC;
 
     private Observer<? super CpuInfo> observer;
-    private int timer = 0;
+    private boolean ime = true;
     private boolean isStopped = false;
+    private int cycles = 0;
 
     private final Memory memory;
+    private final GPU gpu;
     private final HashMap<Integer, Instruction> instructions;
 
-    public CPU(Memory memory) {
+    public CPU(Memory memory, GPU gpu) {
         this.instructions = new Instructions(this);
         this.memory = memory;
+        this.gpu = gpu;
 
         this.reset();
     }
@@ -122,6 +127,7 @@ public class CPU extends Observable<CpuInfo> {
         this.memory.setByteAt(0xFF05, 0x00);
         this.memory.setByteAt(0xFF06, 0x00);
         this.memory.setByteAt(0xFF07, 0x00);
+        this.memory.setByteAt(0xFF0F, 0xE0);
         this.memory.setByteAt(0xFF10, 0x80);
         this.memory.setByteAt(0xFF11, 0xBF);
         this.memory.setByteAt(0xFF12, 0xF3);
@@ -152,6 +158,7 @@ public class CPU extends Observable<CpuInfo> {
         this.memory.setByteAt(0xFFFF, 0x00);
     }
 
+    // region Register setters and getters
     public int getA() {
         return this.A;
     }
@@ -267,25 +274,89 @@ public class CPU extends Observable<CpuInfo> {
     public void setSP(int n) {
         this.SP = n;
     }
+    // endregion
 
     /**
      * Tick one clock cycle
      */
     public void tick() {
-        if(!isStopped) {
-            Instruction instruction = this.getInstruction(this.memory.getByteAt(this.PC++));
-            this.execute(instruction);
+        if(this.isStopped) {
+            return;
         }
 
-        this.observer.onNext(new CpuInfo(this));
+        // Set cycles to 0 every frame to prevent integer overflow.
+        if(this.cycles >= (FREQUENCY / Display.FREQUENCY)) {
+            this.cycles = 0;
+        }
+
+        // Check if there are any interrupts that need to be serviced.
+        boolean shouldServiceInterrupts = this.ime && (this.getInterruptFlag() != 0) && (this.getInterruptEnable() != 0);
+
+        if(shouldServiceInterrupts) {
+            int enabledInterrupts = this.getInterruptEnable() & this.getInterruptFlag();
+
+            if((enabledInterrupts & Interrupts.VBLANK) == Interrupts.VBLANK) {
+                this.ime = false;
+                // TODO: The other components need to know about this and draw the next frame to the screen.
+                this.gpu.render();
+                this.rst(0x40);
+                this.cycles += 5;
+            } else if((enabledInterrupts & Interrupts.LCD_STAT) == Interrupts.LCD_STAT) {
+                this.ime = false;
+                this.rst(0x48);
+                this.cycles += 5;
+            } else if((enabledInterrupts & Interrupts.TIMER) == Interrupts.TIMER) {
+                this.ime = false;
+                this.rst(0x50);
+                this.cycles += 5;
+            } else if((enabledInterrupts & Interrupts.SERIAL) == Interrupts.SERIAL) {
+                this.ime = false;
+                this.rst(0x58);
+                this.cycles += 5;
+            } else if((enabledInterrupts & Interrupts.JOYPAD) == Interrupts.JOYPAD) {
+                this.ime = false;
+                this.rst(0x60);
+                this.cycles += 5;
+            }
+        } else {
+            Instruction instruction = this.getInstruction(this.memory.getByteAt(this.PC++));
+            this.execute(instruction);
+            this.gpu.tick(this.cycles);
+        }
+
+        if(this.observer != null) {
+            this.observer.onNext(new CpuInfo(this));
+        }
     }
 
     public void run() {
-        while(!this.isStopped) {
+        while(true) {
             this.tick();
         }
     }
 
+    /**
+     * Sets flags in the F register. If multiple flags should be set, then they should be bitwise or'd together.
+     * Example: if Z and H should be set, then they should be passed in to this method like this: Z | H
+     * @param flags The flags to check.
+     */
+    public void setFlags(int flags) {
+        this.F = this.F | flags;
+    }
+
+    /**
+     * Resets flags in the F register. If multiple flags should be reset, then they should be bitwise or'd together.
+     * Example: if Z and H should be reset, then they should be passed in to this method like this: Z | H
+     * @param flags The flags to check.
+     */
+    public void resetFlags(int flags) {
+        this.F = this.F & ~flags;
+    }
+
+    /**
+     * Increments PC by specified amount.
+     * @param n The amount to increment PC.
+     */
     private void incrementPC(int n) {
         this.PC += n;
     }
@@ -325,7 +396,7 @@ public class CPU extends Observable<CpuInfo> {
         }
 
         this.incrementPC(instruction.getOpSize());
-        this.timer += instruction.getOpCycles();
+        this.cycles += instruction.getOpCycles();
     }
 
     /**
@@ -356,21 +427,19 @@ public class CPU extends Observable<CpuInfo> {
     }
 
     /**
-     * Sets flags in the F register. If multiple flags should be set, then they should be bitwise or'd together.
-     * Example: if Z and H should be set, then they should be passed in to this method like this: Z | H
-     * @param flags The flags to check.
+     * Gets the value of the interrupt flag.
+     * @return The value at memory address 0xFF0F
      */
-    public void setFlags(int flags) {
-        this.F = this.F | flags;
+    private int getInterruptFlag() {
+        return this.memory.getByteAt(0xFF0F);
     }
 
     /**
-     * Resets flags in the F register. If multiple flags should be reset, then they should be bitwise or'd together.
-     * Example: if Z and H should be reset, then they should be passed in to this method like this: Z | H
-     * @param flags The flags to check.
+     * Gets the value of the interrupt enable.
+     * @return The value at memory address 0xFFFF
      */
-    public void resetFlags(int flags) {
-        this.F = this.F & ~flags;
+    private int getInterruptEnable() {
+        return this.memory.getByteAt(0xFFFF);
     }
 
     // TODO: Delete this if my version of daa works.
@@ -384,6 +453,7 @@ public class CPU extends Observable<CpuInfo> {
         return (this.F & flags) == flags;
     }
 
+    // region Instruction helper methods
     /**
      * Increments a {@code value} by 1 and sets the necessary flags.
      * @param value The value to increment.
@@ -912,14 +982,19 @@ public class CPU extends Observable<CpuInfo> {
         this.setFlags(FLAG_SUB);
     }
 
-    private void disableInterrupts() {
-        this.memory.setByteAt(0xFFFF, 0x00);
+    /**
+     * Push PC onto stack and reset PC to {@code address}.
+     * @param address The address to jump to.
+     */
+    private void rst(int address) {
+        this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
+        this.memory.setByteAt(this.SP - 2, this.PC & 0xFF);
+        this.SP -= 2;
+        this.PC = address;
     }
+    // endregion
 
-    private void enableInterrupts() {
-        this.memory.setByteAt(0xFFFF, 0x01);
-    }
-
+    // region Instructions
     /**
      * OP codes
      * 0x00, 0x40, 0x49, 0x52, 0x5B, 0x64, 0x6D, 0x7F,
@@ -1106,7 +1181,7 @@ public class CPU extends Observable<CpuInfo> {
      */
     Void stop(int[] ops) {
         this.isStopped = true;
-        this.disableInterrupts();
+        this.ime = false;
         return null;
     }
 
@@ -1296,9 +1371,9 @@ public class CPU extends Observable<CpuInfo> {
                 this.incrementPC(ops[0] - 127);
             }*/
 
-            this.timer += 3;
+            this.cycles += 3;
         } else {
-            this.timer += 2;
+            this.cycles += 2;
         }
 
         return null;
@@ -1445,9 +1520,9 @@ public class CPU extends Observable<CpuInfo> {
                 this.incrementPC(ops[0] - 127);
             }*/
 
-            this.timer += 3;
+            this.cycles += 3;
         } else {
-            this.timer += 2;
+            this.cycles += 2;
         }
 
         return null;
@@ -1533,9 +1608,9 @@ public class CPU extends Observable<CpuInfo> {
                 this.incrementPC(ops[0] - 127);
             }*/
 
-            this.timer += 3;
+            this.cycles += 3;
         } else {
-            this.timer += 2;
+            this.cycles += 2;
         }
 
         return null;
@@ -1623,9 +1698,9 @@ public class CPU extends Observable<CpuInfo> {
                 this.incrementPC(ops[0] - 127);
             }*/
 
-            this.timer += 3;
+            this.cycles += 3;
         } else {
-            this.timer += 2;
+            this.cycles += 2;
         }
 
         return null;
@@ -2832,9 +2907,9 @@ public class CPU extends Observable<CpuInfo> {
             this.PC = this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP));
             this.SP += 2;
 
-            this.timer += 5;
+            this.cycles += 5;
         } else {
-            this.timer += 2;
+            this.cycles += 2;
         }
 
         return null;
@@ -2859,9 +2934,9 @@ public class CPU extends Observable<CpuInfo> {
         if((this.F & FLAG_ZERO) != FLAG_ZERO) {
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
 
-            this.timer += 4;
+            this.cycles += 4;
         } else {
-            this.timer += 3;
+            this.cycles += 3;
         }
 
         return null;
@@ -2889,9 +2964,9 @@ public class CPU extends Observable<CpuInfo> {
 
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
             this.SP -= 2;
-            this.timer += 6;
+            this.cycles += 6;
         } else {
-            this.timer += 3;
+            this.cycles += 3;
         }
 
         return null;
@@ -2923,10 +2998,7 @@ public class CPU extends Observable<CpuInfo> {
      * @param ops unused.
      */
     Void rst_00(int[] ops) {
-        this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
-        this.memory.setByteAt(this.SP - 2, this.PC & 0xFF);
-        this.SP -= 2;
-        this.PC = 0x00;
+        this.rst(0x00);
         return null;
     }
 
@@ -2939,9 +3011,9 @@ public class CPU extends Observable<CpuInfo> {
             this.PC = this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP));
             this.SP += 2;
 
-            this.timer += 5;
+            this.cycles += 5;
         } else {
-            this.timer += 2;
+            this.cycles += 2;
         }
 
         return null;
@@ -2966,9 +3038,9 @@ public class CPU extends Observable<CpuInfo> {
         if((this.F & FLAG_ZERO) == FLAG_ZERO) {
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
 
-            this.timer += 4;
+            this.cycles += 4;
         } else {
-            this.timer += 3;
+            this.cycles += 3;
         }
 
         return null;
@@ -2986,9 +3058,9 @@ public class CPU extends Observable<CpuInfo> {
 
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
             this.SP -= 2;
-            this.timer += 6;
+            this.cycles += 6;
         } else {
-            this.timer += 3;
+            this.cycles += 3;
         }
 
         return null;
@@ -3023,10 +3095,7 @@ public class CPU extends Observable<CpuInfo> {
      * @param ops unused.
      */
     Void rst_08(int[] ops) {
-        this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
-        this.memory.setByteAt(this.SP - 2, this.PC & 0xFF);
-        this.SP -= 2;
-        this.PC = 0x08;
+        this.rst(0x08);
         return null;
     }
 
@@ -3039,9 +3108,9 @@ public class CPU extends Observable<CpuInfo> {
             this.PC = this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP));
             this.SP += 2;
 
-            this.timer += 5;
+            this.cycles += 5;
         } else {
-            this.timer += 2;
+            this.cycles += 2;
         }
 
         return null;
@@ -3066,9 +3135,9 @@ public class CPU extends Observable<CpuInfo> {
         if((this.F & FLAG_CARRY) != FLAG_CARRY) {
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
 
-            this.timer += 4;
+            this.cycles += 4;
         } else {
-            this.timer += 3;
+            this.cycles += 3;
         }
 
         return null;
@@ -3086,9 +3155,9 @@ public class CPU extends Observable<CpuInfo> {
 
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
             this.SP -= 2;
-            this.timer += 6;
+            this.cycles += 6;
         } else {
-            this.timer += 3;
+            this.cycles += 3;
         }
 
         return null;
@@ -3120,10 +3189,7 @@ public class CPU extends Observable<CpuInfo> {
      * @param ops unused.
      */
     Void rst_10(int[] ops) {
-        this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
-        this.memory.setByteAt(this.SP - 2, this.PC & 0xFF);
-        this.SP -= 2;
-        this.PC = 0x10;
+        this.rst(0x10);
         return null;
     }
 
@@ -3136,9 +3202,9 @@ public class CPU extends Observable<CpuInfo> {
             this.PC = this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP));
             this.SP += 2;
 
-            this.timer += 5;
+            this.cycles += 5;
         } else {
-            this.timer += 2;
+            this.cycles += 2;
         }
 
         return null;
@@ -3152,7 +3218,7 @@ public class CPU extends Observable<CpuInfo> {
         this.PC = this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP));
         this.SP += 2;
 
-        this.enableInterrupts();
+        this.ime = true;
 
         return null;
     }
@@ -3165,9 +3231,9 @@ public class CPU extends Observable<CpuInfo> {
         if((this.F & FLAG_CARRY) == FLAG_CARRY) {
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
 
-            this.timer += 4;
+            this.cycles += 4;
         } else {
-            this.timer += 3;
+            this.cycles += 3;
         }
 
         return null;
@@ -3185,9 +3251,9 @@ public class CPU extends Observable<CpuInfo> {
 
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
             this.SP -= 2;
-            this.timer += 6;
+            this.cycles += 6;
         } else {
-            this.timer += 3;
+            this.cycles += 3;
         }
 
         return null;
@@ -3207,10 +3273,7 @@ public class CPU extends Observable<CpuInfo> {
      * @param ops unused.
      */
     Void rst_18(int[] ops) {
-        this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
-        this.memory.setByteAt(this.SP - 2, this.PC & 0xFF);
-        this.SP -= 2;
-        this.PC = 0x18;
+        this.rst(0x18);
         return null;
     }
 
@@ -3272,10 +3335,7 @@ public class CPU extends Observable<CpuInfo> {
      * @param ops unused.
      */
     Void rst_20(int[] ops) {
-        this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
-        this.memory.setByteAt(this.SP - 2, this.PC & 0xFF);
-        this.SP -= 2;
-        this.PC = 0x20;
+        this.rst(0x20);
         return null;
     }
 
@@ -3324,10 +3384,7 @@ public class CPU extends Observable<CpuInfo> {
      * @param ops unused.
      */
     Void rst_28(int[] ops) {
-        this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
-        this.memory.setByteAt(this.SP - 2, this.PC & 0xFF);
-        this.SP -= 2;
-        this.PC = 0x28;
+        this.rst(0x28);
         return null;
     }
 
@@ -3367,7 +3424,7 @@ public class CPU extends Observable<CpuInfo> {
      * @param ops unused.
      */
     Void di(int[] ops) {
-        this.disableInterrupts();
+        this.ime = false;
         return null;
     }
 
@@ -3398,10 +3455,7 @@ public class CPU extends Observable<CpuInfo> {
      * @param ops unused.
      */
     Void rst_30(int[] ops) {
-        this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
-        this.memory.setByteAt(this.SP - 2, this.PC & 0xFF);
-        this.SP -= 2;
-        this.PC = 0x30;
+        this.rst(0x30);
         return null;
     }
 
@@ -3456,7 +3510,7 @@ public class CPU extends Observable<CpuInfo> {
      * @param ops unused.
      */
     Void ei(int[] ops) {
-        this.enableInterrupts();
+        this.ime = true;
         return null;
     }
 
@@ -3475,10 +3529,7 @@ public class CPU extends Observable<CpuInfo> {
      * @param ops unused.
      */
     Void rst_38(int[] ops) {
-        this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
-        this.memory.setByteAt(this.SP - 2, this.PC & 0xFF);
-        this.SP -= 2;
-        this.PC = 0x38;
+        this.rst(0x38);
         return null;
     }
 
@@ -5785,6 +5836,7 @@ public class CPU extends Observable<CpuInfo> {
         this.A = this.set(7, this.A);
         return null;
     }
+    // endregion
 
     @Override
     protected void subscribeActual(Observer<? super CpuInfo> observer) {

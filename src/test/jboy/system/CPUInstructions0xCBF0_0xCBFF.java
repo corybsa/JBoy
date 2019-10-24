@@ -17,7 +17,7 @@ class CPUInstructions0xCBF0_0xCBFF {
     @BeforeAll
     static void testBeforeAll() {
         memory = new Memory();
-        cpu = new CPU(memory);
+        cpu = new CPU(memory, null);
     }
 
     @BeforeEach

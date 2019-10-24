@@ -1,5 +1,11 @@
 package jboy.system;
 
+import io.reactivex.Observable;
+import io.reactivex.Observer;
+import javafx.util.Pair;
+
+import java.util.HashMap;
+
 /**
  * The GameBoy has 64KB of Memory.
  *
@@ -48,8 +54,8 @@ package jboy.system;
  *                        - Special byte of I/O.
  *                        - It's here because of how the CPU works internally.
  */
-public class Memory {
-    private int[] cartridge = new int[0x8000];
+public class Memory extends Observable<Pair<Integer, Integer>> {
+    private int[] cartridge = new int[0x800000];
     private int[] vram = new int[0x2000];
     private int[] sram = new int[0x2000];
     private int[] wram = new int[0x2000];
@@ -60,6 +66,12 @@ public class Memory {
     private int[] ff4c_ff7f = new int[0x34];
     private int[] hram = new int[0x7F];
     private int[] ime = new int[1];
+    private Observer<? super Pair<Integer, Integer>> observer;
+
+    @Override
+    protected void subscribeActual(Observer<? super Pair<Integer, Integer>> observer) {
+        this.observer = observer;
+    }
 
     public void loadROM(int[] rom) {
         this.cartridge = rom;
@@ -107,14 +119,15 @@ public class Memory {
     }
 
     public void setByteAt(int address, int value) {
-        // can't modify the ROM (0x0000 through 0x7FFF)
         int addr;
 
+        // can't modify the ROM (0x0000 through 0x7FFF)
         if(address <= 0x7FFF) {
             // nothing
         } else if(address <= 0x9FFF) {
-            addr = (0x1FFF - (0x9FFF - address)) & 0xFFFF;
-            this.vram[addr] = value;
+//            addr = (0x1FFF - (0x9FFF - address)) & 0xFFFF;
+//            this.vram[addr] = value;
+            this.observer.onNext(new Pair<>(address, value));
         } else if(address <= 0xBFFF) {
             addr = (0x1FFF - (0xBFFF - address)) & 0xFFFF;
             this.sram[addr] = value;
@@ -133,6 +146,10 @@ public class Memory {
         } else if(address <= 0xFF4B) {
             addr = (0x4B - (0xFF4B - address)) & 0xFFFF;
             this.io[addr] = value;
+
+            if(address == 0xFF0F) {
+                this.compareLY();
+            }
         } else if(address <= 0xFF7F) {
             addr = (0x33 - (0xFF7F - address)) & 0xFFFF;
             this.ff4c_ff7f[addr] = value;
@@ -141,6 +158,22 @@ public class Memory {
             this.hram[addr] = value;
         } else {
             this.ime[0] = value;
+        }
+    }
+
+    /**
+     * The GameBoy permanently compares the value of the LYC and LY registers. When both values are identical,
+     * the coincidence bit (6th bit) in the STAT register becomes set, and (if enabled) a STAT interrupt is requested.
+     */
+    private void compareLY() {
+        int lyc = this.getByteAt(0xFF45);
+        int ly = this.getByteAt(0xFF44);
+
+        if(lyc == ly) {
+            int interruptFlags = this.getByteAt(0xFF0F);
+
+            this.setByteAt(0xFF41, (1 << 6));
+            this.setByteAt(0xFF0F, interruptFlags | Interrupts.LCD_STAT);
         }
     }
 }

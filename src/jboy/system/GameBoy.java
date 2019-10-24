@@ -3,14 +3,20 @@ package jboy.system;
 import jboy.other.GameBoyInfo;
 
 public class GameBoy implements Runnable {
-    private CPU cpu;
-    private Memory memory;
-    private GameBoyInfo info;
+    private final CPU cpu;
+    private final GPU gpu;
+    private final Display display;
+    private final Memory memory;
 
     public GameBoy() {
+        this.display = new Display();
         this.memory = new Memory();
-        this.cpu = new CPU(this.memory);
-        this.info = new GameBoyInfo(this);
+        this.gpu = new GPU(this.memory, this.display);
+        this.cpu = new CPU(this.memory, this.gpu);
+
+        this.memory.subscribe(val -> {
+            this.gpu.setByteAt(val.getKey(), val.getValue());
+        });
     }
 
     public void loadROM(int[] rom) {
@@ -23,32 +29,12 @@ public class GameBoy implements Runnable {
         this.cpu.run();
     }
 
-    public int[] getSprites() {
-        int[] sprites = new int[0xA0];
-
-        for(int i = 0; i < 0x9F; i++) {
-            sprites[i] = this.memory.getByteAt(0xFF00 + i);
-        }
-
-        return sprites;
-    }
-
-    public int[] getNintendo() {
-        int[] nintendo = new int[0x30];
-
-        for(int i = 0; i < 0x2F; i++) {
-            nintendo[i] = this.memory.getByteAt(i);
-        }
-
-        return nintendo;
-    }
-
     public String getCartridgeInfo() {
         return new Cartridge(this.memory.getROM()).toString();
     }
 
     public GameBoyInfo getInfo() {
-        return this.info;
+        return new GameBoyInfo(this);
     }
 
     public CPU getCpu() {

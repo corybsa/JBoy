@@ -1,6 +1,5 @@
 package sample;
 
-import io.reactivex.Observable;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
@@ -14,7 +13,6 @@ import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.image.PixelFormat;
 import javafx.scene.image.PixelWriter;
-import javafx.scene.image.WritableImage;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
@@ -26,44 +24,49 @@ import jboy.system.GameBoy;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 public class Main extends Application {
     private Stage stage;
     private ListView<String> listView;
     private GameBoy gameBoy;
-    private GraphicsContext graphicsContext;
     private Thread gameThread;
+
+    private GraphicsContext graphicsContext;
 
     @Override
     public void start(Stage primaryStage) throws Exception{
         this.stage = primaryStage;
-//        Parent root = FXMLLoader.load(getClass().getResource("sample.fxml"));
         primaryStage.setTitle("JBoy");
 
         VBox vbox = new VBox();
         MenuBar menuBar = createMenuBar();
-        this.listView = new ListView<>();
+        Canvas canvas = new Canvas(160, 144);
+        this.graphicsContext = canvas.getGraphicsContext2D();
 
         vbox.getChildren().add(menuBar);
-        Canvas canvas = new Canvas();
-        this.graphicsContext = canvas.getGraphicsContext2D();
-//        gc.getPixelWriter().setPixels();
-//        this.vbox.getChildren().add(this.listView);
+
+
         vbox.getChildren().add(canvas);
-        Scene scene = new Scene(vbox, 300, 275);
+
+        Scene scene = new Scene(vbox, 160, 144);
 
         primaryStage.setScene(scene);
         primaryStage.show();
         this.gameBoy = new GameBoy();
+//        byte[] data = this.createImageData();
+//        this.drawImage(data);
     }
 
     @Override
     public void stop() throws Exception {
-        this.gameThread.interrupt();
+        if(this.gameThread != null) {
+            this.gameThread.interrupt();
+        }
+
         super.stop();
     }
 
@@ -138,14 +141,49 @@ public class Main extends Application {
 
             System.out.println(this.gameBoy.getCartridgeInfo());
 
-            int[] nintendo = this.gameBoy.getNintendo();
-            System.out.println(Arrays.toString(nintendo));
-            WritableImage img = new WritableImage(100, 100);
-            PixelWriter pw = this.graphicsContext.getPixelWriter();
-            pw.setPixels(0, 0, 100, 100, PixelFormat.getIntArgbInstance(), nintendo, 0, 100);
+//            this.drawImage(nintendo);
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private byte[] createImageData() {
+        System.out.println("Creating image data.");
+        byte[] data = new byte[300];
+
+        int i = 0;
+
+        for (int y = 0; y < 10; y++) {
+            int r = y * 255 / 10;
+
+            for (int x = 0; x < 10; x++) {
+                int g = x * 255 / 10;
+                data[i] = (byte)r;
+                data[i + 1] = (byte)g;
+                i += 3;
+            }
+        }
+
+        System.out.println("Done.");
+        return data;
+    }
+
+    private void drawImage(byte[] data) {
+        System.out.println("Drawing image.");
+        int rows = data.length / 16;
+        int stragglers = data.length % 16;
+        rows = (int)(rows + Math.ceil(stragglers / 16.0));
+
+        PixelWriter pw = this.graphicsContext.getPixelWriter();
+        PixelFormat<ByteBuffer> pf = PixelFormat.getByteRgbInstance();
+
+        for(int y = 0; y < 100; y += 10) {
+            for(int x = 0; x < 100; x += 10) {
+                pw.setPixels(x, y, 10, 10, pf, data, 0, 30);
+            }
+        }
+
+        System.out.println("Done.");
     }
 
     private void disassemble(File file) {
@@ -174,8 +212,17 @@ public class Main extends Application {
     }
 
     private void openDebugWindow() {
+        FileChooser chooser = new FileChooser();
+        File file = chooser.showOpenDialog(this.stage);
+
+        if(file != null) {
+            this.loadRom(file);
+        }
+
         GridPane layout = new GridPane();
-        Label pc = new Label("PC: 0");
+        Label pc = new Label("PC: 0x100");
+        Label a = new Label("A: 0x00");
+        Label hl = new Label("HL: 0x0000");
         Scene debugScene = new Scene(layout);
         Stage debugWindow = new Stage();
 
@@ -190,28 +237,15 @@ public class Main extends Application {
         GameBoyInfo gbInfo = this.gameBoy.getInfo();
         gbInfo.subscribe(info -> {
             Platform.runLater(() -> {
-                pc.setText(Integer.toString(info.getCpuInfo().getCpu().getPC(), 16));
+                pc.setText("PC: 0x" + Integer.toString(info.getCpuInfo().getCpu().getPC(), 16));
+                a.setText("A: 0x" + Integer.toString(info.getCpuInfo().getCpu().getA(), 16));
+                hl.setText("HL: 0x" + Integer.toString(info.getCpuInfo().getCpu().getHL(), 16));
             });
         });
-        /*Observable<GameBoyInfo> stream = Observable.create(subscriber -> {
-            while(true) {
-                if(subscriber.isDisposed()) {
-                    break;
-                }
-
-                subscriber.onNext(gbInfo);
-            }
-        });
-
-        stream.subscribe(
-                info -> {
-                    System.out.println(info.getCpuInfo().getCpu().getPC());
-                },
-                err -> {},
-                () -> System.out.println("Complete")
-        );*/
 
         layout.add(pc, 0, 0);
+        layout.add(a, 0, 1);
+        layout.add(hl, 0, 2);
 
         debugWindow.show();
     }
