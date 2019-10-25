@@ -4,7 +4,13 @@ import io.reactivex.Observable;
 import io.reactivex.Observer;
 import jboy.other.CpuInfo;
 
+import java.time.Instant;
+import java.time.temporal.TemporalField;
 import java.util.HashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <h3>Description</h3>
@@ -102,7 +108,9 @@ public class CPU extends Observable<CpuInfo> {
     private Observer<? super CpuInfo> observer;
     private boolean ime = true;
     private boolean isStopped = false;
-    private int cycles = 0;
+    private long cycles = 0;
+    private long cyclesSinceLastSync = 0;
+    private long lastSyncTime = 0;
 
     private final Memory memory;
     private final GPU gpu;
@@ -281,43 +289,37 @@ public class CPU extends Observable<CpuInfo> {
      */
     public void tick() {
         if(this.isStopped) {
+            this.checkInterrupts();
             return;
         }
 
         // Set cycles to 0 every frame to prevent integer overflow.
-        if(this.cycles >= (FREQUENCY / Display.FREQUENCY)) {
+        /*if(this.cycles >= (FREQUENCY / Display.FREQUENCY)) {
             this.cycles = 0;
+        }*/
+
+        // TODO: Figure out nanoseconds.
+        long target = this.cyclesSinceLastSync / CPU.FREQUENCY;
+        long nanoseconds = Instant.now().getEpochSecond();
+        long sleepDuration = target + this.lastSyncTime - nanoseconds;
+
+        if(sleepDuration > 0 && sleepDuration < (Display.LCDC_PERIOD * 1000000000L / CPU.FREQUENCY)) {
+            try {
+                Thread.sleep(0, (int) sleepDuration);
+            } catch(InterruptedException e) {
+                System.out.println("Could not sleep.");
+                e.printStackTrace();
+            }
+            this.lastSyncTime += target;
+        } else {
+            this.lastSyncTime = nanoseconds;
         }
 
         // Check if there are any interrupts that need to be serviced.
         boolean shouldServiceInterrupts = this.ime && (this.getInterruptFlag() != 0) && (this.getInterruptEnable() != 0);
 
         if(shouldServiceInterrupts) {
-            int enabledInterrupts = this.getInterruptEnable() & this.getInterruptFlag();
-
-            if((enabledInterrupts & Interrupts.VBLANK) == Interrupts.VBLANK) {
-                this.ime = false;
-                // TODO: The other components need to know about this and draw the next frame to the screen.
-                this.gpu.render();
-                this.rst(0x40);
-                this.cycles += 5;
-            } else if((enabledInterrupts & Interrupts.LCD_STAT) == Interrupts.LCD_STAT) {
-                this.ime = false;
-                this.rst(0x48);
-                this.cycles += 5;
-            } else if((enabledInterrupts & Interrupts.TIMER) == Interrupts.TIMER) {
-                this.ime = false;
-                this.rst(0x50);
-                this.cycles += 5;
-            } else if((enabledInterrupts & Interrupts.SERIAL) == Interrupts.SERIAL) {
-                this.ime = false;
-                this.rst(0x58);
-                this.cycles += 5;
-            } else if((enabledInterrupts & Interrupts.JOYPAD) == Interrupts.JOYPAD) {
-                this.ime = false;
-                this.rst(0x60);
-                this.cycles += 5;
-            }
+            this.checkInterrupts();
         } else {
             Instruction instruction = this.getInstruction(this.memory.getByteAt(this.PC++));
             this.execute(instruction);
@@ -330,6 +332,12 @@ public class CPU extends Observable<CpuInfo> {
     }
 
     public void run() {
+        /*final long frameRate = 1000000 / 3600;
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+
+        final Runnable timer = this::tick;
+        scheduler.scheduleAtFixedRate(timer, 0, frameRate, TimeUnit.MICROSECONDS);*/
+
         while(true) {
             this.tick();
         }
@@ -359,6 +367,43 @@ public class CPU extends Observable<CpuInfo> {
      */
     private void incrementPC(int n) {
         this.PC += n;
+    }
+
+    private void incrementCycles(int n) {
+        this.cycles = this.cycles + n;
+        this.cyclesSinceLastSync += n;
+    }
+
+    private void checkInterrupts() {
+        int enabledInterrupts = this.getInterruptEnable() & this.getInterruptFlag();
+
+        if((enabledInterrupts & Interrupts.VBLANK) == Interrupts.VBLANK) {
+            this.ime = false;
+            this.isStopped = false;
+            // TODO: The other components need to know about this and draw the next frame to the screen.
+            this.rst(0x40);
+            this.incrementCycles(5);
+        } else if((enabledInterrupts & Interrupts.LCD_STAT) == Interrupts.LCD_STAT) {
+            this.ime = false;
+            this.isStopped = false;
+            this.rst(0x48);
+            this.incrementCycles(5);
+        } else if((enabledInterrupts & Interrupts.TIMER) == Interrupts.TIMER) {
+            this.ime = false;
+            this.isStopped = false;
+            this.rst(0x50);
+            this.incrementCycles(5);
+        } else if((enabledInterrupts & Interrupts.SERIAL) == Interrupts.SERIAL) {
+            this.ime = false;
+            this.isStopped = false;
+            this.rst(0x58);
+            this.incrementCycles(5);
+        } else if((enabledInterrupts & Interrupts.JOYPAD) == Interrupts.JOYPAD) {
+            this.ime = false;
+            this.isStopped = false;
+            this.rst(0x60);
+            this.incrementCycles(5);
+        }
     }
 
     /**
@@ -396,7 +441,7 @@ public class CPU extends Observable<CpuInfo> {
         }
 
         this.incrementPC(instruction.getOpSize());
-        this.cycles += instruction.getOpCycles();
+        this.incrementCycles(instruction.getOpCycles());
     }
 
     /**
@@ -1371,9 +1416,9 @@ public class CPU extends Observable<CpuInfo> {
                 this.incrementPC(ops[0] - 127);
             }*/
 
-            this.cycles += 3;
+            this.incrementCycles(3);
         } else {
-            this.cycles += 2;
+            this.incrementCycles(2);
         }
 
         return null;
@@ -1520,9 +1565,9 @@ public class CPU extends Observable<CpuInfo> {
                 this.incrementPC(ops[0] - 127);
             }*/
 
-            this.cycles += 3;
+            this.incrementCycles(3);
         } else {
-            this.cycles += 2;
+            this.incrementCycles(2);
         }
 
         return null;
@@ -1608,9 +1653,9 @@ public class CPU extends Observable<CpuInfo> {
                 this.incrementPC(ops[0] - 127);
             }*/
 
-            this.cycles += 3;
+            this.incrementCycles(3);
         } else {
-            this.cycles += 2;
+            this.incrementCycles(2);
         }
 
         return null;
@@ -1698,9 +1743,9 @@ public class CPU extends Observable<CpuInfo> {
                 this.incrementPC(ops[0] - 127);
             }*/
 
-            this.cycles += 3;
+            this.incrementCycles(3);
         } else {
-            this.cycles += 2;
+            this.incrementCycles(2);
         }
 
         return null;
@@ -2907,9 +2952,9 @@ public class CPU extends Observable<CpuInfo> {
             this.PC = this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP));
             this.SP += 2;
 
-            this.cycles += 5;
+            this.incrementCycles(5);
         } else {
-            this.cycles += 2;
+            this.incrementCycles(2);
         }
 
         return null;
@@ -2934,9 +2979,9 @@ public class CPU extends Observable<CpuInfo> {
         if((this.F & FLAG_ZERO) != FLAG_ZERO) {
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
 
-            this.cycles += 4;
+            this.incrementCycles(4);
         } else {
-            this.cycles += 3;
+            this.incrementCycles(3);
         }
 
         return null;
@@ -2964,9 +3009,9 @@ public class CPU extends Observable<CpuInfo> {
 
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
             this.SP -= 2;
-            this.cycles += 6;
+            this.incrementCycles(6);
         } else {
-            this.cycles += 3;
+            this.incrementCycles(3);
         }
 
         return null;
@@ -3011,9 +3056,9 @@ public class CPU extends Observable<CpuInfo> {
             this.PC = this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP));
             this.SP += 2;
 
-            this.cycles += 5;
+            this.incrementCycles(5);
         } else {
-            this.cycles += 2;
+            this.incrementCycles(2);
         }
 
         return null;
@@ -3038,9 +3083,9 @@ public class CPU extends Observable<CpuInfo> {
         if((this.F & FLAG_ZERO) == FLAG_ZERO) {
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
 
-            this.cycles += 4;
+            this.incrementCycles(4);
         } else {
-            this.cycles += 3;
+            this.incrementCycles(3);
         }
 
         return null;
@@ -3058,9 +3103,9 @@ public class CPU extends Observable<CpuInfo> {
 
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
             this.SP -= 2;
-            this.cycles += 6;
+            this.incrementCycles(6);
         } else {
-            this.cycles += 3;
+            this.incrementCycles(3);
         }
 
         return null;
@@ -3108,9 +3153,9 @@ public class CPU extends Observable<CpuInfo> {
             this.PC = this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP));
             this.SP += 2;
 
-            this.cycles += 5;
+            this.incrementCycles(5);
         } else {
-            this.cycles += 2;
+            this.incrementCycles(2);
         }
 
         return null;
@@ -3135,9 +3180,9 @@ public class CPU extends Observable<CpuInfo> {
         if((this.F & FLAG_CARRY) != FLAG_CARRY) {
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
 
-            this.cycles += 4;
+            this.incrementCycles(4);
         } else {
-            this.cycles += 3;
+            this.incrementCycles(3);
         }
 
         return null;
@@ -3155,9 +3200,9 @@ public class CPU extends Observable<CpuInfo> {
 
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
             this.SP -= 2;
-            this.cycles += 6;
+            this.incrementCycles(6);
         } else {
-            this.cycles += 3;
+            this.incrementCycles(3);
         }
 
         return null;
@@ -3202,9 +3247,9 @@ public class CPU extends Observable<CpuInfo> {
             this.PC = this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP));
             this.SP += 2;
 
-            this.cycles += 5;
+            this.incrementCycles(5);
         } else {
-            this.cycles += 2;
+            this.incrementCycles(2);
         }
 
         return null;
@@ -3231,9 +3276,9 @@ public class CPU extends Observable<CpuInfo> {
         if((this.F & FLAG_CARRY) == FLAG_CARRY) {
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
 
-            this.cycles += 4;
+            this.incrementCycles(4);
         } else {
-            this.cycles += 3;
+            this.incrementCycles(3);
         }
 
         return null;
@@ -3251,9 +3296,9 @@ public class CPU extends Observable<CpuInfo> {
 
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
             this.SP -= 2;
-            this.cycles += 6;
+            this.incrementCycles(6);
         } else {
-            this.cycles += 3;
+            this.incrementCycles(3);
         }
 
         return null;

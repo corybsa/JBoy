@@ -14,9 +14,7 @@ public class GameBoy implements Runnable {
         this.gpu = new GPU(this.memory, this.display);
         this.cpu = new CPU(this.memory, this.gpu);
 
-        this.memory.subscribe(val -> {
-            this.gpu.setByteAt(val.getKey(), val.getValue());
-        });
+        this.memory.subscribe(this.gpu::updateTiles);
     }
 
     public void loadROM(int[] rom) {
@@ -43,5 +41,9 @@ public class GameBoy implements Runnable {
 
     public Memory getMemory() {
         return this.memory;
+    }
+
+    public Display getDisplay() {
+        return this.display;
     }
 }

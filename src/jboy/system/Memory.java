@@ -2,9 +2,6 @@ package jboy.system;
 
 import io.reactivex.Observable;
 import io.reactivex.Observer;
-import javafx.util.Pair;
-
-import java.util.HashMap;
 
 /**
  * The GameBoy has 64KB of Memory.
@@ -54,7 +51,7 @@ import java.util.HashMap;
  *                        - Special byte of I/O.
  *                        - It's here because of how the CPU works internally.
  */
-public class Memory extends Observable<Pair<Integer, Integer>> {
+public class Memory extends Observable<Integer> {
     private int[] cartridge = new int[0x800000];
     private int[] vram = new int[0x2000];
     private int[] sram = new int[0x2000];
@@ -66,10 +63,10 @@ public class Memory extends Observable<Pair<Integer, Integer>> {
     private int[] ff4c_ff7f = new int[0x34];
     private int[] hram = new int[0x7F];
     private int[] ime = new int[1];
-    private Observer<? super Pair<Integer, Integer>> observer;
+    private Observer<? super Integer> observer;
 
     @Override
-    protected void subscribeActual(Observer<? super Pair<Integer, Integer>> observer) {
+    protected void subscribeActual(Observer<? super Integer> observer) {
         this.observer = observer;
     }
 
@@ -125,9 +122,9 @@ public class Memory extends Observable<Pair<Integer, Integer>> {
         if(address <= 0x7FFF) {
             // nothing
         } else if(address <= 0x9FFF) {
-//            addr = (0x1FFF - (0x9FFF - address)) & 0xFFFF;
-//            this.vram[addr] = value;
-            this.observer.onNext(new Pair<>(address, value));
+            addr = (0x1FFF - (0x9FFF - address)) & 0xFFFF;
+            this.vram[addr] = value;
+            this.observer.onNext(address);
         } else if(address <= 0xBFFF) {
             addr = (0x1FFF - (0xBFFF - address)) & 0xFFFF;
             this.sram[addr] = value;
@@ -147,7 +144,7 @@ public class Memory extends Observable<Pair<Integer, Integer>> {
             addr = (0x4B - (0xFF4B - address)) & 0xFFFF;
             this.io[addr] = value;
 
-            if(address == 0xFF0F) {
+            if(address == 0xFF44 || address == 0xFF45) {
                 this.compareLY();
             }
         } else if(address <= 0xFF7F) {

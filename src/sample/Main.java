@@ -1,5 +1,6 @@
 package sample;
 
+import io.reactivex.disposables.Disposable;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
@@ -33,9 +34,13 @@ public class Main extends Application {
     private Stage stage;
     private ListView<String> listView;
     private GameBoy gameBoy;
-    private Thread gameThread;
-
     private GraphicsContext graphicsContext;
+
+    private Thread gameThread;
+    private Disposable debugInfo;
+    private Disposable displaySubscription;
+
+    private static int counter = 0;
 
     @Override
     public void start(Stage primaryStage) throws Exception{
@@ -66,6 +71,12 @@ public class Main extends Application {
         if(this.gameThread != null) {
             this.gameThread.interrupt();
         }
+
+        if(this.debugInfo != null) {
+            this.debugInfo.dispose();
+        }
+
+        this.displaySubscription.dispose();
 
         super.stop();
     }
@@ -134,42 +145,21 @@ public class Main extends Application {
                 rom[i] = bytes[i] & 0xFF;
             }
 
+            this.displaySubscription = this.gameBoy.getDisplay().subscribe(this::drawImage);
+
             this.gameBoy.loadROM(rom);
 
             gameThread = new Thread(this.gameBoy);
             gameThread.start();
 
             System.out.println(this.gameBoy.getCartridgeInfo());
-
-//            this.drawImage(nintendo);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private byte[] createImageData() {
-        System.out.println("Creating image data.");
-        byte[] data = new byte[300];
-
-        int i = 0;
-
-        for (int y = 0; y < 10; y++) {
-            int r = y * 255 / 10;
-
-            for (int x = 0; x < 10; x++) {
-                int g = x * 255 / 10;
-                data[i] = (byte)r;
-                data[i + 1] = (byte)g;
-                i += 3;
-            }
-        }
-
-        System.out.println("Done.");
-        return data;
-    }
-
     private void drawImage(byte[] data) {
-        System.out.println("Drawing image.");
+        System.out.println("Drawing image: " + counter++);
         int rows = data.length / 16;
         int stragglers = data.length % 16;
         rows = (int)(rows + Math.ceil(stragglers / 16.0));
@@ -182,8 +172,6 @@ public class Main extends Application {
                 pw.setPixels(x, y, 10, 10, pf, data, 0, 30);
             }
         }
-
-        System.out.println("Done.");
     }
 
     private void disassemble(File file) {
@@ -235,7 +223,7 @@ public class Main extends Application {
         debugWindow.setY(Screen.getPrimary().getVisualBounds().getHeight() / 2);
 
         GameBoyInfo gbInfo = this.gameBoy.getInfo();
-        gbInfo.subscribe(info -> {
+        this.debugInfo = gbInfo.subscribe(info -> {
             Platform.runLater(() -> {
                 pc.setText("PC: 0x" + Integer.toString(info.getCpuInfo().getCpu().getPC(), 16));
                 a.setText("A: 0x" + Integer.toString(info.getCpuInfo().getCpu().getA(), 16));

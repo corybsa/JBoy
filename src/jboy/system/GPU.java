@@ -9,7 +9,7 @@ class GPU {
     private Mode mode;
     private int scanline = 0;
     private int ticks = 0;
-    private int previousCycles = 0;
+    private long previousCycles = 0;
     private int[][][] tiles = new int[384][8][8];
 
     public enum Mode {
@@ -32,7 +32,7 @@ class GPU {
         this.mode = Mode.HBLANK;
     }
 
-    public void tick(int cycles) {
+    public void tick(long cycles) {
         this.ticks += cycles - this.previousCycles;
 
         // When cycles is set to 0 in the cpu, ticks becomes negative. This corrects that and sets ticks to the
@@ -46,6 +46,7 @@ class GPU {
         switch(this.mode) {
             case HBLANK:
                 if(this.ticks >= Timings.HBLANK) {
+                    this.display.renderScanLine(this.tiles);
                     this.scanline++;
 
                     if(this.scanline == Display.VBlankArea.START) {
@@ -99,7 +100,6 @@ class GPU {
      */
     private void setLY(int value) {
         this.memory.setByteAt(0xFF44, value);
-
     }
 
     /**
@@ -119,13 +119,13 @@ class GPU {
     }
 
     public void render() {
-        this.display.renderScanLine();
+//        this.display.renderScanLine();
     }
 
-    public void setByteAt(int address, int value) {
-        this.memory.setByteAt(address, value);
+    public void updateTiles(int address) {
+        int vramAddress = address & 0x1FFF;
 
-        if(address >= 0x1800) {
+        if(vramAddress >= 0x1800) {
             return;
         }
 
@@ -133,8 +133,8 @@ class GPU {
         int byte1 = this.memory.getByteAt(index);
         int byte2 = this.memory.getByteAt(index + 1);
 
-        int tileIndex = address / 16;
-        int rowIndex = (address % 16) / 2;
+        int tileIndex = vramAddress / 16;
+        int rowIndex = (vramAddress % 16) / 2;
         int pixelIndex;
         int pixelValue;
 
