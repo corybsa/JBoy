@@ -29,6 +29,9 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class Main extends Application {
     private Stage stage;
@@ -40,10 +43,8 @@ public class Main extends Application {
     private Disposable debugInfo;
     private Disposable displaySubscription;
 
-    private static int counter = 0;
-
     @Override
-    public void start(Stage primaryStage) throws Exception{
+    public void start(Stage primaryStage) {
         this.stage = primaryStage;
         primaryStage.setTitle("JBoy");
 
@@ -62,8 +63,6 @@ public class Main extends Application {
         primaryStage.setScene(scene);
         primaryStage.show();
         this.gameBoy = new GameBoy();
-//        byte[] data = this.createImageData();
-//        this.drawImage(data);
     }
 
     @Override
@@ -159,7 +158,6 @@ public class Main extends Application {
     }
 
     private void drawImage(byte[] data) {
-        System.out.println("Drawing image: " + counter++);
         int rows = data.length / 16;
         int stragglers = data.length % 16;
         rows = (int)(rows + Math.ceil(stragglers / 16.0));
