@@ -122,6 +122,10 @@ class GPU {
 //        this.display.renderScanLine();
     }
 
+    public Mode getMode() {
+        return this.mode;
+    }
+
     public void updateTiles(int address) {
         int vramAddress = address & 0x1FFF;
 

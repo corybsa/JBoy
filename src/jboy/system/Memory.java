@@ -142,6 +142,12 @@ public class Memory extends Observable<Integer> {
             this.fea0_feff[addr] = value;
         } else if(address <= 0xFF4B) {
             addr = (0x4B - (0xFF4B - address)) & 0xFFFF;
+
+            if(address == 0xFF04) {
+                this.io[addr] = 0;
+                return;
+            }
+
             this.io[addr] = value;
 
             if(address == 0xFF44 || address == 0xFF45) {

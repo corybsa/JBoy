@@ -294,27 +294,29 @@ public class CPU extends Observable<CpuInfo> {
         }
 
         // Set cycles to 0 every frame to prevent integer overflow.
-        /*if(this.cycles >= (FREQUENCY / Display.FREQUENCY)) {
+        if(this.cycles >= (CPU.FREQUENCY / Display.FREQUENCY)) {
             this.cycles = 0;
-        }*/
+        }
 
-        // TODO: Figure out nanoseconds.
-        long target = this.cyclesSinceLastSync / CPU.FREQUENCY;
-        long nanoseconds = Instant.now().getEpochSecond();
+        long target = this.cyclesSinceLastSync * 1000000000L / CPU.FREQUENCY;
+        long nanoseconds = Instant.now().getEpochSecond() * 1000000000L;
         long sleepDuration = target + this.lastSyncTime - nanoseconds;
 
+        // There's a weird lag during vblank, so we can disable sleep during vblank
+        // and just process everything as fast as possible to mitigate the lag.
+        // This is probably not the best solution, but it works.
+        if(this.gpu.getMode() == GPU.Mode.VBLANK) {
+            sleepDuration = 0;
+        }
+
         if(sleepDuration > 0 && sleepDuration < (Display.LCDC_PERIOD * 1000000000L / CPU.FREQUENCY)) {
-            try {
-                Thread.sleep(0, (int) sleepDuration);
-            } catch(InterruptedException e) {
-                System.out.println("Could not sleep.");
-                e.printStackTrace();
-            }
+            this.sleep(sleepDuration);
             this.lastSyncTime += target;
         } else {
             this.lastSyncTime = nanoseconds;
         }
 
+        this.cyclesSinceLastSync = 0;
         // Check if there are any interrupts that need to be serviced.
         boolean shouldServiceInterrupts = this.ime && (this.getInterruptFlag() != 0) && (this.getInterruptEnable() != 0);
 
@@ -324,6 +326,8 @@ public class CPU extends Observable<CpuInfo> {
             Instruction instruction = this.getInstruction(this.memory.getByteAt(this.PC++));
             this.execute(instruction);
             this.gpu.tick(this.cycles);
+            Timers.divCounter += instruction.getOpCycles();
+            this.incrementTimers();
         }
 
         if(this.observer != null) {
@@ -331,13 +335,10 @@ public class CPU extends Observable<CpuInfo> {
         }
     }
 
-    public void run() {
-        /*final long frameRate = 1000000 / 3600;
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-
-        final Runnable timer = this::tick;
-        scheduler.scheduleAtFixedRate(timer, 0, frameRate, TimeUnit.MICROSECONDS);*/
-
+    /**
+     * The main loop. This ticks the CPU and runs forever.
+     */
+    void run() {
         while(true) {
             this.tick();
         }
@@ -362,6 +363,68 @@ public class CPU extends Observable<CpuInfo> {
     }
 
     /**
+     * Sleep for {@code duration} nanoseconds.
+     * @param duration Time in nanoseconds to sleep.
+     */
+    private void sleep(long duration) {
+        try {
+            if(duration > 999999) {
+                Thread.sleep(0, 999999);
+                this.sleep(duration - 999999);
+            } else {
+                Thread.sleep(0, (int) duration);
+            }
+        } catch(InterruptedException e) {
+            // if sleep is interrupted, I don't think it matters.
+        }
+    }
+
+    /**
+     * Increment the various timer registers.
+     */
+    private void incrementTimers() {
+        if(Timers.divCounter >= 256) {
+            this.incrementDIV();
+            Timers.divCounter = 0;
+        }
+
+        int tac = this.memory.getByteAt(0xFF07);
+        boolean isTacEnabled = tac >> 2 == 1;
+
+        if(isTacEnabled) {
+            int tacFreq = Timers.getFrequency(tac & 0x03);
+
+            if(Timers.timaCounter >= (CPU.FREQUENCY / tacFreq)) {
+                int tima = this.memory.getByteAt(0xFF05);
+
+                if(tima == 0xFF) {
+                    tima = this.memory.getByteAt(0xFF06);
+                    this.requestInterrupt(Interrupts.TIMER);
+                } else {
+                    tima += 1;
+                }
+
+                this.memory.setByteAt(0xFF05, tima);
+            }
+        }
+    }
+
+    /**
+     * The DIV register increments once every second, or once every 256 CPU cycles. It overflows once 0xFF is reached.
+     */
+    private void incrementDIV() {
+        int div = this.memory.getByteAt(0xFF04);
+
+        if(div == 0xFF) {
+            div = 0x00;
+        } else {
+            div++;
+        }
+
+        this.memory.setByteAt(0xFF04, div);
+    }
+
+    /**
      * Increments PC by specified amount.
      * @param n The amount to increment PC.
      */
@@ -369,18 +432,26 @@ public class CPU extends Observable<CpuInfo> {
         this.PC += n;
     }
 
+    /**
+     * Keep track of how many cycles have elapsed and also keeps track of how many cycles since the components were last synced.
+     * @param n The amount of machine cycles to increment by.
+     */
     private void incrementCycles(int n) {
-        this.cycles = this.cycles + n;
+        this.cycles += n;
         this.cyclesSinceLastSync += n;
     }
 
+    /**
+     * Check for the 5 different hardware interrupts and service them as needed. They are serviced in order of priority.
+     * The priority is as follows:
+     * VBLANK, LCD Status, Timer overflow, Serial input, JoyPad input
+     */
     private void checkInterrupts() {
         int enabledInterrupts = this.getInterruptEnable() & this.getInterruptFlag();
 
         if((enabledInterrupts & Interrupts.VBLANK) == Interrupts.VBLANK) {
             this.ime = false;
             this.isStopped = false;
-            // TODO: The other components need to know about this and draw the next frame to the screen.
             this.rst(0x40);
             this.incrementCycles(5);
         } else if((enabledInterrupts & Interrupts.LCD_STAT) == Interrupts.LCD_STAT) {
@@ -404,6 +475,16 @@ public class CPU extends Observable<CpuInfo> {
             this.rst(0x60);
             this.incrementCycles(5);
         }
+    }
+
+    /**
+     * Requests an interrupt.
+     * @param interrupt The interrupt to request.
+     */
+    private void requestInterrupt(int interrupt) {
+        int interruptFlag = this.getInterruptFlag();
+        interruptFlag |= interrupt;
+        this.memory.setByteAt(0xFF0F, interruptFlag);
     }
 
     /**
