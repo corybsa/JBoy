@@ -57,6 +57,7 @@ public class Main extends Application {
         vbox.getChildren().add(menuBar);
         vbox.getChildren().add(canvas);
 
+        // TODO: gotta figure out how to size the scene
         Scene scene = new Scene(vbox, Display.WIDTH, Display.HEIGHT + 29);
 
         primaryStage.setScene(scene);

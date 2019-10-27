@@ -53,7 +53,7 @@ class GPU {
                         int interruptFlags = this.getInterruptFlag();
 
                         if((this.getInterruptEnable() & Interrupts.VBLANK) == Interrupts.VBLANK) {
-                            this.memory.setByteAt(0xFF0F, interruptFlags | Interrupts.VBLANK);
+                            this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, interruptFlags | Interrupts.VBLANK);
                         }
 
                         this.mode = Mode.VBLANK;
@@ -99,7 +99,7 @@ class GPU {
      * @param value The value to set the LY register to.
      */
     private void setLY(int value) {
-        this.memory.setByteAt(0xFF44, value);
+        this.memory.setByteAt(IORegisters.LY_COMPARE, value);
     }
 
     /**
@@ -107,7 +107,7 @@ class GPU {
      * @return The value at memory address 0xFFFF
      */
     private int getInterruptEnable() {
-        return this.memory.getByteAt(0xFFFF);
+        return this.memory.getByteAt(IORegisters.INTERRUPT_ENABLE);
     }
 
     /**
@@ -115,7 +115,7 @@ class GPU {
      * @return The value at memory address 0xFF0F
      */
     private int getInterruptFlag() {
-        return this.memory.getByteAt(0xFF0F);
+        return this.memory.getByteAt(IORegisters.INTERRUPT_FLAGS);
     }
 
     public void render() {

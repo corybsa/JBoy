@@ -5,12 +5,7 @@ import io.reactivex.Observer;
 import jboy.other.CpuInfo;
 
 import java.time.Instant;
-import java.time.temporal.TemporalField;
 import java.util.HashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 /**
  * <h3>Description</h3>
@@ -124,6 +119,9 @@ public class CPU extends Observable<CpuInfo> {
         this.reset();
     }
 
+    /**
+     * Sets registers to default values.
+     */
     private void reset() {
         this.setAF(0x01B0);
         this.setBC(0x0013);
@@ -132,38 +130,38 @@ public class CPU extends Observable<CpuInfo> {
         this.setSP(0xFFFE);
         this.setPC(0x100);
 
-        this.memory.setByteAt(0xFF05, 0x00);
-        this.memory.setByteAt(0xFF06, 0x00);
-        this.memory.setByteAt(0xFF07, 0x00);
-        this.memory.setByteAt(0xFF0F, 0xE0);
-        this.memory.setByteAt(0xFF10, 0x80);
-        this.memory.setByteAt(0xFF11, 0xBF);
-        this.memory.setByteAt(0xFF12, 0xF3);
-        this.memory.setByteAt(0xFF14, 0xBF);
-        this.memory.setByteAt(0xFF16, 0x3F);
-        this.memory.setByteAt(0xFF17, 0x00);
-        this.memory.setByteAt(0xFF19, 0xBF);
-        this.memory.setByteAt(0xFF1A, 0x7F);
-        this.memory.setByteAt(0xFF1B, 0xFF);
-        this.memory.setByteAt(0xFF1C, 0x9F);
-        this.memory.setByteAt(0xFF1E, 0xBF);
-        this.memory.setByteAt(0xFF20, 0xFF);
-        this.memory.setByteAt(0xFF21, 0x00);
-        this.memory.setByteAt(0xFF22, 0x00);
-        this.memory.setByteAt(0xFF23, 0xBF);
-        this.memory.setByteAt(0xFF24, 0x77);
-        this.memory.setByteAt(0xFF25, 0xF3);
-        this.memory.setByteAt(0xFF26, 0xF1);
-        this.memory.setByteAt(0xFF40, 0x91);
-        this.memory.setByteAt(0xFF42, 0x00);
-        this.memory.setByteAt(0xFF43, 0x00);
-        this.memory.setByteAt(0xFF45, 0x00);
-        this.memory.setByteAt(0xFF47, 0xFC);
-        this.memory.setByteAt(0xFF48, 0xFF);
-        this.memory.setByteAt(0xFF49, 0xFF);
-        this.memory.setByteAt(0xFF4A, 0x00);
-        this.memory.setByteAt(0xFF4B, 0x00);
-        this.memory.setByteAt(0xFFFF, 0x00);
+        this.memory.setByteAt(IORegisters.TIMER, 0x00);
+        this.memory.setByteAt(IORegisters.TIMER_MODULO, 0x00);
+        this.memory.setByteAt(IORegisters.TIMER_CONTROL, 0x00);
+        this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, 0xE0);
+        this.memory.setByteAt(IORegisters.SOUND1_SWEEP, 0x80);
+        this.memory.setByteAt(IORegisters.SOUND1_LENGTH_WAVE, 0xBF);
+        this.memory.setByteAt(IORegisters.SOUND1_ENVELOPE, 0xF3);
+        this.memory.setByteAt(IORegisters.SOUND1_HIGH_FREQUENCY, 0xBF);
+        this.memory.setByteAt(IORegisters.SOUND2_LENGTH_WAVE, 0x3F);
+        this.memory.setByteAt(IORegisters.SOUND2_ENVELOPE, 0x00);
+        this.memory.setByteAt(IORegisters.SOUND2_HIGH_FREQUENCY, 0xBF);
+        this.memory.setByteAt(IORegisters.SOUND3_ENABLE, 0x7F);
+        this.memory.setByteAt(IORegisters.SOUND3_LENGTH, 0xFF);
+        this.memory.setByteAt(IORegisters.SOUND3_OUTPUT_LEVEL, 0x9F);
+        this.memory.setByteAt(IORegisters.SOUND3_FREQUENCY_HIGH_DATA, 0xBF);
+        this.memory.setByteAt(IORegisters.SOUND4_LENGTH, 0xFF);
+        this.memory.setByteAt(IORegisters.SOUND4_ENVELOPE, 0x00);
+        this.memory.setByteAt(IORegisters.SOUND4_COUNTER, 0x00);
+        this.memory.setByteAt(IORegisters.SOUND4_INITIAL, 0xBF);
+        this.memory.setByteAt(IORegisters.SOUND_CHANNEL_CONTROL, 0x77);
+        this.memory.setByteAt(IORegisters.SOUND_OUTPUT_CONTROL, 0xF3);
+        this.memory.setByteAt(IORegisters.SOUND_ENABLE, 0xF1);
+        this.memory.setByteAt(IORegisters.LCDC, 0x91);
+        this.memory.setByteAt(IORegisters.SCROLL_Y, 0x00);
+        this.memory.setByteAt(IORegisters.SCROLL_X, 0x00);
+        this.memory.setByteAt(IORegisters.LY_COMPARE, 0x00);
+        this.memory.setByteAt(IORegisters.BG_PALETTE_DATA, 0xFC);
+        this.memory.setByteAt(IORegisters.OBJECT_PALETTE0_DATA, 0xFF);
+        this.memory.setByteAt(IORegisters.OBJECT_PALETTE1_DATA, 0xFF);
+        this.memory.setByteAt(IORegisters.WINDOW_Y, 0x00);
+        this.memory.setByteAt(IORegisters.WINDOW_X, 0x00);
+        this.memory.setByteAt(IORegisters.INTERRUPT_ENABLE, 0x00);
     }
 
     // region Register setters and getters
@@ -298,25 +296,8 @@ public class CPU extends Observable<CpuInfo> {
             this.cycles = 0;
         }
 
-        long target = this.cyclesSinceLastSync * 1000000000L / CPU.FREQUENCY;
-        long nanoseconds = Instant.now().getEpochSecond() * 1000000000L;
-        long sleepDuration = target + this.lastSyncTime - nanoseconds;
+        this.synchronize();
 
-        // There's a weird lag during vblank, so we can disable sleep during vblank
-        // and just process everything as fast as possible to mitigate the lag.
-        // This is probably not the best solution, but it works.
-        if(this.gpu.getMode() == GPU.Mode.VBLANK) {
-            sleepDuration = 0;
-        }
-
-        if(sleepDuration > 0 && sleepDuration < (Display.LCDC_PERIOD * 1000000000L / CPU.FREQUENCY)) {
-            this.sleep(sleepDuration);
-            this.lastSyncTime += target;
-        } else {
-            this.lastSyncTime = nanoseconds;
-        }
-
-        this.cyclesSinceLastSync = 0;
         // Check if there are any interrupts that need to be serviced.
         boolean shouldServiceInterrupts = this.ime && (this.getInterruptFlag() != 0) && (this.getInterruptEnable() != 0);
 
@@ -326,6 +307,8 @@ public class CPU extends Observable<CpuInfo> {
             Instruction instruction = this.getInstruction(this.memory.getByteAt(this.PC++));
             this.execute(instruction);
             this.gpu.tick(this.cycles);
+
+            // The DIV register needs to be updated every cycle.
             Timers.divCounter += instruction.getOpCycles();
             this.incrementTimers();
         }
@@ -363,6 +346,45 @@ public class CPU extends Observable<CpuInfo> {
     }
 
     /**
+     * Keeps the CPU from running as fast as it can. This will keep the frame rate at 60 fps.
+     */
+    private void synchronize() {
+        // Our target sleep time is the length in time the previous instruction took.
+        long target = this.cyclesSinceLastSync * 1000000000L / CPU.FREQUENCY;
+
+        // Get the current nanoseconds since 1970.
+        long nanoseconds = Instant.now().getEpochSecond() * 1000000000L;
+
+        // The sleep duration is the previous instruction time plus how long it's been since we last synced.
+        // We subtract the nanoseconds to see if the CPU is running too fast.
+        // If sleepDuration is positive that means that the CPU is running incredibly fast (for GameBoy standards, anyway),
+        //   and we need to slow it down by sleeping.
+        long sleepDuration = target + this.lastSyncTime - nanoseconds;
+
+        // There's a weird lag during vblank, so we can disable sleep during vblank
+        //   and just process everything as fast as possible to mitigate the lag.
+        // This is probably not the best solution, but it works.
+        if(this.gpu.getMode() == GPU.Mode.VBLANK) {
+            sleepDuration = 0;
+        }
+
+        // Check if sleepDuration is between zero and the time it takes to complete a whole frame.
+        if(sleepDuration > 0 && sleepDuration < (Display.LCDC_PERIOD * 1000000000L / CPU.FREQUENCY)) {
+            this.sleep(sleepDuration);
+
+            // Need to keep track of how long it's been since we last synced.
+            this.lastSyncTime += target;
+        } else {
+            // we need to know when we last synced.
+            this.lastSyncTime = nanoseconds;
+        }
+
+        // We only care about the previous instruction, so we can set this to zero and it will be updated
+        // after the next instruction is executed.
+        this.cyclesSinceLastSync = 0;
+    }
+
+    /**
      * Sleep for {@code duration} nanoseconds.
      * @param duration Time in nanoseconds to sleep.
      */
@@ -388,23 +410,23 @@ public class CPU extends Observable<CpuInfo> {
             Timers.divCounter = 0;
         }
 
-        int tac = this.memory.getByteAt(0xFF07);
-        boolean isTacEnabled = tac >> 2 == 1;
+        int tac = this.memory.getByteAt(IORegisters.TIMER_CONTROL);
+        boolean isTacEnabled = (tac >> 2) == 1;
 
         if(isTacEnabled) {
             int tacFreq = Timers.getFrequency(tac & 0x03);
 
             if(Timers.timaCounter >= (CPU.FREQUENCY / tacFreq)) {
-                int tima = this.memory.getByteAt(0xFF05);
+                int tima = this.memory.getByteAt(IORegisters.TIMER);
 
                 if(tima == 0xFF) {
-                    tima = this.memory.getByteAt(0xFF06);
+                    tima = this.memory.getByteAt(IORegisters.TIMER_MODULO);
                     this.requestInterrupt(Interrupts.TIMER);
                 } else {
                     tima += 1;
                 }
 
-                this.memory.setByteAt(0xFF05, tima);
+                this.memory.setByteAt(IORegisters.TIMER, tima);
             }
         }
     }
@@ -413,7 +435,7 @@ public class CPU extends Observable<CpuInfo> {
      * The DIV register increments once every second, or once every 256 CPU cycles. It overflows once 0xFF is reached.
      */
     private void incrementDIV() {
-        int div = this.memory.getByteAt(0xFF04);
+        int div = this.memory.getByteAt(IORegisters.DIVIDER);
 
         if(div == 0xFF) {
             div = 0x00;
@@ -421,7 +443,7 @@ public class CPU extends Observable<CpuInfo> {
             div++;
         }
 
-        this.memory.setByteAt(0xFF04, div);
+        this.memory.setByteAt(IORegisters.DIVIDER, div);
     }
 
     /**
@@ -484,7 +506,7 @@ public class CPU extends Observable<CpuInfo> {
     private void requestInterrupt(int interrupt) {
         int interruptFlag = this.getInterruptFlag();
         interruptFlag |= interrupt;
-        this.memory.setByteAt(0xFF0F, interruptFlag);
+        this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, interruptFlag);
     }
 
     /**
@@ -557,7 +579,7 @@ public class CPU extends Observable<CpuInfo> {
      * @return The value at memory address 0xFF0F
      */
     private int getInterruptFlag() {
-        return this.memory.getByteAt(0xFF0F);
+        return this.memory.getByteAt(IORegisters.INTERRUPT_FLAGS);
     }
 
     /**
@@ -565,7 +587,7 @@ public class CPU extends Observable<CpuInfo> {
      * @return The value at memory address 0xFFFF
      */
     private int getInterruptEnable() {
-        return this.memory.getByteAt(0xFFFF);
+        return this.memory.getByteAt(IORegisters.INTERRUPT_ENABLE);
     }
 
     // TODO: Delete this if my version of daa works.

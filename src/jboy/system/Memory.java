@@ -143,14 +143,14 @@ public class Memory extends Observable<Integer> {
         } else if(address <= 0xFF4B) {
             addr = (0x4B - (0xFF4B - address)) & 0xFFFF;
 
-            if(address == 0xFF04) {
+            if(address == IORegisters.DIVIDER) {
                 this.io[addr] = 0;
                 return;
             }
 
             this.io[addr] = value;
 
-            if(address == 0xFF44 || address == 0xFF45) {
+            if(address == IORegisters.LCDC_Y_COORDINATE || address == IORegisters.LY_COMPARE) {
                 this.compareLY();
             }
         } else if(address <= 0xFF7F) {
@@ -169,14 +169,14 @@ public class Memory extends Observable<Integer> {
      * the coincidence bit (6th bit) in the STAT register becomes set, and (if enabled) a STAT interrupt is requested.
      */
     private void compareLY() {
-        int lyc = this.getByteAt(0xFF45);
-        int ly = this.getByteAt(0xFF44);
+        int lyc = this.getByteAt(IORegisters.LY_COMPARE);
+        int ly = this.getByteAt(IORegisters.LCDC_Y_COORDINATE);
 
         if(lyc == ly) {
-            int interruptFlags = this.getByteAt(0xFF0F);
+            int interruptFlags = this.getByteAt(IORegisters.INTERRUPT_FLAGS);
 
             this.setByteAt(0xFF41, (1 << 6));
-            this.setByteAt(0xFF0F, interruptFlags | Interrupts.LCD_STAT);
+            this.setByteAt(IORegisters.INTERRUPT_FLAGS, interruptFlags | Interrupts.LCD_STAT);
         }
     }
 }
