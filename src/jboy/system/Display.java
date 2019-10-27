@@ -5,8 +5,13 @@ import io.reactivex.Observer;
 
 public class Display extends Observable<byte[]> {
     // The refresh rate of the display in frames per second.
-    public static final float FREQUENCY = 59.7f;
-    public static final int LCDC_PERIOD = 17556;
+    static final float FREQUENCY = 59.7f;
+
+    // The amount of machine cycles per frame.
+    static final int LCDC_PERIOD = (int)(CPU.FREQUENCY / Display.FREQUENCY);
+
+    public static final int HEIGHT = 144;
+    public static final int WIDTH = 160;
 
     private Observer<? super byte[]> observer;
 
@@ -34,28 +39,16 @@ public class Display extends Observable<byte[]> {
     }
 
     private byte[] createImage() {
-        byte[] data = new byte[300];
+        // multiply by 3 because each pixel is represented by 3 bytes.
+        // total length of array is 69120
+        byte[] pixels = new byte[Display.HEIGHT * Display.WIDTH * 3];
 
-        int i = 0;
-
-        for (int y = 0; y < 10; y++) {
-            int r = y * 255 / 10;
-
-            for (int x = 0; x < 10; x++) {
-                int g = x * 255 / 10;
-                data[i] = (byte)r;
-                data[i + 1] = (byte)g;
-                data[i + 2] = (byte)255;
-                i += 3;
-            }
+        for(int i = 0; i < pixels.length; i += 3) {
+            pixels[i] = (byte)Math.floor(Math.random() * 255);
+            pixels[i + 1] = (byte)Math.floor(Math.random() * 255);
+            pixels[i + 2] = (byte)Math.floor(Math.random() * 255);
         }
 
-        for(int j = 0; j < data.length; j += 3) {
-            data[j] = (byte)Math.floor(Math.random() * 255);
-            data[j + 1] = (byte)Math.floor(Math.random() * 255);
-            data[j + 2] = (byte)Math.floor(Math.random() * 255);
-        }
-
-        return data;
+        return pixels;
     }
 }

@@ -21,6 +21,7 @@ import javafx.stage.Screen;
 import javafx.stage.Stage;
 import jboy.disassembler.Disassembler;
 import jboy.other.GameBoyInfo;
+import jboy.system.Display;
 import jboy.system.GameBoy;
 
 import java.io.File;
@@ -50,15 +51,13 @@ public class Main extends Application {
 
         VBox vbox = new VBox();
         MenuBar menuBar = createMenuBar();
-        Canvas canvas = new Canvas(160, 144);
+        Canvas canvas = new Canvas(Display.WIDTH, Display.HEIGHT);
         this.graphicsContext = canvas.getGraphicsContext2D();
 
         vbox.getChildren().add(menuBar);
-
-
         vbox.getChildren().add(canvas);
 
-        Scene scene = new Scene(vbox, 160, 144);
+        Scene scene = new Scene(vbox, Display.WIDTH, Display.HEIGHT + 29);
 
         primaryStage.setScene(scene);
         primaryStage.show();
@@ -158,18 +157,10 @@ public class Main extends Application {
     }
 
     private void drawImage(byte[] data) {
-        int rows = data.length / 16;
-        int stragglers = data.length % 16;
-        rows = (int)(rows + Math.ceil(stragglers / 16.0));
-
         PixelWriter pw = this.graphicsContext.getPixelWriter();
         PixelFormat<ByteBuffer> pf = PixelFormat.getByteRgbInstance();
 
-        for(int y = 0; y < 100; y += 10) {
-            for(int x = 0; x < 100; x += 10) {
-                pw.setPixels(x, y, 10, 10, pf, data, 0, 30);
-            }
-        }
+        pw.setPixels(0, 0, Display.WIDTH, Display.HEIGHT, pf, data, 0, Display.WIDTH);
     }
 
     private void disassemble(File file) {
