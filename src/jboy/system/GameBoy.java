@@ -9,8 +9,8 @@ public class GameBoy implements Runnable {
     private final Memory memory;
 
     public GameBoy() {
-        this.display = new Display();
         this.memory = new Memory();
+        this.display = new Display(this.memory);
         this.gpu = new GPU(this.memory, this.display);
         this.cpu = new CPU(this.memory, this.gpu);
 

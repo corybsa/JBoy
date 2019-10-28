@@ -1,9 +1,6 @@
 package jboy.system;
 
 class GPU {
-    // TODO: do I need this?
-    private final int frameTime = (int)(CPU.FREQUENCY / Display.FREQUENCY);
-
     private final Memory memory;
     private final Display display;
     private Mode mode;
@@ -118,15 +115,11 @@ class GPU {
         return this.memory.getByteAt(IORegisters.INTERRUPT_FLAGS);
     }
 
-    public void render() {
-//        this.display.renderScanLine();
-    }
-
-    public Mode getMode() {
+    Mode getMode() {
         return this.mode;
     }
 
-    public void updateTiles(int address) {
+    void updateTiles(int address) {
         int vramAddress = address & 0x1FFF;
 
         if(vramAddress >= 0x1800) {

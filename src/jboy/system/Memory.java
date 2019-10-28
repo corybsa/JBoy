@@ -175,7 +175,7 @@ public class Memory extends Observable<Integer> {
         if(lyc == ly) {
             int interruptFlags = this.getByteAt(IORegisters.INTERRUPT_FLAGS);
 
-            this.setByteAt(0xFF41, (1 << 6));
+            this.setByteAt(IORegisters.LCD_STATUS, (1 << 6));
             this.setByteAt(IORegisters.INTERRUPT_FLAGS, interruptFlags | Interrupts.LCD_STAT);
         }
     }

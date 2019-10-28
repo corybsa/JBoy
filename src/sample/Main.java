@@ -159,7 +159,7 @@ public class Main extends Application {
 
     private void drawImage(byte[] data) {
         PixelWriter pw = this.graphicsContext.getPixelWriter();
-        PixelFormat<ByteBuffer> pf = PixelFormat.getByteRgbInstance();
+        PixelFormat<ByteBuffer> pf = PixelFormat.getByteBgraInstance();
 
         pw.setPixels(0, 0, Display.WIDTH, Display.HEIGHT, pf, data, 0, Display.WIDTH);
     }
@@ -199,7 +199,9 @@ public class Main extends Application {
 
         GridPane layout = new GridPane();
         Label pc = new Label("PC: 0x100");
-        Label a = new Label("A: 0x00");
+        Label af = new Label("AF: 0x0000");
+        Label bc = new Label("BC: 0x0000");
+        Label de = new Label("DE: 0x0000");
         Label hl = new Label("HL: 0x0000");
         Scene debugScene = new Scene(layout);
         Stage debugWindow = new Stage();
@@ -215,15 +217,33 @@ public class Main extends Application {
         GameBoyInfo gbInfo = this.gameBoy.getInfo();
         this.debugInfo = gbInfo.subscribe(info -> {
             Platform.runLater(() -> {
-                pc.setText("PC: 0x" + Integer.toString(info.getCpuInfo().getCpu().getPC(), 16));
-                a.setText("A: 0x" + Integer.toString(info.getCpuInfo().getCpu().getA(), 16));
-                hl.setText("HL: 0x" + Integer.toString(info.getCpuInfo().getCpu().getHL(), 16));
+                StringBuilder sb = new StringBuilder("PC: 0x");
+                sb.append(String.format("%4s", Integer.toString(info.getCpuInfo().getCpu().getPC(), 16).toUpperCase()).replace(" ", "0"));
+                pc.setText(sb.toString());
+                sb.delete(0, sb.length());
+
+                sb.append("AF: 0x").append(String.format("%4s", Integer.toString(info.getCpuInfo().getCpu().getAF(), 16).toUpperCase()).replace(" ", "0"));
+                af.setText(sb.toString());
+                sb.delete(0, sb.length());
+
+                sb.append("BC: 0x").append(String.format("%4s", Integer.toString(info.getCpuInfo().getCpu().getBC(), 16).toUpperCase()).replace(" ", "0"));
+                bc.setText(sb.toString());
+                sb.delete(0, sb.length());
+
+                sb.append("DE: 0x").append(String.format("%4s", Integer.toString(info.getCpuInfo().getCpu().getDE(), 16).toUpperCase()).replace(" ", "0"));
+                de.setText(sb.toString());
+                sb.delete(0, sb.length());
+
+                sb.append("HL: 0x").append(String.format("%4s", Integer.toString(info.getCpuInfo().getCpu().getHL(), 16).toUpperCase()).replace(" ", "0"));
+                hl.setText(sb.toString());
             });
         });
 
         layout.add(pc, 0, 0);
-        layout.add(a, 0, 1);
-        layout.add(hl, 0, 2);
+        layout.add(af, 0, 1);
+        layout.add(bc, 0, 2);
+        layout.add(de, 0, 3);
+        layout.add(hl, 0, 4);
 
         debugWindow.show();
     }
