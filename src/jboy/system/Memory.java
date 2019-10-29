@@ -124,7 +124,7 @@ public class Memory extends Observable<Integer> {
         } else if(address <= 0x9FFF) {
             addr = (0x1FFF - (0x9FFF - address)) & 0xFFFF;
             this.vram[addr] = value;
-            this.observer.onNext(address);
+//            this.observer.onNext(address);
         } else if(address <= 0xBFFF) {
             addr = (0x1FFF - (0xBFFF - address)) & 0xFFFF;
             this.sram[addr] = value;

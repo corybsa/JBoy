@@ -133,7 +133,7 @@ public class CPU extends Observable<CpuInfo> {
         this.memory.setByteAt(IORegisters.TIMER, 0x00);
         this.memory.setByteAt(IORegisters.TIMER_MODULO, 0x00);
         this.memory.setByteAt(IORegisters.TIMER_CONTROL, 0x00);
-        this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, 0xE0);
+        this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, 0xE1);
         this.memory.setByteAt(IORegisters.SOUND1_SWEEP, 0x80);
         this.memory.setByteAt(IORegisters.SOUND1_LENGTH_WAVE, 0xBF);
         this.memory.setByteAt(IORegisters.SOUND1_ENVELOPE, 0xF3);
@@ -474,26 +474,31 @@ public class CPU extends Observable<CpuInfo> {
         if((enabledInterrupts & Interrupts.VBLANK) == Interrupts.VBLANK) {
             this.ime = false;
             this.isStopped = false;
+            this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, this.getInterruptFlag() & ~Interrupts.VBLANK);
             this.rst(0x40);
             this.incrementCycles(5);
         } else if((enabledInterrupts & Interrupts.LCD_STAT) == Interrupts.LCD_STAT) {
             this.ime = false;
             this.isStopped = false;
+            this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, this.getInterruptFlag() & ~Interrupts.LCD_STAT);
             this.rst(0x48);
             this.incrementCycles(5);
         } else if((enabledInterrupts & Interrupts.TIMER) == Interrupts.TIMER) {
             this.ime = false;
             this.isStopped = false;
+            this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, this.getInterruptFlag() & ~Interrupts.TIMER);
             this.rst(0x50);
             this.incrementCycles(5);
         } else if((enabledInterrupts & Interrupts.SERIAL) == Interrupts.SERIAL) {
             this.ime = false;
             this.isStopped = false;
+            this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, this.getInterruptFlag() & ~Interrupts.SERIAL);
             this.rst(0x58);
             this.incrementCycles(5);
         } else if((enabledInterrupts & Interrupts.JOYPAD) == Interrupts.JOYPAD) {
             this.ime = false;
             this.isStopped = false;
+            this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, this.getInterruptFlag() & ~Interrupts.JOYPAD);
             this.rst(0x60);
             this.incrementCycles(5);
         }
@@ -1329,7 +1334,8 @@ public class CPU extends Observable<CpuInfo> {
      */
     Void stop(int[] ops) {
         this.isStopped = true;
-        this.ime = false;
+        this.memory.setByteAt(IORegisters.INTERRUPT_ENABLE, 0x00);
+        // TODO: set P10 - P13 low
         return null;
     }
 

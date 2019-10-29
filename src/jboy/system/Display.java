@@ -68,29 +68,29 @@ public class Display extends Observable<byte[]> {
         int bgWindowOffset = (lcdc >> 4) & 0x01;
         int bgOffset = (lcdc >> 3) & 0x01;
         int bgAddress;
-        int windowAddress;
+        int tileData;
         int scrollX = this.memory.getByteAt(IORegisters.SCROLL_X);
         int scrollY = this.memory.getByteAt(IORegisters.SCROLL_Y);
-        int windowX = this.memory.getByteAt(IORegisters.WINDOW_X);
-        int windowY = this.memory.getByteAt(IORegisters.WINDOW_Y) - 7;
+        int windowX = this.memory.getByteAt(IORegisters.WINDOW_X) - 7;
+        int windowY = this.memory.getByteAt(IORegisters.WINDOW_Y);
 
         // Is the window enabled?
         if(((lcdc >> 5) & 0x01) == 0x01) {
             // Is the current scanline within the bounds of the window y coordinate?
-            if(windowY <= this.memory.getByteAt(IORegisters.LCDC_Y_COORDINATE)) {
+            if(windowY <= scanlineY) {
                 isWindowEnabled = true;
             }
         }
 
-        // Check which window tile set to use.
+        // Check which tile set to use.
         if(bgWindowOffset == 1) {
-            windowAddress = 0x8000;
+            tileData = 0x8000;
         } else {
-            windowAddress = 0x8800;
+            tileData = 0x8800;
             unsigned = false;
         }
 
-        if(isWindowEnabled) {
+        if(!isWindowEnabled) {
             // Check which tile set to use.
             if(bgOffset == 1) {
                 bgAddress = 0x9C00;
@@ -105,12 +105,12 @@ public class Display extends Observable<byte[]> {
             }
         }
 
-        int y = 0;
+        int y;
 
         if(!isWindowEnabled) {
             y = scrollY + scanlineY;
         } else {
-            y = scanlineY - scrollY;
+            y = scanlineY - windowY;
         }
 
         int tileRow = (y / 8) * 32;
@@ -118,10 +118,8 @@ public class Display extends Observable<byte[]> {
         for(int pixel = 0; pixel < 160; pixel++) {
             int x = pixel + scrollX;
 
-            if(isWindowEnabled) {
-                if(pixel >= windowX) {
-                    x = pixel - windowX;
-                }
+            if(isWindowEnabled && pixel >= windowX) {
+                x = pixel - windowX;
             }
 
             int tileCol = x / 8;
@@ -135,7 +133,7 @@ public class Display extends Observable<byte[]> {
                 tileNum = (byte)this.memory.getByteAt(tileAddress);
             }
 
-            int tileLocation = windowAddress;
+            int tileLocation = tileData;
 
             if(unsigned) {
                 tileLocation += tileNum * 16;
@@ -147,7 +145,8 @@ public class Display extends Observable<byte[]> {
             int data1 = this.memory.getByteAt(tileLocation + line);
             int data2 = this.memory.getByteAt(tileLocation + line + 1);
 
-            int colorBit = (x % 8) - 7 * -1;
+//            int colorBit = (x % 8) - 7 * -1;
+            int colorBit = (x % 8);
             int colorNum = ((data2 & (1 << colorBit)) << 1) | (data1 & (1 << colorBit));
             int color = this.getColor(colorNum, IORegisters.BG_PALETTE_DATA);
             byte red = (byte)0xFF;
@@ -177,7 +176,7 @@ public class Display extends Observable<byte[]> {
                     break;
             }
 
-            if(scanlineY < 0 || scanlineY > 143 || pixel < 0 || pixel > 159) {
+            if(scanlineY < 0 || scanlineY > 143) {
                 continue;
             }
 

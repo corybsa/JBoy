@@ -96,7 +96,7 @@ class GPU {
      * @param value The value to set the LY register to.
      */
     private void setLY(int value) {
-        this.memory.setByteAt(IORegisters.LY_COMPARE, value);
+        this.memory.setByteAt(IORegisters.LCDC_Y_COORDINATE, value);
     }
 
     /**
@@ -120,7 +120,7 @@ class GPU {
     }
 
     void updateTiles(int address) {
-        int vramAddress = address & 0x1FFF;
+        int vramAddress = (0x1FFF - (0x9FFF - address)) & 0xFFFF;
 
         if(vramAddress >= 0x1800) {
             return;
