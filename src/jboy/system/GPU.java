@@ -48,11 +48,7 @@ class GPU {
 
                     if(this.scanline == Display.VBlankArea.START) {
                         int interruptFlags = this.getInterruptFlag();
-
-                        if((this.getInterruptEnable() & Interrupts.VBLANK) == Interrupts.VBLANK) {
-                            this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, interruptFlags | Interrupts.VBLANK);
-                        }
-
+                        this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, interruptFlags | Interrupts.VBLANK);
                         this.mode = Mode.VBLANK;
                     } else {
                         this.mode = Mode.OAM;
@@ -137,8 +133,8 @@ class GPU {
 
         for(pixelIndex = 0; pixelIndex < 8; pixelIndex++) {
             int mask = 1 << (7 - pixelIndex);
-            int lsb = byte1 & mask;
-            int msb = byte2 & mask;
+            int lsb = (byte1 & mask) >> (7 - pixelIndex);
+            int msb = (byte2 & mask) >> (7 - pixelIndex);
 
             if(lsb == 1 && msb == 1) {
                 pixelValue = Display.PixelColor.WHITE;
