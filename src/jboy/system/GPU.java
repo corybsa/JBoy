@@ -1,5 +1,7 @@
 package jboy.system;
 
+import java.util.ArrayList;
+
 class GPU {
     private final Memory memory;
     private final Display display;
@@ -8,6 +10,7 @@ class GPU {
     private int ticks = 0;
     private long previousCycles = 0;
     private int[][][] tiles = new int[384][8][8];
+    private int[] tileArray = new int[384 * 8 * 8];
 
     public enum Mode {
         HBLANK,
@@ -43,7 +46,7 @@ class GPU {
         switch(this.mode) {
             case HBLANK:
                 if(this.ticks >= Timings.HBLANK) {
-                    this.display.renderScanLine(this.tiles);
+                    this.display.renderScanLine(this.tileArray);
                     this.scanline++;
 
                     if(this.scanline == Display.VBlankArea.START) {
@@ -146,7 +149,9 @@ class GPU {
                 pixelValue = Display.PixelColor.BLACK;
             }
 
-            this.tiles[tileIndex][rowIndex][pixelIndex] = pixelValue;
+//            this.tiles[tileIndex][rowIndex][pixelIndex] = pixelValue;
+
+            this.tileArray[tileIndex * rowIndex * pixelIndex] = pixelValue;
         }
     }
 }
