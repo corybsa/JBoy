@@ -5,7 +5,7 @@ import io.reactivex.Observer;
 
 public class Display extends Observable<byte[]> {
     // The refresh rate of the display in frames per second. 59.7 / 4 = 14.925
-    static final float FREQUENCY = 59.7f * 2;
+    static final float FREQUENCY = 59.7f;
 
     // The amount of machine cycles per frame.
     static final int LCDC_PERIOD = (int)(CPU.FREQUENCY / Display.FREQUENCY);
@@ -13,7 +13,6 @@ public class Display extends Observable<byte[]> {
     public static final int HEIGHT = 144;
     public static final int WIDTH = 160;
 
-    private byte[][][] tiles = new byte[160][144][4];
     private byte[] tileArray = new byte[160 * 144 * 4];
     private Memory memory;
     private Observer<? super byte[]> observer;
@@ -117,7 +116,7 @@ public class Display extends Observable<byte[]> {
 
         int tileRow = (y / 8) * 32;
 
-        for(int pixel = 0; pixel < 160; pixel++) {
+        for(int pixel = 0; pixel < Display.WIDTH; pixel++) {
             int x = pixel + scrollX;
 
             if(isWindowEnabled && pixel >= windowX) {
@@ -147,8 +146,7 @@ public class Display extends Observable<byte[]> {
             int data1 = this.memory.getByteAt(tileLocation + line);
             int data2 = this.memory.getByteAt(tileLocation + line + 1);
 
-//            int colorBit = (x % 8) - 7 * -1;
-            int colorBit = (x % 8);
+            int colorBit = ((x % 8) - 7) * -1;
             int colorNum = ((data2 & (1 << colorBit)) >> (colorBit - 1)) | ((data1 & (1 << colorBit)) >> colorBit);
             int color = this.getColor(colorNum, IORegisters.BG_PALETTE_DATA);
             byte red = (byte)0xFF;
@@ -182,15 +180,11 @@ public class Display extends Observable<byte[]> {
                 continue;
             }
 
-            /*this.tiles[pixel][scanlineY][0] = blue;
-            this.tiles[pixel][scanlineY][1] = green;
-            this.tiles[pixel][scanlineY][2] = red;
-            this.tiles[pixel][scanlineY][3] = (byte)0xFF;*/
-
-            this.tileArray[pixel * scanlineY] = blue;
-            this.tileArray[(pixel * scanlineY) + 1] = green;
-            this.tileArray[(pixel * scanlineY) + 2] = red;
-            this.tileArray[(pixel * scanlineY) + 3] = (byte)0xFF;
+            int index = (pixel * 4) + ((scanlineY * 32));
+            this.tileArray[index] = blue;
+            this.tileArray[index + 1] = green;
+            this.tileArray[index + 2] = red;
+            this.tileArray[index + 3] = (byte)0xFF;
         }
     }
 
@@ -241,54 +235,5 @@ public class Display extends Observable<byte[]> {
         }
 
         return result;
-    }
-
-    private byte[] createImage(int[] tiles) {
-        // multiply by 4 because each pixel is represented by 4 bytes.
-        byte[] pixels = new byte[Display.HEIGHT * Display.WIDTH * 4];
-
-        /*for(int i = 0; i < pixels.length; i += 4) {
-            pixels[i] = (byte)Math.floor(Math.random() * 255); // blue
-            pixels[i + 1] = (byte)Math.floor(Math.random() * 255); // green
-            pixels[i + 2] = (byte)Math.floor(Math.random() * 255); // red
-            pixels[i + 3] = (byte)Math.floor(Math.random() * 255); // alpha
-        }*/
-
-        for(int i = 0; i < tiles.length; i += 4) {
-            int color = (byte)tiles[i];
-            byte r = (byte)0xFF;
-            byte g = (byte)0xFF;
-            byte b = (byte)0xFF;
-
-            switch(color) {
-                case PixelColor.WHITE:
-                    r = (byte)0xFF;
-                    g = (byte)0xFF;
-                    b = (byte)0xFF;
-                    break;
-                case PixelColor.LIGHT_GRAY:
-                    r = (byte)0xCC;
-                    g = (byte)0xCC;
-                    b = (byte)0xCC;
-                    break;
-                case PixelColor.DARK_GRAY:
-                    r = (byte)0x77;
-                    g = (byte)0x77;
-                    b = (byte)0x77;
-                    break;
-                case PixelColor.BLACK:
-                    r = (byte)0x00;
-                    g = (byte)0x00;
-                    b = (byte)0x00;
-                    break;
-            }
-
-            pixels[i] = b;
-            pixels[i + 1] = g;
-            pixels[i + 2] = r;
-            pixels[i + 3] = (byte)0xFF;
-        }
-
-        return pixels;
     }
 }

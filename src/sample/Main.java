@@ -36,9 +36,11 @@ import java.util.concurrent.TimeUnit;
 
 public class Main extends Application {
     private Stage stage;
-    private ListView<String> listView;
+    private ListView<String> listView = new ListView<>();
     private GameBoy gameBoy;
     private GraphicsContext graphicsContext;
+    private PixelWriter pixelWriter;
+    private PixelFormat<ByteBuffer> pixelFormat;
 
     private Thread gameThread;
     private Disposable debugInfo;
@@ -53,6 +55,8 @@ public class Main extends Application {
         MenuBar menuBar = createMenuBar();
         Canvas canvas = new Canvas(Display.WIDTH, Display.HEIGHT);
         this.graphicsContext = canvas.getGraphicsContext2D();
+        this.pixelWriter = this.graphicsContext.getPixelWriter();
+        this.pixelFormat = PixelFormat.getByteBgraInstance();
 
         vbox.getChildren().add(menuBar);
         vbox.getChildren().add(canvas);
@@ -158,10 +162,16 @@ public class Main extends Application {
     }
 
     private void drawImage(byte[] data) {
-        PixelWriter pw = this.graphicsContext.getPixelWriter();
-        PixelFormat<ByteBuffer> pf = PixelFormat.getByteBgraInstance();
-
-        pw.setPixels(0, 0, Display.WIDTH, Display.HEIGHT, pf, data, 0, Display.WIDTH);
+        this.pixelWriter.setPixels(
+                0,
+                0,
+                Display.WIDTH,
+                Display.HEIGHT,
+                this.pixelFormat,
+                data,
+                0,
+                Display.WIDTH / 4
+        );
     }
 
     private void disassemble(File file) {

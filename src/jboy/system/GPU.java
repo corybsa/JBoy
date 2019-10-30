@@ -1,7 +1,5 @@
 package jboy.system;
 
-import java.util.ArrayList;
-
 class GPU {
     private final Memory memory;
     private final Display display;
@@ -9,7 +7,6 @@ class GPU {
     private int scanline = 0;
     private int ticks = 0;
     private long previousCycles = 0;
-    private int[][][] tiles = new int[384][8][8];
     private int[] tileArray = new int[384 * 8 * 8];
 
     public enum Mode {
@@ -99,14 +96,6 @@ class GPU {
     }
 
     /**
-     * Gets the value of the interrupt enable.
-     * @return The value at memory address 0xFFFF
-     */
-    private int getInterruptEnable() {
-        return this.memory.getByteAt(IORegisters.INTERRUPT_ENABLE);
-    }
-
-    /**
      * Gets the value of the interrupt flag.
      * @return The value at memory address 0xFF0F
      */
@@ -116,42 +105,5 @@ class GPU {
 
     Mode getMode() {
         return this.mode;
-    }
-
-    void updateTiles(int address) {
-        int vramAddress = (0x1FFF - (0x9FFF - address)) & 0xFFFF;
-
-        if(vramAddress >= 0x1800) {
-            return;
-        }
-
-        int index = address & 0xFFFE;
-        int byte1 = this.memory.getByteAt(index);
-        int byte2 = this.memory.getByteAt(index + 1);
-
-        int tileIndex = vramAddress / 16;
-        int rowIndex = (vramAddress % 16) / 2;
-        int pixelIndex;
-        int pixelValue;
-
-        for(pixelIndex = 0; pixelIndex < 8; pixelIndex++) {
-            int mask = 1 << (7 - pixelIndex);
-            int lsb = (byte1 & mask) >> (7 - pixelIndex);
-            int msb = (byte2 & mask) >> (7 - pixelIndex);
-
-            if(lsb == 1 && msb == 1) {
-                pixelValue = Display.PixelColor.WHITE;
-            } else if(lsb == 1 && msb == 0) {
-                pixelValue = Display.PixelColor.DARK_GRAY;
-            } else if(lsb == 0 && msb == 1) {
-                pixelValue = Display.PixelColor.LIGHT_GRAY;
-            } else {
-                pixelValue = Display.PixelColor.BLACK;
-            }
-
-//            this.tiles[tileIndex][rowIndex][pixelIndex] = pixelValue;
-
-            this.tileArray[tileIndex * rowIndex * pixelIndex] = pixelValue;
-        }
     }
 }

@@ -14,7 +14,7 @@ public class GameBoy implements Runnable {
         this.gpu = new GPU(this.memory, this.display);
         this.cpu = new CPU(this.memory, this.gpu);
 
-        this.memory.subscribe(this.gpu::updateTiles);
+//        this.memory.subscribe(this.gpu::updateTiles);
     }
 
     public void loadROM(int[] rom) {
