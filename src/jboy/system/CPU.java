@@ -296,7 +296,7 @@ public class CPU extends Observable<CpuInfo> {
             this.cycles = 0;
         }
 
-//        this.synchronize();
+        this.synchronize();
 
         // Check if there are any interrupts that need to be serviced.
         boolean shouldServiceInterrupts = this.ime && (this.getInterruptFlag() & this.getInterruptEnable()) != 0;
