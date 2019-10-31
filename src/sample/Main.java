@@ -170,7 +170,7 @@ public class Main extends Application {
                 this.pixelFormat,
                 data,
                 0,
-                Display.WIDTH / 4
+                Display.WIDTH * 4
         );
     }
 
