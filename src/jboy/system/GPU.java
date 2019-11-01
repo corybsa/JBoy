@@ -1,5 +1,7 @@
 package jboy.system;
 
+import java.time.Instant;
+
 class GPU {
     private final Memory memory;
     private final Display display;
@@ -8,6 +10,7 @@ class GPU {
     private int ticks = 0;
     private long previousCycles = 0;
     private int[][][] tiles = new int[384][8][8];
+    private long lastFrame = Instant.now().getEpochSecond();
 
     public enum Mode {
         HBLANK,
@@ -18,9 +21,9 @@ class GPU {
 
     private interface Timings {
         int HBLANK = 51;
+        int VBLANK = 114;
         int OAM = 20;
         int VRAM = 43;
-        int VBLANK = 114;
     }
 
     GPU(Memory memory, Display display) {
@@ -65,6 +68,17 @@ class GPU {
                     this.scanline++;
 
                     if(this.scanline > Display.VBlankArea.END) {
+                        /*long now = Instant.now().getEpochSecond();
+                        double delta = (double)now - (double)this.lastFrame;
+
+                        if(delta <= 0) {
+                            System.out.println("FPS: infinity");
+                        } else {
+                            System.out.println("FPS: " + (1 / delta));
+                        }
+
+                        this.lastFrame = now;*/
+
                         this.scanline = 0;
                         this.changeMode(Mode.OAM);
 //                        this.mode = Mode.OAM;
@@ -120,36 +134,44 @@ class GPU {
 
     private void changeMode(Mode mode) {
         if(mode != this.mode) {
-            int statusFlag;
-            int modeFlag;
+            int statusFlag = this.memory.getByteAt(IORegisters.LCD_STATUS);
 
             switch(mode) {
+                case HBLANK:
+                    // set the mode interrupt bit 3 to 1 (bits 3 through 5)
+                    statusFlag |= (1 << 3);
+
+                    // set the mode bit to 0 (bits 0 and 1)
+                    statusFlag = ((statusFlag >> 2) << 2);
+
+                    this.memory.setByteAt(IORegisters.LCD_STATUS, statusFlag);
+                    this.requestInterrupt(Interrupts.LCD_STAT);
+                    break;
                 case VBLANK:
-                    // set the mode interrupt bit to 1 (bits 3 through 5)
-                    statusFlag = this.memory.getByteAt(IORegisters.LCD_STATUS);
-                    statusFlag = (statusFlag & ~((mode.ordinal() + 3) << 1)) | ((mode.ordinal() + 3) << 1);
+                    // set the mode interrupt bit 4 to 1 (bits 3 through 5)
+                    statusFlag |= (1 << 4);
 
                     // set the mode bit to 1 (bits 0 and 1)
-                    modeFlag = this.memory.getByteAt(IORegisters.LCD_STATUS);
-                    modeFlag = (modeFlag & ~mode.ordinal()) | mode.ordinal();
+                    statusFlag = ((statusFlag >> 2) << 2) | 1;
 
-                    this.memory.setByteAt(IORegisters.LCD_STATUS, statusFlag | modeFlag);
+                    this.memory.setByteAt(IORegisters.LCD_STATUS, statusFlag);
                     this.requestInterrupt(Interrupts.VBLANK);
                     break;
-                case HBLANK:
                 case OAM:
-                    // set the mode interrupt bit to 1 (bits 3 through 5)
-                    statusFlag = this.memory.getByteAt(IORegisters.LCD_STATUS);
-                    statusFlag = (statusFlag & ~((mode.ordinal() + 3) << 1)) | ((mode.ordinal() + 3) << 1);
+                    // set the mode interrupt bit 5 to 1 (bits 3 through 5)
+                    statusFlag |= (1 << 5);
 
-                    // set the mode bit to 1 (bits 0 and 1)
-                    modeFlag = this.memory.getByteAt(IORegisters.LCD_STATUS);
-                    modeFlag = (modeFlag & ~mode.ordinal()) | mode.ordinal();
+                    // set the mode bit to 2 (bits 0 and 1)
+                    statusFlag = ((statusFlag >> 2) << 2) | 2;
 
-                    this.memory.setByteAt(IORegisters.LCD_STATUS, statusFlag | modeFlag);
+                    this.memory.setByteAt(IORegisters.LCD_STATUS, statusFlag);
                     this.requestInterrupt(Interrupts.LCD_STAT);
                     break;
                 case VRAM:
+                    // set the mode bit to 2 (bits 0 and 1)
+                    statusFlag = ((statusFlag >> 2) << 2) | 3;
+
+                    this.memory.setByteAt(IORegisters.LCD_STATUS, statusFlag);
                     this.requestInterrupt(Interrupts.LCD_STAT);
                     break;
             }

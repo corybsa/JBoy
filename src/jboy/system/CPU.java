@@ -1,11 +1,17 @@
 package jboy.system;
 
+import io.reactivex.Flowable;
 import io.reactivex.Observable;
 import io.reactivex.Observer;
+import io.reactivex.Single;
 import jboy.other.CpuInfo;
 
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <h3>Description</h3>
@@ -322,6 +328,8 @@ public class CPU extends Observable<CpuInfo> {
      * The main loop. This ticks the CPU and runs forever.
      */
     void run() {
+        this.reset();
+
         while(true) {
             this.tick();
         }
@@ -350,10 +358,10 @@ public class CPU extends Observable<CpuInfo> {
      */
     private void synchronize() {
         // Our target sleep time is the length in time the previous instruction took.
-        long target = this.cyclesSinceLastSync * 1000000000L / CPU.FREQUENCY;
+        long target = this.cyclesSinceLastSync * 75_000L / CPU.FREQUENCY;
 
         // Get the current nanoseconds since 1970.
-        long nanoseconds = Instant.now().getEpochSecond() * 1000000000L;
+        long nanoseconds = Instant.now().getEpochSecond() * 75_000L;
 
         // The sleep duration is the previous instruction time plus how long it's been since we last synced.
         // We subtract the nanoseconds to see if the CPU is running too fast.
@@ -369,7 +377,7 @@ public class CPU extends Observable<CpuInfo> {
         }
 
         // Check if sleepDuration is between zero and the time it takes to complete a whole frame.
-        if(sleepDuration > 0 && sleepDuration < (Display.LCDC_PERIOD * 1000000000L / CPU.FREQUENCY)) {
+        if(sleepDuration > 0 && sleepDuration < (Display.LCDC_PERIOD * 75_000L / CPU.FREQUENCY)) {
             this.sleep(sleepDuration);
 
             // Need to keep track of how long it's been since we last synced.
@@ -394,7 +402,7 @@ public class CPU extends Observable<CpuInfo> {
                 Thread.sleep(0, 999999);
                 this.sleep(duration - 999999);
             } else {
-                Thread.sleep(0, (int) duration);
+                Thread.sleep(0, (int)duration);
             }
         } catch(InterruptedException e) {
             // if sleep is interrupted, I don't think it matters.

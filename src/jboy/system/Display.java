@@ -13,13 +13,13 @@ public class Display extends Observable<byte[]> {
     public static final int HEIGHT = 144;
     public static final int WIDTH = 160;
 
-    private byte[] tileArray = new byte[HEIGHT * WIDTH * 4];
-    private byte[][] tiles = new byte[HEIGHT][WIDTH * 4];
+    private byte[] tiles = new byte[HEIGHT * WIDTH * 4];
+    private int tileIndex = 0;
     private Memory memory;
     private Observer<? super byte[]> observer;
 
     public interface VBlankArea {
-        int START = 143;
+        int START = 144;
         int END = 153;
     }
 
@@ -58,13 +58,11 @@ public class Display extends Observable<byte[]> {
             this.renderSprites(lcdc);
         }
 
-        observer.onNext(this.tileArray);
-//        observer.onNext(this.tiles);
+        observer.onNext(this.tiles);
     }
 
     private void renderBG(int lcdc, int[][][] tiles) {
         boolean isWindowEnabled = false;
-        boolean unsigned = true;
         int scanlineY = this.memory.getByteAt(IORegisters.LCDC_Y_COORDINATE);
         int windowOffset = (lcdc >> 6) & 0x01;
         int bgWindowOffset = (lcdc >> 4) & 0x01;
@@ -89,7 +87,6 @@ public class Display extends Observable<byte[]> {
             tileData = 0x8000;
         } else {
             tileData = 0x8800;
-            unsigned = false;
         }
 
         if(!isWindowEnabled) {
@@ -115,7 +112,59 @@ public class Display extends Observable<byte[]> {
             y = scanlineY - windowY;
         }
 
-        int index = 0;
+        int tileRow = (y / 8) * 32;
+
+        for(int col = 0; col < Display.WIDTH; col++) {
+            int tileCol = col / 8;
+            int tileNum;
+
+            int tileAddress = bgAddress + tileRow + tileCol;
+            tileNum = this.memory.getByteAt(tileAddress);
+
+            int color = tiles[tileNum][y % 8][col % 8];
+            byte red = (byte)0xFF;
+            byte green = (byte)0xFF;
+            byte blue = (byte)0xFF;
+
+            switch(color) {
+                case PixelColor.WHITE:
+                    red = (byte)0xFF;
+                    green = (byte)0xFF;
+                    blue = (byte)0xFF;
+                    break;
+                case PixelColor.LIGHT_GRAY:
+                    red = (byte)0xCC;
+                    green = (byte)0xCC;
+                    blue = (byte)0xCC;
+                    break;
+                case PixelColor.DARK_GRAY:
+                    red = 0x77;
+                    green = 0x77;
+                    blue = 0x77;
+                    break;
+                case PixelColor.BLACK:
+                    red = 0x00;
+                    green = 0x00;
+                    blue = 0x00;
+                    break;
+            }
+
+            if(scanlineY < 0 || scanlineY > 143) {
+                continue;
+            }
+
+            this.tiles[this.tileIndex] = blue;
+            this.tiles[this.tileIndex + 1] = green;
+            this.tiles[this.tileIndex + 2] = red;
+            this.tiles[this.tileIndex + 3] = (byte)0xFF;
+            this.tileIndex += 4;
+        }
+
+        if(this.tileIndex >= (HEIGHT * WIDTH * 4)) {
+            this.tileIndex = 0;
+        }
+
+        /*int index = 0;
 
         for(int row = 0; row < Display.HEIGHT; row++) {
             for(int col = 0; col < Display.WIDTH; col++) {
@@ -124,12 +173,7 @@ public class Display extends Observable<byte[]> {
                 int tileNum;
 
                 int tileAddress = bgAddress + tileRow + tileCol;
-
-                if(unsigned) {
-                    tileNum = this.memory.getByteAt(tileAddress);
-                } else {
-                    tileNum = (byte)this.memory.getByteAt(tileAddress);
-                }
+                tileNum = this.memory.getByteAt(tileAddress);
 
                 int color = tiles[tileNum][row % 8][col % 8];
                 byte red = (byte)0xFF;
@@ -163,13 +207,13 @@ public class Display extends Observable<byte[]> {
                     continue;
                 }
 
-                this.tileArray[index] = blue;
-                this.tileArray[index + 1] = green;
-                this.tileArray[index + 2] = red;
-                this.tileArray[index + 3] = (byte)0xFF;
+                this.tiles[index] = blue;
+                this.tiles[index + 1] = green;
+                this.tiles[index + 2] = red;
+                this.tiles[index + 3] = (byte)0xFF;
                 index += 4;
             }
-        }
+        }*/
     }
 
     private void renderSprites(int lcdc) {
