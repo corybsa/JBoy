@@ -112,7 +112,7 @@ public class Display extends Observable<byte[]> {
             y = scanlineY - windowY;
         }
 
-        int tileRow = (y / 8) * 32;
+        /*int tileRow = (y / 8) * 32;
 
         for(int col = 0; col < Display.WIDTH; col++) {
             int tileCol = col / 8;
@@ -162,9 +162,9 @@ public class Display extends Observable<byte[]> {
 
         if(this.tileIndex >= (HEIGHT * WIDTH * 4)) {
             this.tileIndex = 0;
-        }
+        }*/
 
-        /*int index = 0;
+        int index = 0;
 
         for(int row = 0; row < Display.HEIGHT; row++) {
             for(int col = 0; col < Display.WIDTH; col++) {
@@ -213,7 +213,7 @@ public class Display extends Observable<byte[]> {
                 this.tiles[index + 3] = (byte)0xFF;
                 index += 4;
             }
-        }*/
+        }
     }
 
     private void renderSprites(int lcdc) {

@@ -54,7 +54,7 @@ import io.reactivex.Observer;
 public class Memory extends Observable<Integer> {
     private int[] cartridge = new int[0x800000];
     private int[] vram = new int[0x2000];
-    private int[] sram = new int[0x2000];
+    private int[] sram = new int[0x8000];
     private int[] wram = new int[0x2000];
     private int[] eram = new int[0x1E00];
     private int[] oam = new int[0xA0];
@@ -63,7 +63,19 @@ public class Memory extends Observable<Integer> {
     private int[] ff4c_ff7f = new int[0x34];
     private int[] hram = new int[0x7F];
     private int[] ime = new int[1];
+
+    private RomBank romBankType;
+    private int currentRomBank = 1;
+    private int currentRamBank = 0;
+    private boolean isRomEnabled = true;
+    private boolean isRamEnabled = false;
     private Observer<? super Integer> observer;
+
+    enum RomBank {
+        NONE,
+        MBC1,
+        MBC2
+    }
 
     @Override
     protected void subscribeActual(Observer<? super Integer> observer) {
@@ -72,6 +84,7 @@ public class Memory extends Observable<Integer> {
 
     public void loadROM(int[] rom) {
         this.cartridge = rom;
+        this.romBankType = this.getRomBankType(this.cartridge[0x147]);
     }
 
     public int[] getROM() {
@@ -81,13 +94,17 @@ public class Memory extends Observable<Integer> {
     public int getByteAt(int address) {
         int addr;
 
-        if(address <= 0x7FFF) {
+        if(address <= 0x3FFF) {
             return this.cartridge[address];
+        } else if(address <= 0x7FFF) {
+            addr = (address - 0x4000) + (this.currentRomBank * 0x4000);
+            return this.cartridge[addr];
         } else if(address <= 0x9FFF) {
             addr = (0x1FFF - (0x9FFF - address)) & 0xFFFF;
             return this.vram[addr];
         } else if(address <= 0xBFFF) {
             addr = (0x1FFF - (0xBFFF - address)) & 0xFFFF;
+            addr = (addr - 0x1FFF) + (this.currentRamBank * 0x2000);
             return this.sram[addr];
         } else if(address <= 0xDFFF) {
             addr = (0x1FFF - (0xDFFF - address)) & 0xFFFF;
@@ -118,15 +135,19 @@ public class Memory extends Observable<Integer> {
     public void setByteAt(int address, int value) {
         int addr;
 
-        // can't modify the ROM (0x0000 through 0x7FFF)
         if(address <= 0x7FFF) {
-            // nothing
+            this.switchBank(address, value);
         } else if(address <= 0x9FFF) {
             addr = (0x1FFF - (0x9FFF - address)) & 0xFFFF;
             this.vram[addr] = value;
             this.observer.onNext(address);
         } else if(address <= 0xBFFF) {
             addr = (0x1FFF - (0xBFFF - address)) & 0xFFFF;
+
+            if(this.isRamEnabled) {
+                addr = (addr - 0x1FFF) + (this.currentRamBank * 0x2000);
+            }
+
             this.sram[addr] = value;
         } else if(address <= 0xDFFF) {
             addr = (0x1FFF - (0xDFFF - address)) & 0xFFFF;
@@ -177,6 +198,95 @@ public class Memory extends Observable<Integer> {
 
             this.setByteAt(IORegisters.LCD_STATUS, (1 << 6));
             this.setByteAt(IORegisters.INTERRUPT_FLAGS, interruptFlags | Interrupts.LCD_STAT);
+        }
+    }
+
+    private RomBank getRomBankType(int value) {
+        switch(value) {
+            default:
+            case 0x00:
+                return RomBank.NONE;
+            case 0x01:
+            case 0x02:
+            case 0x03:
+                return RomBank.MBC1;
+            case 0x05:
+            case 0x06:
+                return RomBank.MBC2;
+        }
+    }
+
+    private void switchBank(int address, int value) {
+        if(address <= 0x1FFF) {
+            if(this.romBankType == RomBank.MBC1 || this.romBankType == RomBank.MBC2) {
+                this.enableRamBanking(address, value);
+            }
+        } else if(address <= 0x3FFF) {
+            if(this.romBankType == RomBank.MBC1 || this.romBankType == RomBank.MBC2) {
+                this.changeLowRomBank(value);
+            }
+        } else if(address <= 0x5FFF) {
+            if(this.romBankType == RomBank.MBC1) {
+                if(this.isRomEnabled) {
+                    this.changeHighRomBank(value);
+                } else {
+                    this.changeRamBank(value);
+                }
+            }
+        } else if(address <= 0x7FFF) {
+            if(this.romBankType == RomBank.MBC1) {
+                this.changeBankMode(value);
+            }
+        }
+    }
+
+    private void enableRamBanking(int address, int value) {
+        // When a game wants to enable RAM banking bit 4 must be 0 for MBC2 cartridges
+        if(this.romBankType == RomBank.MBC2 && (address >> 4) == 1) {
+            return;
+        }
+
+        // When a game wants to write to RAM banks, the lower nibble must be 0x0A.
+        this.isRamEnabled = (value & 0x0F) == 0x0A;
+    }
+
+    private void changeLowRomBank(int value) {
+        if(this.romBankType == RomBank.MBC2) {
+            this.currentRomBank = value & 0x0F;
+
+            // rom bank can't be zero
+            if(this.currentRomBank == 0) {
+                this.currentRomBank = 1;
+            }
+
+            return;
+        }
+
+        this.currentRomBank = (this.currentRomBank & 0xE0) | (value & 0x1F);
+
+        if(this.currentRomBank == 0) {
+            this.currentRomBank = 1;
+        }
+    }
+
+    private void changeHighRomBank(int value) {
+        this.currentRomBank = (this.currentRomBank & 0x1F) | (value & 0xE0);
+
+        if(this.currentRomBank == 0) {
+            this.currentRomBank = 1;
+        }
+    }
+
+    private void changeRamBank(int value) {
+        this.currentRamBank = value & 0x03;
+    }
+
+    private void changeBankMode(int value) {
+        if((value & 0x01) == 0) {
+            this.isRomEnabled = true;
+            this.currentRamBank = 0;
+        } else {
+            this.isRomEnabled = false;
         }
     }
 }
