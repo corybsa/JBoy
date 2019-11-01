@@ -106,6 +106,7 @@ public class Display extends Observable<byte[]> {
 
         int y;
 
+        // TODO: scrolling doesn't work
         if(!isWindowEnabled) {
             y = scrollY + scanlineY;
         } else {

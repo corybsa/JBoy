@@ -477,6 +477,7 @@ public class CPU extends Observable<CpuInfo> {
      * VBLANK, LCD Status, Timer overflow, Serial input, JoyPad input
      */
     private void checkInterrupts() {
+        // TODO: interrupts are not working properly. Run blargg on bgb and compare.
         int enabledInterrupts = this.getInterruptEnable() & this.getInterruptFlag();
 
         if((enabledInterrupts & Interrupts.VBLANK) == Interrupts.VBLANK) {
