@@ -7,11 +7,7 @@ import javafx.concurrent.Task;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
-import javafx.scene.control.Menu;
-import javafx.scene.control.MenuBar;
-import javafx.scene.control.MenuItem;
+import javafx.scene.control.*;
 import javafx.scene.image.PixelFormat;
 import javafx.scene.image.PixelWriter;
 import javafx.scene.layout.GridPane;
@@ -21,6 +17,7 @@ import javafx.stage.Screen;
 import javafx.stage.Stage;
 import jboy.disassembler.Disassembler;
 import jboy.other.GameBoyInfo;
+import jboy.system.CPU;
 import jboy.system.Display;
 import jboy.system.GameBoy;
 
@@ -115,7 +112,7 @@ public class Main extends Application {
     private Menu createActionsMenu() {
         Menu mActions = new Menu("Actions");
         MenuItem miDisassemble = new MenuItem("Disassemble...");
-        MenuItem miDebug = new MenuItem("Debug");
+        MenuItem miDebug = new MenuItem("Show debugger");
 
         miDisassemble.setOnAction(x -> {
             FileChooser chooser = new FileChooser();
@@ -196,62 +193,152 @@ public class Main extends Application {
         }
     }
 
+    // TODO: definitely need to refactor this when I'm done.
     private void openDebugWindow() {
-        FileChooser chooser = new FileChooser();
-        File file = chooser.showOpenDialog(this.stage);
-
-        if(file != null) {
-            this.loadRom(file);
-        }
-
         GridPane layout = new GridPane();
         Label pc = new Label("PC: 0x100");
+        Label sp = new Label("SP: 0xFFFE");
         Label af = new Label("AF: 0x0000");
         Label bc = new Label("BC: 0x0000");
         Label de = new Label("DE: 0x0000");
         Label hl = new Label("HL: 0x0000");
+        Label interruptFlags = new Label("IF: 0x00");
+        Label interruptEnable = new Label("IE: 0x00");
+        Label ime = new Label("IME: off");
+        Label lcdc = new Label("LCDC: 0x00");
+
+        CheckBox z = new CheckBox("Z") {
+            @Override
+            public void arm() {
+                // nothing.
+            }
+        };
+
+        CheckBox n = new CheckBox("N") {
+            @Override
+            public void arm() {
+                // nothing.
+            }
+        };
+
+        CheckBox h = new CheckBox("H") {
+            @Override
+            public void arm() {
+                // nothing.
+            }
+        };
+
+        CheckBox c = new CheckBox("C") {
+            @Override
+            public void arm() {
+                // nothing.
+            }
+        };
+
+        Button tick = new Button("Tick");
+        tick.setOnAction(x -> this.gameBoy.tick());
+
+        Button run = new Button("Run to breakpoint");
+        run.setOnAction(x -> this.gameBoy.runToBreakpoint());
+
+        Button reset = new Button("Reset");
+        reset.setOnAction(x -> this.gameBoy.resetCpu());
+
+        Label lblBreakpoint = new Label("Enter a breakpoint: ");
+        TextField tfBreakpoint = new TextField();
+
+        Label lblBreakpoints = new Label("Breakpoints:");
+        ListView<String> breakpoints = new ListView<>();
+
+        Button addBreakpoint = new Button("Add breakpoint");
+        addBreakpoint.setOnAction(x -> {
+            String text = tfBreakpoint.getText();
+
+            if(!text.isEmpty() && !text.isBlank()) {
+                this.gameBoy.addBreakpoint(Integer.parseInt(tfBreakpoint.getText(), 16));
+            }
+
+            tfBreakpoint.setText("");
+        });
+
+        Button removeBreakpoint = new Button("Remove breakpoint");
+        removeBreakpoint.setOnAction(x -> {
+            int index = breakpoints.getSelectionModel().getSelectedIndex();
+
+            if(index >= 0) {
+                this.gameBoy.removeBreakpoint(breakpoints.getSelectionModel().getSelectedIndex());
+            }
+        });
+
         Scene debugScene = new Scene(layout);
         Stage debugWindow = new Stage();
 
         debugWindow.setTitle("Debugger");
         debugWindow.setScene(debugScene);
-        debugWindow.setHeight(200);
-        debugWindow.setWidth(200);
+        debugWindow.setHeight(400);
+        debugWindow.setWidth(400);
 
         debugWindow.setX(Screen.getPrimary().getVisualBounds().getWidth() / 2);
         debugWindow.setY(Screen.getPrimary().getVisualBounds().getHeight() / 2);
 
+        this.gameBoy.setIsDebugging(true);
+
         GameBoyInfo gbInfo = this.gameBoy.getInfo();
         this.debugInfo = gbInfo.subscribe(info -> {
             Platform.runLater(() -> {
-                StringBuilder sb = new StringBuilder("PC: 0x");
-                sb.append(String.format("%4s", Integer.toString(info.getCpuInfo().getCpu().getPC(), 16).toUpperCase()).replace(" ", "0"));
-                pc.setText(sb.toString());
-                sb.delete(0, sb.length());
+                int flags = info.getCpuInfo().getCpu().getAF();
 
-                sb.append("AF: 0x").append(String.format("%4s", Integer.toString(info.getCpuInfo().getCpu().getAF(), 16).toUpperCase()).replace(" ", "0"));
-                af.setText(sb.toString());
-                sb.delete(0, sb.length());
+                pc.setText(info.getCpuInfo().getPC());
+                sp.setText(info.getCpuInfo().getSP());
+                af.setText(info.getCpuInfo().getAF());
+                bc.setText(info.getCpuInfo().getBC());
+                de.setText(info.getCpuInfo().getDE());
+                hl.setText(info.getCpuInfo().getHL());
+                interruptFlags.setText(info.getCpuInfo().getInterruptFlags());
+                interruptEnable.setText(info.getCpuInfo().getInterruptEnable());
+                ime.setText(info.getCpuInfo().getIME());
+                lcdc.setText(info.getMemoryInfo().getLCDC());
 
-                sb.append("BC: 0x").append(String.format("%4s", Integer.toString(info.getCpuInfo().getCpu().getBC(), 16).toUpperCase()).replace(" ", "0"));
-                bc.setText(sb.toString());
-                sb.delete(0, sb.length());
+                z.setSelected((flags & CPU.FLAG_ZERO) == CPU.FLAG_ZERO);
+                n.setSelected((flags & CPU.FLAG_SUB) == CPU.FLAG_SUB);
+                h.setSelected((flags & CPU.FLAG_HALF) == CPU.FLAG_HALF);
+                c.setSelected((flags & CPU.FLAG_CARRY) == CPU.FLAG_CARRY);
 
-                sb.append("DE: 0x").append(String.format("%4s", Integer.toString(info.getCpuInfo().getCpu().getDE(), 16).toUpperCase()).replace(" ", "0"));
-                de.setText(sb.toString());
-                sb.delete(0, sb.length());
-
-                sb.append("HL: 0x").append(String.format("%4s", Integer.toString(info.getCpuInfo().getCpu().getHL(), 16).toUpperCase()).replace(" ", "0"));
-                hl.setText(sb.toString());
+                breakpoints.getItems().clear();
+                breakpoints.getItems().addAll(info.getCpuInfo().getBreakpoints());
             });
         });
 
-        layout.add(pc, 0, 0);
-        layout.add(af, 0, 1);
-        layout.add(bc, 0, 2);
-        layout.add(de, 0, 3);
-        layout.add(hl, 0, 4);
+        layout.add(af, 0, 0);
+        layout.add(bc, 0, 1);
+        layout.add(de, 0, 2);
+        layout.add(hl, 0, 3);
+        layout.add(sp, 0, 4);
+        layout.add(pc, 0, 5);
 
+        layout.add(ime, 1, 0);
+        layout.add(interruptEnable, 1, 1);
+        layout.add(interruptFlags, 1, 2);
+        layout.add(lcdc, 1, 3);
+
+        layout.add(z, 2, 0);
+        layout.add(n, 2, 1);
+        layout.add(h, 2, 2);
+        layout.add(c, 2, 3);
+
+        layout.add(run, 1, 990);
+        layout.add(tick, 0, 990);
+        layout.add(reset, 2, 990);
+
+        layout.add(lblBreakpoint, 0, 998);
+        layout.add(tfBreakpoint, 1, 998);
+        layout.add(addBreakpoint, 0, 999);
+
+        layout.add(lblBreakpoints, 0, 1000);
+        layout.add(breakpoints, 0, 1001, 2, 5);
+        layout.add(removeBreakpoint, 0, 1007);
+
+        this.gameBoy.resetCpu();
         debugWindow.show();
     }
 }

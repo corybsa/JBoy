@@ -169,6 +169,10 @@ public class Memory extends Observable<Integer> {
                 return;
             }
 
+            // TODO: I think when you write to IORegisters.INTERRUPT_FLAGS, only the lower nibble is written.
+
+            // TODO: (in bgb) something weird is happening when a value is written to IORegisters.LCDC.
+
             this.io[addr] = value;
 
             if(address == IORegisters.LCDC_Y_COORDINATE || address == IORegisters.LY_COMPARE) {

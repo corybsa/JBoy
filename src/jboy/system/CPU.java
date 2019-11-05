@@ -1,17 +1,12 @@
 package jboy.system;
 
-import io.reactivex.Flowable;
 import io.reactivex.Observable;
 import io.reactivex.Observer;
-import io.reactivex.Single;
 import jboy.other.CpuInfo;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 /**
  * <h3>Description</h3>
@@ -116,11 +111,15 @@ public class CPU extends Observable<CpuInfo> {
     private final Memory memory;
     private final GPU gpu;
     private final HashMap<Integer, Instruction> instructions;
+    private final CpuInfo info;
+    private ArrayList<Integer> breakpoints;
 
     public CPU(Memory memory, GPU gpu) {
         this.instructions = new Instructions(this);
         this.memory = memory;
         this.gpu = gpu;
+        this.info = new CpuInfo(this);
+        this.breakpoints = new ArrayList<>();
 
         this.reset();
     }
@@ -128,7 +127,7 @@ public class CPU extends Observable<CpuInfo> {
     /**
      * Sets registers to default values.
      */
-    private void reset() {
+    public void reset() {
         this.setAF(0x01B0);
         this.setBC(0x0013);
         this.setDE(0x00D8);
@@ -168,6 +167,8 @@ public class CPU extends Observable<CpuInfo> {
         this.memory.setByteAt(IORegisters.WINDOW_Y, 0x00);
         this.memory.setByteAt(IORegisters.WINDOW_X, 0x00);
         this.memory.setByteAt(IORegisters.INTERRUPT_ENABLE, 0x00);
+
+        this.updateObserver();
     }
 
     // region Register setters and getters
@@ -319,18 +320,18 @@ public class CPU extends Observable<CpuInfo> {
             this.incrementTimers();
         }
 
-        if(this.observer != null) {
-            this.observer.onNext(new CpuInfo(this));
-        }
+        this.updateObserver();
     }
 
     /**
      * The main loop. This ticks the CPU and runs forever.
      */
     void run() {
-        this.reset();
-
         while(true) {
+            if(!this.breakpoints.isEmpty() && this.breakpoints.contains(this.PC)) {
+                break;
+            }
+
             this.tick();
         }
     }
@@ -481,36 +482,31 @@ public class CPU extends Observable<CpuInfo> {
         int enabledInterrupts = this.getInterruptEnable() & this.getInterruptFlag();
 
         if((enabledInterrupts & Interrupts.VBLANK) == Interrupts.VBLANK) {
-            this.ime = false;
-            this.isStopped = false;
-            this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, this.getInterruptFlag() & ~Interrupts.VBLANK);
-            this.rst(0x40);
-            this.incrementCycles(5);
+            this.serviceInterrupt(Interrupts.VBLANK, 0x40);
         } else if((enabledInterrupts & Interrupts.LCD_STAT) == Interrupts.LCD_STAT) {
-            this.ime = false;
-            this.isStopped = false;
-            this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, this.getInterruptFlag() & ~Interrupts.LCD_STAT);
-            this.rst(0x48);
-            this.incrementCycles(5);
+            this.serviceInterrupt(Interrupts.LCD_STAT, 0x48);
         } else if((enabledInterrupts & Interrupts.TIMER) == Interrupts.TIMER) {
-            this.ime = false;
-            this.isStopped = false;
-            this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, this.getInterruptFlag() & ~Interrupts.TIMER);
-            this.rst(0x50);
-            this.incrementCycles(5);
+            this.serviceInterrupt(Interrupts.TIMER, 0x50);
         } else if((enabledInterrupts & Interrupts.SERIAL) == Interrupts.SERIAL) {
-            this.ime = false;
-            this.isStopped = false;
-            this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, this.getInterruptFlag() & ~Interrupts.SERIAL);
-            this.rst(0x58);
-            this.incrementCycles(5);
+            this.serviceInterrupt(Interrupts.SERIAL, 0x58);
         } else if((enabledInterrupts & Interrupts.JOYPAD) == Interrupts.JOYPAD) {
-            this.ime = false;
-            this.isStopped = false;
-            this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, this.getInterruptFlag() & ~Interrupts.JOYPAD);
-            this.rst(0x60);
-            this.incrementCycles(5);
+            this.serviceInterrupt(Interrupts.JOYPAD, 0x60);
         }
+    }
+
+    /**
+     * Servicing an interrupt disabled interrupts, resumes the CPU if it was stopped,
+     * resets the interrupt bit that was serviced, resets the PC to a certain address
+     * and consumes 5 cycles.
+     * @param interrupt The {@link Interrupts interrupt} to service.
+     * @param vector The address to reset to.
+     */
+    private void serviceInterrupt(int interrupt, int vector) {
+        this.ime = false;
+        this.isStopped = false;
+        this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, this.getInterruptFlag() & ~interrupt);
+        this.rst(vector);
+        this.incrementCycles(5);
     }
 
     /**
@@ -592,7 +588,7 @@ public class CPU extends Observable<CpuInfo> {
      * Gets the value of the interrupt flag.
      * @return The value at memory address 0xFF0F
      */
-    private int getInterruptFlag() {
+    public int getInterruptFlag() {
         return this.memory.getByteAt(IORegisters.INTERRUPT_FLAGS);
     }
 
@@ -600,8 +596,38 @@ public class CPU extends Observable<CpuInfo> {
      * Gets the value of the interrupt enable.
      * @return The value at memory address 0xFFFF
      */
-    private int getInterruptEnable() {
+    public int getInterruptEnable() {
         return this.memory.getByteAt(IORegisters.INTERRUPT_ENABLE);
+    }
+
+    /**
+     * Reads the state of the interrupt master enable (IME).
+     * @return The state of the IME.
+     */
+    public boolean getIME() {
+        return this.ime;
+    }
+
+    public void addBreakpoint(int breakpoint) {
+        this.breakpoints.add(breakpoint);
+
+        this.updateObserver();
+    }
+
+    public void removeBreakpoint(int breakpoint) {
+        this.breakpoints.remove(breakpoint);
+
+        this.updateObserver();
+    }
+
+    public ArrayList<Integer> getBreakpoints() {
+        return this.breakpoints;
+    }
+
+    private void updateObserver() {
+        if(this.observer != null) {
+            this.observer.onNext(this.info.update(this));
+        }
     }
 
     // TODO: Delete this if my version of daa works.
@@ -1194,7 +1220,7 @@ public class CPU extends Observable<CpuInfo> {
      */
     Void inc_bc(int[] ops) {
         // increment BC by 1 and get the first 8 bits
-        this.setBC((this.getBC() + 1) & 0xFF);
+        this.setBC((this.getBC() + 1) & 0xFFFF);
         return null;
     }
 
@@ -1278,7 +1304,7 @@ public class CPU extends Observable<CpuInfo> {
      * @param ops unused.
      */
     Void dec_bc(int[] ops) {
-        this.setBC(this.getBC() - 1);
+        this.setBC((this.getBC() - 1) & 0xFFFF);
         return null;
     }
 
@@ -1343,7 +1369,7 @@ public class CPU extends Observable<CpuInfo> {
      */
     Void stop(int[] ops) {
         this.isStopped = true;
-        this.memory.setByteAt(IORegisters.INTERRUPT_ENABLE, 0x00);
+//        this.memory.setByteAt(IORegisters.INTERRUPT_ENABLE, 0x00);
         // TODO: set P10 - P13 low
         return null;
     }
@@ -1371,7 +1397,7 @@ public class CPU extends Observable<CpuInfo> {
      * @param ops unused
      */
     Void inc_de(int[] ops) {
-        this.setDE(this.getDE() + 1);
+        this.setDE((this.getDE() + 1) & 0xFFFF);
         return null;
     }
 
@@ -1465,7 +1491,7 @@ public class CPU extends Observable<CpuInfo> {
      * @param ops unused.
      */
     Void dec_de(int[] ops) {
-        this.setDE(this.getDE() - 1);
+        this.setDE((this.getDE() - 1) & 0xFFFF);
         return null;
     }
 
@@ -1566,7 +1592,7 @@ public class CPU extends Observable<CpuInfo> {
      * @param ops unused.
      */
     Void inc_hl(int[] ops) {
-        this.setHL(this.getHL() + 1);
+        this.setHL((this.getHL() + 1) & 0xFFFF);
         return null;
     }
 
@@ -1715,7 +1741,7 @@ public class CPU extends Observable<CpuInfo> {
      * @param ops unused.
      */
     Void dec_hl(int[] ops) {
-        this.setHL(this.getHL() - 1);
+        this.setHL((this.getHL() - 1) & 0xFFFF);
         return null;
     }
 

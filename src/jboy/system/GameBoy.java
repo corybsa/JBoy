@@ -7,6 +7,8 @@ public class GameBoy implements Runnable {
     private final GPU gpu;
     private final Display display;
     private final Memory memory;
+    private boolean isCartLoaded = false;
+    private boolean isDebugging = false;
 
     public GameBoy() {
         this.memory = new Memory();
@@ -24,10 +26,16 @@ public class GameBoy implements Runnable {
 
     @Override
     public void run() {
-        this.cpu.run();
+        if(!this.isDebugging) {
+            this.cpu.reset();
+            this.cpu.run();
+        } else {
+            this.cpu.reset();
+        }
     }
 
     public String getCartridgeInfo() {
+        this.isCartLoaded = true;
         return new Cartridge(this.memory.getROM()).toString();
     }
 
@@ -45,5 +53,37 @@ public class GameBoy implements Runnable {
 
     public Display getDisplay() {
         return this.display;
+    }
+
+    public void setIsDebugging(boolean state) {
+        this.isDebugging = state;
+    }
+
+    public void tick() {
+        if(!this.isCartLoaded) {
+            return;
+        }
+
+        this.cpu.tick();
+    }
+
+    public void runToBreakpoint() {
+        if(!this.isCartLoaded) {
+            return;
+        }
+
+        this.cpu.run();
+    }
+
+    public void addBreakpoint(int breakpoint) {
+        this.cpu.addBreakpoint(breakpoint);
+    }
+
+    public void removeBreakpoint(int breakpoint) {
+        this.cpu.removeBreakpoint(breakpoint);
+    }
+
+    public void resetCpu() {
+        this.cpu.reset();
     }
 }

@@ -50,7 +50,7 @@ class GPU {
                     this.scanline++;
 
                     if(this.scanline == Display.VBlankArea.START) {
-                        int interruptFlags = this.getInterruptFlag();
+//                        int interruptFlags = this.getInterruptFlag();
 //                        this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, interruptFlags | Interrupts.VBLANK);
 //                        this.mode = Mode.VBLANK;
                         this.changeMode(Mode.VBLANK);
@@ -190,6 +190,7 @@ class GPU {
         if(vramAddress >= 0x1800) {
             return;
         }
+
         int index = address & 0xFFFE;
         int byte1 = this.memory.getByteAt(index);
         int byte2 = this.memory.getByteAt(index + 1);
