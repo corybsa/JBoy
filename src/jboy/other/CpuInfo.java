@@ -21,35 +21,35 @@ public class CpuInfo {
     }
 
     public String getPC() {
-        return "PC: " + String.format("0x%4s", Integer.toString(this.cpu.getPC(), 16).toUpperCase()).replace(" ", "0");
+        return "PC: " + String.format("0x%4s", Integer.toHexString(this.cpu.getPC()).toUpperCase()).replace(" ", "0");
     }
 
     public String getSP() {
-        return "SP: " + String.format("0x%4s", Integer.toString(this.cpu.getSP(), 16).toUpperCase()).replace(" ", "0");
+        return "SP: " + String.format("0x%4s", Integer.toHexString(this.cpu.getSP()).toUpperCase()).replace(" ", "0");
     }
 
     public String getAF() {
-        return "AF: " + String.format("0x%4s", Integer.toString(this.cpu.getAF(), 16).toUpperCase()).replace(" ", "0");
+        return "AF: " + String.format("0x%4s", Integer.toHexString(this.cpu.getAF()).toUpperCase()).replace(" ", "0");
     }
 
     public String getBC() {
-        return "BC: " + String.format("0x%4s", Integer.toString(this.cpu.getBC(), 16).toUpperCase()).replace(" ", "0");
+        return "BC: " + String.format("0x%4s", Integer.toHexString(this.cpu.getBC()).toUpperCase()).replace(" ", "0");
     }
 
     public String getDE() {
-        return "DE: " + String.format("0x%4s", Integer.toString(this.cpu.getDE(), 16).toUpperCase()).replace(" ", "0");
+        return "DE: " + String.format("0x%4s", Integer.toHexString(this.cpu.getDE()).toUpperCase()).replace(" ", "0");
     }
 
     public String getHL() {
-        return "HL: " + String.format("0x%4s", Integer.toString(this.cpu.getHL(), 16).toUpperCase()).replace(" ", "0");
+        return "HL: " + String.format("0x%4s", Integer.toHexString(this.cpu.getHL()).toUpperCase()).replace(" ", "0");
     }
 
     public String getInterruptFlags() {
-        return "IF: " + String.format("0x%2s", Integer.toString(this.cpu.getInterruptFlag(), 16).toUpperCase()).replace(" ", "0");
+        return "IF: " + String.format("0x%2s", Integer.toHexString(this.cpu.getInterruptFlag()).toUpperCase()).replace(" ", "0");
     }
 
     public String getInterruptEnable() {
-        return "IE: " + String.format("0x%2s", Integer.toString(this.cpu.getInterruptEnable(), 16).toUpperCase()).replace(" ", "0");
+        return "IE: " + String.format("0x%2s", Integer.toHexString(this.cpu.getInterruptEnable()).toUpperCase()).replace(" ", "0");
     }
 
     public String getIME() {
@@ -60,7 +60,7 @@ public class CpuInfo {
         ArrayList<String> result = new ArrayList<>();
 
         for(Integer breakpoint : this.cpu.getBreakpoints()) {
-            result.add(String.format("0x%4s", Integer.toString(breakpoint, 16).toUpperCase()).replace(" ", "0"));
+            result.add(String.format("0x%4s", Integer.toHexString(breakpoint).toUpperCase()).replace(" ", "0"));
         }
 
         return result;

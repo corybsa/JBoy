@@ -1,8 +1,11 @@
 package jboy.system;
 
+import io.reactivex.Observable;
+import io.reactivex.Observer;
+
 import java.time.Instant;
 
-class GPU {
+public class GPU extends Observable<Double> {
     private final Memory memory;
     private final Display display;
     private Mode mode;
@@ -10,7 +13,9 @@ class GPU {
     private int ticks = 0;
     private long previousCycles = 0;
     private int[][][] tiles = new int[384][8][8];
-    private long lastFrame = Instant.now().getEpochSecond();
+    private double lastFrame = Instant.now().getEpochSecond();
+
+    private Observer<? super Double> observer;
 
     public enum Mode {
         HBLANK,
@@ -32,6 +37,11 @@ class GPU {
         this.mode = Mode.HBLANK;
     }
 
+    @Override
+    public void subscribeActual(Observer<? super Double> observer) {
+        this.observer = observer;
+    }
+
     public void tick(long cycles) {
         this.ticks += cycles - this.previousCycles;
 
@@ -50,13 +60,9 @@ class GPU {
                     this.scanline++;
 
                     if(this.scanline == Display.VBlankArea.START) {
-//                        int interruptFlags = this.getInterruptFlag();
-//                        this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, interruptFlags | Interrupts.VBLANK);
-//                        this.mode = Mode.VBLANK;
                         this.changeMode(Mode.VBLANK);
                     } else {
                         this.changeMode(Mode.OAM);
-//                        this.mode = Mode.OAM;
                     }
 
                     this.ticks -= Timings.HBLANK;
@@ -68,20 +74,17 @@ class GPU {
                     this.scanline++;
 
                     if(this.scanline > Display.VBlankArea.END) {
-                        /*long now = Instant.now().getEpochSecond();
-                        double delta = (double)now - (double)this.lastFrame;
+                        double now = Instant.now().getEpochSecond();
+                        double delta = now - this.lastFrame;
 
-                        if(delta <= 0) {
-                            System.out.println("FPS: infinity");
-                        } else {
-                            System.out.println("FPS: " + (1 / delta));
+                        if(delta > 0 && this.observer != null) {
+                            this.observer.onNext((1 / delta) * 60.0d);
                         }
 
-                        this.lastFrame = now;*/
+                        this.lastFrame = now;
 
                         this.scanline = 0;
                         this.changeMode(Mode.OAM);
-//                        this.mode = Mode.OAM;
                     }
 
                     this.ticks -= Timings.VBLANK;
@@ -91,14 +94,12 @@ class GPU {
             case OAM:
                 if(this.ticks >= Timings.OAM) {
                     this.changeMode(Mode.VRAM);
-//                    this.mode = Mode.VRAM;
                     this.ticks -= Timings.OAM;
                 }
                 break;
             case VRAM:
                 if(this.ticks >= Timings.VRAM) {
                     this.changeMode(Mode.HBLANK);
-//                    this.mode = Mode.HBLANK;
                     this.ticks -= Timings.VRAM;
                 }
                 break;
@@ -115,19 +116,11 @@ class GPU {
     }
 
     /**
-     * Gets the value of the interrupt flag.
-     * @return The value at memory address 0xFF0F
-     */
-    private int getInterruptFlag() {
-        return this.memory.getByteAt(IORegisters.INTERRUPT_FLAGS);
-    }
-
-    /**
      * Requests an interrupt.
      * @param interrupt The interrupt to request.
      */
     private void requestInterrupt(int interrupt) {
-        int interruptFlag = this.getInterruptFlag();
+        int interruptFlag = this.memory.getByteAt(IORegisters.INTERRUPT_FLAGS);
         interruptFlag |= interrupt;
         this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, interruptFlag);
     }
