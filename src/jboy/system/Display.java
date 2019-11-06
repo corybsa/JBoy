@@ -154,10 +154,18 @@ public class Display extends Observable<byte[]> {
                 continue;
             }
 
-            this.tiles[this.tileIndex] = blue;
-            this.tiles[this.tileIndex + 1] = green;
-            this.tiles[this.tileIndex + 2] = red;
-            this.tiles[this.tileIndex + 3] = (byte)0xFF;
+            int row = y;
+
+            if(row > 159) {
+                row -= 159;
+            }
+
+            int i = ((row * 144) + (col)) * 4;
+
+            this.tiles[i] = blue;
+            this.tiles[i + 1] = green;
+            this.tiles[i + 2] = red;
+            this.tiles[i + 3] = (byte)0xFF;
             this.tileIndex += 4;
         }
 
@@ -168,6 +176,12 @@ public class Display extends Observable<byte[]> {
         int index = 0;
 
         for(int row = 0; row < Display.HEIGHT; row++) {
+            y = row + scrollY;
+
+            if(y > 143) {
+                y -= 143;
+            }
+
             for(int col = 0; col < Display.WIDTH; col++) {
                 int tileRow = (row / 8) * 32;
                 int tileCol = col / 8;
@@ -208,61 +222,21 @@ public class Display extends Observable<byte[]> {
                     continue;
                 }
 
+                index = (((y) * 160) + col) * 4;
+
+                if(index > 92159) {
+                    index -= 92159;
+                }
+
                 this.tiles[index] = blue;
                 this.tiles[index + 1] = green;
                 this.tiles[index + 2] = red;
                 this.tiles[index + 3] = (byte)0xFF;
-                index += 4;
             }
         }
     }
 
     private void renderSprites(int lcdc) {
 
-    }
-
-    private int getColor(int num, int address) {
-        int result = PixelColor.WHITE;
-        int palette = this.memory.getByteAt(address);
-        int high = 0;
-        int low = 0;
-
-        switch(num) {
-            case 0x00:
-                high = 1;
-                low = 0;
-                break;
-            case 0x01:
-                high = 3;
-                low = 2;
-                break;
-            case 0x02:
-                high = 5;
-                low = 4;
-                break;
-            case 0x03:
-                high = 7;
-                low = 6;
-                break;
-        }
-
-        int color = ((palette & (1 << high)) >> low) | ((palette & (1 << low)) >> low);
-
-        switch(color) {
-            case 0x00:
-                result = PixelColor.WHITE;
-                break;
-            case 0x01:
-                result = PixelColor.LIGHT_GRAY;
-                break;
-            case 0x02:
-                result = PixelColor.DARK_GRAY;
-                break;
-            case 0x03:
-                result = PixelColor.BLACK;
-                break;
-        }
-
-        return result;
     }
 }
