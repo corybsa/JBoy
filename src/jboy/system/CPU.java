@@ -124,10 +124,15 @@ public class CPU extends Observable<CpuInfo> {
         this.reset();
     }
 
+    @Override
+    protected void subscribeActual(Observer<? super CpuInfo> observer) {
+        this.observer = observer;
+    }
+
     /**
      * Sets registers to default values.
      */
-    public void reset() {
+    void reset() {
         this.setAF(0x01B0);
         this.setBC(0x0013);
         this.setDE(0x00D8);
@@ -295,6 +300,8 @@ public class CPU extends Observable<CpuInfo> {
     public void tick() {
         if(this.isStopped) {
             this.checkInterrupts();
+            this.gpu.tick(this.cycles);
+            this.cycles += 5; // ???
             return;
         }
 
@@ -6026,9 +6033,4 @@ public class CPU extends Observable<CpuInfo> {
         return null;
     }
     // endregion
-
-    @Override
-    protected void subscribeActual(Observer<? super CpuInfo> observer) {
-        this.observer = observer;
-    }
 }
