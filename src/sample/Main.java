@@ -28,16 +28,21 @@ import java.util.ArrayList;
 
 public class Main extends Application {
     private Stage stage;
+
     private ListView<String> listView = new ListView<>();
-    private GameBoy gameBoy;
     private GraphicsContext graphicsContext;
     private PixelWriter pixelWriter;
     private PixelFormat<ByteBuffer> pixelFormat;
 
     private Thread gameThread;
+    private GameBoy gameBoy;
+
+    private GameBoyInfo gbInfo;
     private Disposable debugInfo;
     private Disposable displaySubscription;
     private Disposable gpuSubscription;
+
+    private Stage debugWindow;
 
     @Override
     public void start(Stage primaryStage) {
@@ -60,6 +65,13 @@ public class Main extends Application {
         primaryStage.setScene(scene);
         primaryStage.show();
         this.gameBoy = new GameBoy();
+
+        // close the debug window if it's open.
+        this.stage.setOnCloseRequest(x -> {
+            if(this.debugWindow != null) {
+                this.debugWindow.close();
+            }
+        });
     }
 
     @Override
@@ -141,7 +153,13 @@ public class Main extends Application {
             this.gpuSubscription.dispose();
         }
 
-        this.gameBoy.unsubscribe();
+        if(this.gbInfo != null) {
+            this.gbInfo.unsubscribe();
+        }
+
+        if(this.gameBoy != null) {
+            this.gameBoy.unsubscribe();
+        }
     }
 
     private void loadRom(File file) {
@@ -208,34 +226,32 @@ public class Main extends Application {
     }
 
     private void openDebugWindow() {
-        DebugWindow dbgWindow = new DebugWindow();
+        DebugWindow dbgWindow = new DebugWindow(this.gameBoy);
 
         dbgWindow.createRegisters();
         dbgWindow.createFlagCheckboxes();
-        dbgWindow.createCpuControls(this.gameBoy);
-        dbgWindow.createBreakpointControls(this.gameBoy);
+        dbgWindow.createMemoryControls();
+        dbgWindow.createCpuControls();
+        dbgWindow.createBreakpointControls();
 
         Scene debugScene = new Scene(dbgWindow.getLayout());
-        Stage debugWindow = new Stage();
+        this.debugWindow = new Stage();
 
-        debugWindow.setTitle("Debugger");
-        debugWindow.setScene(debugScene);
-        debugWindow.setHeight(400);
-        debugWindow.setWidth(400);
-
-        debugWindow.setX(Screen.getPrimary().getVisualBounds().getWidth() / 2);
-        debugWindow.setY(Screen.getPrimary().getVisualBounds().getHeight() / 2);
+        this.debugWindow.setTitle("Debugger");
+        this.debugWindow.setScene(debugScene);
+        this.debugWindow.setHeight(400);
+        this.debugWindow.setWidth(600);
 
         this.gameBoy.setIsDebugging(true);
 
-        GameBoyInfo gbInfo = this.gameBoy.getInfo();
-        this.debugInfo = gbInfo.subscribe(info -> {
+        this.gbInfo = this.gameBoy.getInfo();
+        this.debugInfo = this.gbInfo.subscribe(info -> {
             Platform.runLater(() -> {
                 dbgWindow.updateWindow(info);
             });
         });
 
         this.gameBoy.resetCpu();
-        debugWindow.show();
+        this.debugWindow.show();
     }
 }

@@ -2,22 +2,25 @@ package jboy.other;
 
 import io.reactivex.Observable;
 import io.reactivex.Observer;
+import io.reactivex.disposables.Disposable;
 import jboy.system.GameBoy;
 
 public class GameBoyInfo extends Observable<GameBoyInfo> {
     private GameBoy gameBoy;
     private CpuInfo cpuInfo;
+    private MemoryInfo memoryInfo;
     private Observer<? super GameBoyInfo> observer;
+
+    private Disposable cpuSubscription;
+    private Disposable memorySubscription;
 
     public GameBoyInfo(GameBoy gb) {
         this.gameBoy = gb;
         this.cpuInfo = new CpuInfo(this.gameBoy.getCpu());
+        this.memoryInfo = new MemoryInfo(this.gameBoy.getMemory());
 
-        this.gameBoy.getCpu().subscribe(val -> {
-            this.setCpuInfo(val);
-
-            this.observer.onNext(this);
-        });
+        this.cpuSubscription = this.gameBoy.getCpu().subscribe(val -> this.observer.onNext(this));
+        this.memorySubscription = this.gameBoy.getMemory().subscribe(val -> this.observer.onNext(this));
     }
 
     @Override
@@ -29,11 +32,12 @@ public class GameBoyInfo extends Observable<GameBoyInfo> {
         return this.cpuInfo;
     }
 
-    public void setCpuInfo(CpuInfo cpuInfo) {
-        this.cpuInfo = cpuInfo;
+    public MemoryInfo getMemoryInfo() {
+        return this.memoryInfo;
     }
 
-    public MemoryInfo getMemoryInfo() {
-        return new MemoryInfo(this.gameBoy.getMemory());
+    public void unsubscribe() {
+        this.cpuSubscription.dispose();
+        this.memorySubscription.dispose();
     }
 }

@@ -1,14 +1,26 @@
 package sample;
 
+import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
-import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import jboy.other.CpuInfo;
 import jboy.other.GameBoyInfo;
+import jboy.other.MemoryInfo;
 import jboy.system.CPU;
 import jboy.system.GameBoy;
+import jboy.system.Memory;
+
+import java.util.ArrayList;
+import java.util.Collections;
 
 class DebugWindow {
-    private GridPane layout;
+    private GameBoy gameBoy;
+
+    private HBox mainLayout;
+    private VBox leftSide;
+    private HBox cpuInfo;
 
     private Label pc;
     private Label sp;
@@ -31,12 +43,24 @@ class DebugWindow {
     private TextField tfBreakpoint;
     private ListView<String> breakpoints;
 
-    DebugWindow() {
-        this.layout = new GridPane();
+    private ArrayList<Integer> memoryWatch;
+    private ListView<String> memoryAddresses;
+
+    DebugWindow(GameBoy gameBoy) {
+        this.gameBoy = gameBoy;
+
+        this.mainLayout = new HBox(20);
+        this.leftSide = new VBox(20);
+        this.cpuInfo = new HBox(20);
+
+        this.mainLayout.setPadding(new Insets(5, 5, 5, 5));
+
+        this.leftSide.getChildren().add(this.cpuInfo);
+        this.mainLayout.getChildren().add(this.leftSide);
     }
 
-    GridPane getLayout() {
-        return this.layout;
+    HBox getLayout() {
+        return this.mainLayout;
     }
 
     void createRegisters() {
@@ -53,19 +77,25 @@ class DebugWindow {
         this.ly = new Label("LY: 0x00");
         this.lcdStat = new Label("STAT: 0x00");
 
-        this.layout.add(this.af, 0, 0);
-        this.layout.add(this.bc, 0, 1);
-        this.layout.add(this.de, 0, 2);
-        this.layout.add(this.hl, 0, 3);
-        this.layout.add(this.sp, 0, 4);
-        this.layout.add(this.pc, 0, 5);
+        VBox vboxCpuRegisters = new VBox(
+                this.af,
+                this.bc,
+                this.de,
+                this.hl,
+                this.sp,
+                this.pc
+        );
 
-        this.layout.add(this.lcdc, 1, 0);
-        this.layout.add(this.lcdStat, 1, 1);
-        this.layout.add(this.ly, 1, 2);
-        this.layout.add(this.ime, 1, 3);
-        this.layout.add(this.interruptEnable, 1, 4);
-        this.layout.add(this.interruptFlags, 1, 5);
+        VBox vboxIoRegisters = new VBox(
+                this.lcdc,
+                this.lcdStat,
+                this.ly,
+                this.interruptEnable,
+                this.interruptFlags,
+                this.ime
+        );
+
+        this.cpuInfo.getChildren().addAll(vboxCpuRegisters, vboxIoRegisters);
     }
 
     void createFlagCheckboxes() {
@@ -97,60 +127,105 @@ class DebugWindow {
             }
         };
 
-        this.layout.add(z, 2, 0);
-        this.layout.add(n, 2, 1);
-        this.layout.add(h, 2, 2);
-        this.layout.add(c, 2, 3);
+        VBox vboxFlags = new VBox(z, n, h, c);
+        this.cpuInfo.getChildren().add(vboxFlags);
     }
 
-    void createCpuControls(GameBoy gameBoy) {
+    void createMemoryControls() {
+        this.memoryWatch = new ArrayList<>();
+        Label lblWatchAddress = new Label("Watch address:");
+
+        TextField tfAddressWatch = new TextField();
+        tfAddressWatch.setOnKeyPressed(keyEvent -> {
+            if(keyEvent.getCode() == KeyCode.ENTER) {
+                this.addWatchAddress(Integer.parseInt(tfAddressWatch.getText(), 16));
+
+                tfAddressWatch.setText("");
+            }
+        });
+
+        HBox hboxWatch = new HBox();
+        hboxWatch.getChildren().addAll(lblWatchAddress, tfAddressWatch);
+
+        this.memoryAddresses = new ListView<>();
+
+        Button removeWatch = new Button("Remove watch");
+        removeWatch.setOnAction(x -> this.removeWatchAddress(this.memoryAddresses.getSelectionModel().getSelectedIndex()));
+
+        VBox vboxMemory = new VBox(hboxWatch, this.memoryAddresses, removeWatch);
+        this.mainLayout.getChildren().add(vboxMemory);
+    }
+
+    private void addWatchAddress(int address) {
+        this.memoryWatch.add(address);
+        this.memoryWatch.sort(Collections.reverseOrder());
+        this.updateWatchAddresses(this.gameBoy.getMemory());
+    }
+
+    private void removeWatchAddress(int index) {
+        this.memoryWatch.remove(index);
+        this.memoryWatch.sort(Collections.reverseOrder());
+        this.updateWatchAddresses(this.gameBoy.getMemory());
+    }
+
+    private void updateWatchAddresses(Memory memory) {
+        this.memoryAddresses.getItems().clear();
+
+        for(Integer address : this.memoryWatch) {
+            int val = memory.getByteAt(address);
+            String item = "0x";
+            item += String.format("%4s", Integer.toHexString(address)).toUpperCase().replace(" ", "0");
+            item += ": " + String.format("%2s", Integer.toHexString(val)).toUpperCase().replace(" ", "0");
+            this.memoryAddresses.getItems().add(item);
+        }
+    }
+
+    void createCpuControls() {
         Button tick = new Button("Tick");
-        tick.setOnAction(x -> gameBoy.tick());
+        tick.setOnAction(x -> this.gameBoy.tick());
 
         Button reset = new Button("Reset");
-        reset.setOnAction(x -> gameBoy.resetCpu());
+        reset.setOnAction(x -> this.gameBoy.resetCpu());
 
         Button run = new Button("Run to breakpoint");
-        run.setOnAction(x -> gameBoy.runToBreakpoint());
+        run.setOnAction(x -> this.gameBoy.runToBreakpoint());
 
-        this.layout.add(run, 1, 19);
-        this.layout.add(tick, 0, 19);
-        this.layout.add(reset, 2, 19);
+        HBox hboxCpuControls = new HBox(10, tick, run, reset);
+        this.leftSide.getChildren().add(hboxCpuControls);
     }
 
-    void createBreakpointControls(GameBoy gameBoy) {
+    void createBreakpointControls() {
         this.breakpoints = new ListView<>();
 
-        Label lblBreakpoint = new Label("Enter a breakpoint: ");
+        Label lblCreateBreakpoint = new Label("Create breakpoint: ");
 
         this.tfBreakpoint = new TextField();
         this.tfBreakpoint.setOnKeyPressed(keyEvent -> {
             if(keyEvent.getCode() == KeyCode.ENTER) {
-                this.addBreakpoint(gameBoy);
+                this.addBreakpoint(this.gameBoy);
             }
         });
-
-        Label lblBreakpoints = new Label("Breakpoints:");
-
-        Button addBreakpoint = new Button("Add breakpoint");
-        addBreakpoint.setOnAction(x -> this.addBreakpoint(gameBoy));
 
         Button removeBreakpoint = new Button("Remove breakpoint");
         removeBreakpoint.setOnAction(x -> {
             int index = this.breakpoints.getSelectionModel().getSelectedIndex();
 
             if(index >= 0) {
-                gameBoy.removeBreakpoint(this.breakpoints.getSelectionModel().getSelectedIndex());
+                this.gameBoy.removeBreakpoint(this.breakpoints.getSelectionModel().getSelectedIndex());
             }
         });
 
-        this.layout.add(lblBreakpoint, 0, 21);
-        this.layout.add(tfBreakpoint, 1, 21);
-        this.layout.add(addBreakpoint, 0, 22);
+        HBox hboxCreateBreakPoint = new HBox();
+        VBox vboxBreakpointControls = new VBox();
 
-        this.layout.add(lblBreakpoints, 0, 23);
-        this.layout.add(this.breakpoints, 0, 24, 2, 5);
-        this.layout.add(removeBreakpoint, 0, 29);
+        hboxCreateBreakPoint.getChildren().addAll(lblCreateBreakpoint, tfBreakpoint);
+        vboxBreakpointControls.getChildren().addAll(
+                hboxCreateBreakPoint,
+                this.breakpoints,
+                removeBreakpoint
+        );
+
+        this.leftSide.getChildren().add(vboxBreakpointControls);
     }
 
     private void addBreakpoint(GameBoy gameBoy) {
@@ -164,17 +239,20 @@ class DebugWindow {
     }
 
     void updateWindow(GameBoyInfo info) {
-        int flags = info.getCpuInfo().getCpu().getAF();
+        CpuInfo cpuInfo = info.getCpuInfo();
+        MemoryInfo memoryInfo = info.getMemoryInfo();
 
-        this.pc.setText(info.getCpuInfo().getPC());
-        this.sp.setText(info.getCpuInfo().getSP());
-        this.af.setText(info.getCpuInfo().getAF());
-        this.bc.setText(info.getCpuInfo().getBC());
-        this.de.setText(info.getCpuInfo().getDE());
-        this.hl.setText(info.getCpuInfo().getHL());
-        this.interruptFlags.setText(info.getCpuInfo().getInterruptFlags());
-        this.interruptEnable.setText(info.getCpuInfo().getInterruptEnable());
-        this.ime.setText(info.getCpuInfo().getIME());
+        int flags = cpuInfo.getCpu().getAF();
+
+        this.pc.setText(cpuInfo.getPC());
+        this.sp.setText(cpuInfo.getSP());
+        this.af.setText(cpuInfo.getAF());
+        this.bc.setText(cpuInfo.getBC());
+        this.de.setText(cpuInfo.getDE());
+        this.hl.setText(cpuInfo.getHL());
+        this.interruptFlags.setText(cpuInfo.getInterruptFlags());
+        this.interruptEnable.setText(cpuInfo.getInterruptEnable());
+        this.ime.setText(cpuInfo.getIME());
         this.lcdc.setText(info.getMemoryInfo().getLCDC());
         this.ly.setText(info.getMemoryInfo().getLY());
         this.lcdStat.setText(info.getMemoryInfo().getLCDStatus());
@@ -185,6 +263,8 @@ class DebugWindow {
         this.c.setSelected((flags & CPU.FLAG_CARRY) == CPU.FLAG_CARRY);
 
         this.breakpoints.getItems().clear();
-        this.breakpoints.getItems().addAll(info.getCpuInfo().getBreakpoints());
+        this.breakpoints.getItems().addAll(cpuInfo.getBreakpoints());
+
+        this.updateWatchAddresses(memoryInfo.getMemory());
     }
 }

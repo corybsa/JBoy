@@ -69,6 +69,7 @@ public class Memory extends Observable<Integer> {
     private int currentRamBank = 0;
     private boolean isRomEnabled = true;
     private boolean isRamEnabled = false;
+
     private Observer<? super Integer> observer;
 
     enum RomBank {
@@ -87,7 +88,7 @@ public class Memory extends Observable<Integer> {
         this.romBankType = this.getRomBankType(this.cartridge[0x147]);
     }
 
-    public int[] getROM() {
+    int[] getROM() {
         return this.cartridge;
     }
 
@@ -104,7 +105,7 @@ public class Memory extends Observable<Integer> {
             return this.vram[addr];
         } else if(address <= 0xBFFF) {
             addr = (0x1FFF - (0xBFFF - address)) & 0xFFFF;
-            addr = (addr - 0x1FFF) + (this.currentRamBank * 0x2000);
+            addr += (this.currentRamBank * 0x2000);
             return this.sram[addr];
         } else if(address <= 0xDFFF) {
             addr = (0x1FFF - (0xDFFF - address)) & 0xFFFF;
@@ -169,7 +170,6 @@ public class Memory extends Observable<Integer> {
                 return;
             }
 
-            // TODO: I think when you write to IORegisters.INTERRUPT_FLAGS, only the lower nibble is written.
             if(address == IORegisters.INTERRUPT_FLAGS) {
                 this.io[addr] = 0xE0 | value;
             } else {
