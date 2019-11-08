@@ -28,12 +28,4 @@ public class MemoryInfo {
         int stat = this.memory.getByteAt(IORegisters.LCD_STATUS);
         return "STAT: " + String.format("0x%2s", Integer.toHexString(stat).toUpperCase()).replace(" ", "0");
     }
-
-    public boolean didWrite() {
-        return this.memory.getDidWrite();
-    }
-
-    public int getLastAddress() {
-        return this.memory.getLastAddress();
-    }
 }
