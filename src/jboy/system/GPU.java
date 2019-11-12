@@ -12,7 +12,7 @@ public class GPU extends Observable<Double> {
     private int scanline = 0;
     private int ticks = 0;
     private long previousCycles = 0;
-    private int[][][] tiles = new int[384][8][8];
+    private byte[][][] tiles = new byte[384][8][8];
     private double lastFrame = Instant.now().getEpochSecond();
 
     private Observer<? super Double> observer;
@@ -190,7 +190,7 @@ public class GPU extends Observable<Double> {
         int tileIndex = vramAddress / 16;
         int rowIndex = (vramAddress % 16) / 2;
         int pixelIndex;
-        int pixelValue;
+        byte pixelValue;
 
         for(pixelIndex = 0; pixelIndex < 8; pixelIndex++) {
             int mask = 1 << (7 - pixelIndex);
