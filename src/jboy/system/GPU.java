@@ -6,6 +6,9 @@ import io.reactivex.Observer;
 import java.time.Instant;
 
 public class GPU extends Observable<Double> {
+    public static final int BG_HEIGHT = 256;
+    public static final int BG_WIDTH = 256;
+
     private final Memory memory;
     private final Display display;
     private Mode mode;
@@ -14,6 +17,9 @@ public class GPU extends Observable<Double> {
     private long previousCycles = 0;
     private byte[][][] tiles = new byte[384][8][8];
     private double lastFrame = Instant.now().getEpochSecond();
+
+    private byte[][][] backgroundMap = new byte[BG_HEIGHT][BG_WIDTH][8];
+    private byte[] backgroundTiles = new byte[BG_HEIGHT * BG_WIDTH * 4];
 
     private Observer<? super Double> observer;
 
@@ -56,7 +62,7 @@ public class GPU extends Observable<Double> {
         switch(this.mode) {
             case HBLANK:
                 if(this.ticks >= Timings.HBLANK) {
-                    this.display.renderScanLine(this.tiles);
+                    this.display.render(this.backgroundMap);
                     this.scanline++;
 
                     if(this.scanline == Display.VBlankArea.START) {
@@ -78,7 +84,7 @@ public class GPU extends Observable<Double> {
                         double delta = now - this.lastFrame;
 
                         if(delta > 0 && this.observer != null) {
-                            this.observer.onNext((1 / delta) * 60.0d);
+                            this.observer.onNext((1.0 / delta) * 60.0d);
                         }
 
                         this.lastFrame = now;
@@ -181,6 +187,7 @@ public class GPU extends Observable<Double> {
         int vramAddress = (0x1FFF - (0x9FFF - address)) & 0xFFFF;
 
         if(vramAddress >= 0x1800) {
+            this.createBackgroundMap();
             return;
         }
 
@@ -200,14 +207,113 @@ public class GPU extends Observable<Double> {
             if(lsb == 1 && msb == 1) {
                 pixelValue = Display.PixelColor.BLACK;
             } else if(lsb == 1 && msb == 0) {
-                pixelValue = Display.PixelColor.DARK_GRAY;
-            } else if(lsb == 0 && msb == 1) {
                 pixelValue = Display.PixelColor.LIGHT_GRAY;
+            } else if(lsb == 0 && msb == 1) {
+                pixelValue = Display.PixelColor.DARK_GRAY;
             } else {
                 pixelValue = Display.PixelColor.WHITE;
             }
 
             this.tiles[tileIndex][rowIndex][pixelIndex] = pixelValue;
         }
+    }
+
+    private void createBackgroundMap() {
+        boolean isWindowEnabled = false;
+        int scanlineY = this.memory.getByteAt(IORegisters.LCDC_Y_COORDINATE);
+        int lcdc = this.memory.getByteAt(IORegisters.LCDC);
+        int windowOffset = (lcdc >> 6) & 0x01;
+        int tileSet = (lcdc >> 4) & 0x01;
+        int bgOffset = (lcdc >> 3) & 0x01;
+        int windowY = this.memory.getByteAt(IORegisters.WINDOW_Y);
+        int index;
+        int bgAddress = 0x9800;
+        int tileOffset;
+        boolean isUnsigned;
+
+        // Is the window enabled?
+        /*if(((lcdc >> 5) & 0x01) == 0x01) {
+            // Is the current scanline within the bounds of the window y coordinate?
+            if(windowY <= scanlineY) {
+                isWindowEnabled = true;
+            }
+        }
+
+        if(!isWindowEnabled) {
+            // Check which tile set to use.
+            if(bgOffset == 1) {
+                bgAddress = 0x9C00;
+            } else {
+                bgAddress = 0x9800;
+            }
+        } else {
+            if(windowOffset == 1) {
+                bgAddress = 0x9C00;
+            } else {
+                bgAddress = 0x9800;
+            }
+        }*/
+
+        for(int row = 0; row < BG_HEIGHT; row++) {
+            int tileRow = (row / 8) * 32;
+
+            for(int col = 0; col < BG_WIDTH; col++) {
+                int tileCol = col / 8;
+                int tileNum;
+
+                int tileAddress = bgAddress + tileRow + tileCol;
+                tileNum = this.memory.getByteAt(tileAddress);
+
+                if(tileSet == 0 && tileNum < 0x80) {
+                    tileNum += 0x100;
+                }
+
+                byte color = this.tiles[tileNum][row % 8][col % 8];
+                this.backgroundMap[row][col][col % 8] = color;
+                byte[] pixels = this.getColor(color);
+
+                index = ((row * BG_WIDTH) + col) * 4;
+
+                this.backgroundTiles[index] = pixels[0];
+                this.backgroundTiles[index + 1] = pixels[1];
+                this.backgroundTiles[index + 2] = pixels[2];
+                this.backgroundTiles[index + 3] = pixels[3];
+            }
+        }
+    }
+
+    private byte[] getColor(byte color) {
+        byte red = (byte)0xFF;
+        byte green = (byte)0xFF;
+        byte blue = (byte)0xFF;
+
+        switch(color) {
+            case Display.PixelColor.WHITE:
+                red = (byte)0xFF;
+                green = (byte)0xFF;
+                blue = (byte)0xFF;
+                break;
+            case Display.PixelColor.LIGHT_GRAY:
+                red = (byte)0xCC;
+                green = (byte)0xCC;
+                blue = (byte)0xCC;
+                break;
+            case Display.PixelColor.DARK_GRAY:
+                red = 0x77;
+                green = 0x77;
+                blue = 0x77;
+                break;
+            case Display.PixelColor.BLACK:
+                red = 0x00;
+                green = 0x00;
+                blue = 0x00;
+                break;
+        }
+
+        return new byte[] { blue, green, red, (byte)0xFF };
+    }
+
+    public byte[] getBackgroundTiles() {
+        return this.backgroundTiles;
     }
 }

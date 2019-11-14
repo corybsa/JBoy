@@ -301,7 +301,7 @@ public class CPU extends Observable<CpuInfo> {
         if(this.isStopped) {
             this.checkInterrupts();
             this.gpu.tick(this.cycles);
-            this.cycles += 5; // ???
+            this.cycles += 5;
             return;
         }
 
