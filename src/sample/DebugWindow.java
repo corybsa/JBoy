@@ -5,12 +5,8 @@ import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import jboy.other.CpuInfo;
-import jboy.other.GameBoyInfo;
-import jboy.other.MemoryInfo;
-import jboy.system.CPU;
-import jboy.system.GameBoy;
-import jboy.system.Memory;
+import jboy.other.*;
+import jboy.system.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,7 +15,7 @@ class DebugWindow {
     private GameBoy gameBoy;
 
     private HBox mainLayout;
-    private VBox leftSide;
+    private VBox cpuContainer;
     private HBox cpuInfo;
 
     private Label pc;
@@ -50,13 +46,13 @@ class DebugWindow {
         this.gameBoy = gameBoy;
 
         this.mainLayout = new HBox(20);
-        this.leftSide = new VBox(20);
+        this.cpuContainer = new VBox(20);
         this.cpuInfo = new HBox(20);
 
         this.mainLayout.setPadding(new Insets(5, 5, 5, 5));
 
-        this.leftSide.getChildren().add(this.cpuInfo);
-        this.mainLayout.getChildren().add(this.leftSide);
+        this.cpuContainer.getChildren().add(this.cpuInfo);
+        this.mainLayout.getChildren().add(this.cpuContainer);
     }
 
     HBox getLayout() {
@@ -131,55 +127,6 @@ class DebugWindow {
         this.cpuInfo.getChildren().add(vboxFlags);
     }
 
-    void createMemoryControls() {
-        this.memoryWatch = new ArrayList<>();
-        Label lblWatchAddress = new Label("Watch address:");
-
-        TextField tfAddressWatch = new TextField();
-        tfAddressWatch.setOnKeyPressed(keyEvent -> {
-            if(keyEvent.getCode() == KeyCode.ENTER) {
-                this.addWatchAddress(Integer.parseInt(tfAddressWatch.getText(), 16));
-
-                tfAddressWatch.setText("");
-            }
-        });
-
-        HBox hboxWatch = new HBox();
-        hboxWatch.getChildren().addAll(lblWatchAddress, tfAddressWatch);
-
-        this.memoryAddresses = new ListView<>();
-
-        Button removeWatch = new Button("Remove watch");
-        removeWatch.setOnAction(x -> this.removeWatchAddress(this.memoryAddresses.getSelectionModel().getSelectedIndex()));
-
-        VBox vboxMemory = new VBox(hboxWatch, this.memoryAddresses, removeWatch);
-        this.mainLayout.getChildren().add(vboxMemory);
-    }
-
-    private void addWatchAddress(int address) {
-        this.memoryWatch.add(address);
-        this.memoryWatch.sort(Collections.reverseOrder());
-        this.updateWatchAddresses(this.gameBoy.getMemory());
-    }
-
-    private void removeWatchAddress(int index) {
-        this.memoryWatch.remove(index);
-        this.memoryWatch.sort(Collections.reverseOrder());
-        this.updateWatchAddresses(this.gameBoy.getMemory());
-    }
-
-    private void updateWatchAddresses(Memory memory) {
-        this.memoryAddresses.getItems().clear();
-
-        for(Integer address : this.memoryWatch) {
-            int val = memory.getByteAt(address);
-            String item = "0x";
-            item += String.format("%4s", Integer.toHexString(address)).toUpperCase().replace(" ", "0");
-            item += ": " + String.format("%2s", Integer.toHexString(val)).toUpperCase().replace(" ", "0");
-            this.memoryAddresses.getItems().add(item);
-        }
-    }
-
     void createCpuControls() {
         Button tick = new Button("Tick");
         tick.setOnAction(x -> this.gameBoy.tick());
@@ -191,11 +138,12 @@ class DebugWindow {
         run.setOnAction(x -> this.gameBoy.runToBreakpoint());
 
         HBox hboxCpuControls = new HBox(10, tick, run, reset);
-        this.leftSide.getChildren().add(hboxCpuControls);
+        this.cpuContainer.getChildren().add(hboxCpuControls);
     }
 
     void createBreakpointControls() {
         this.breakpoints = new ListView<>();
+        this.breakpoints.setPrefHeight(238);
 
         Label lblCreateBreakpoint = new Label("Create breakpoint: ");
 
@@ -225,17 +173,32 @@ class DebugWindow {
                 removeBreakpoint
         );
 
-        this.leftSide.getChildren().add(vboxBreakpointControls);
+        this.cpuContainer.getChildren().add(vboxBreakpointControls);
     }
 
-    private void addBreakpoint(GameBoy gameBoy) {
-        String text = tfBreakpoint.getText();
+    void createMemoryControls() {
+        this.memoryWatch = new ArrayList<>();
+        Label lblWatchAddress = new Label("Watch address:");
 
-        if(!text.isEmpty() && !text.isBlank()) {
-            gameBoy.addBreakpoint(Integer.parseInt(tfBreakpoint.getText(), 16));
-        }
+        TextField tfAddressWatch = new TextField();
+        tfAddressWatch.setOnKeyPressed(keyEvent -> {
+            if(keyEvent.getCode() == KeyCode.ENTER) {
+                this.addWatchAddress(Integer.parseInt(tfAddressWatch.getText(), 16));
 
-        tfBreakpoint.setText("");
+                tfAddressWatch.setText("");
+            }
+        });
+
+        HBox hboxWatch = new HBox();
+        hboxWatch.getChildren().addAll(lblWatchAddress, tfAddressWatch);
+
+        this.memoryAddresses = new ListView<>();
+
+        Button removeWatch = new Button("Remove watch");
+        removeWatch.setOnAction(x -> this.removeWatchAddress(this.memoryAddresses.getSelectionModel().getSelectedIndex()));
+
+        VBox vboxMemory = new VBox(hboxWatch, this.memoryAddresses, removeWatch);
+        this.mainLayout.getChildren().add(vboxMemory);
     }
 
     void updateWindow(GameBoyInfo info) {
@@ -266,5 +229,39 @@ class DebugWindow {
         this.breakpoints.getItems().addAll(cpuInfo.getBreakpoints());
 
         this.updateWatchAddresses(memoryInfo.getMemory());
+    }
+
+    private void addWatchAddress(int address) {
+        this.memoryWatch.add(address);
+        this.memoryWatch.sort(Collections.reverseOrder());
+        this.updateWatchAddresses(this.gameBoy.getMemory());
+    }
+
+    private void removeWatchAddress(int index) {
+        this.memoryWatch.remove(index);
+        this.memoryWatch.sort(Collections.reverseOrder());
+        this.updateWatchAddresses(this.gameBoy.getMemory());
+    }
+
+    private void updateWatchAddresses(Memory memory) {
+        this.memoryAddresses.getItems().clear();
+
+        for(Integer address : this.memoryWatch) {
+            int val = memory.getByteAt(address);
+            String item = "0x";
+            item += String.format("%4s", Integer.toHexString(address)).toUpperCase().replace(" ", "0");
+            item += ": " + String.format("%2s", Integer.toHexString(val)).toUpperCase().replace(" ", "0");
+            this.memoryAddresses.getItems().add(item);
+        }
+    }
+
+    private void addBreakpoint(GameBoy gameBoy) {
+        String text = tfBreakpoint.getText();
+
+        if(!text.isEmpty() && !text.isBlank()) {
+            gameBoy.addBreakpoint(Integer.parseInt(tfBreakpoint.getText(), 16));
+        }
+
+        tfBreakpoint.setText("");
     }
 }
