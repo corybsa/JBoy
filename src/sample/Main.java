@@ -5,11 +5,11 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.scene.Scene;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.*;
+import javafx.scene.image.ImageView;
 import javafx.scene.image.PixelFormat;
 import javafx.scene.image.PixelWriter;
+import javafx.scene.image.WritableImage;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -29,7 +29,6 @@ public class Main extends Application {
     private Stage stage;
 
     private ListView<String> listView = new ListView<>();
-    private GraphicsContext graphicsContext;
     private PixelWriter pixelWriter;
     private PixelFormat<ByteBuffer> pixelFormat;
 
@@ -50,16 +49,22 @@ public class Main extends Application {
 
         VBox vbox = new VBox();
         MenuBar menuBar = createMenuBar();
-        Canvas canvas = new Canvas(Display.WIDTH, Display.HEIGHT);
-        this.graphicsContext = canvas.getGraphicsContext2D();
-        this.pixelWriter = this.graphicsContext.getPixelWriter();
+        WritableImage image = new WritableImage(Display.WIDTH, Display.HEIGHT);
+        ImageView imageView = new ImageView(image);
+
+        // TODO: get rid of this ghetto scaling
+        imageView.setFitWidth((double)Display.WIDTH * 2);
+        imageView.setFitHeight((double)Display.HEIGHT * 2);
+        imageView.snapshot(null, null);
+
+        this.pixelWriter = image.getPixelWriter();
         this.pixelFormat = PixelFormat.getByteBgraInstance();
 
         vbox.getChildren().add(menuBar);
-        vbox.getChildren().add(canvas);
+        vbox.getChildren().add(imageView);
 
         // TODO: gotta figure out how to size the scene
-        Scene scene = new Scene(vbox, Display.WIDTH, Display.HEIGHT + 29);
+        Scene scene = new Scene(vbox, (Display.WIDTH * 2), (Display.HEIGHT * 2) + 29);
 
         primaryStage.setScene(scene);
         primaryStage.show();
@@ -172,7 +177,7 @@ public class Main extends Application {
 
             this.displaySubscription = this.gameBoy.getDisplay().subscribe(this::drawImage);
             this.gpuSubscription = this.gameBoy.getGpu().subscribe(fps -> {
-                Platform.runLater(() -> this.stage.setTitle("JBoy | " + fps.toString()));
+                Platform.runLater(() -> this.stage.setTitle("JBoy | " + String.format("%.1f", fps)));
             });
 
             this.gameBoy.loadROM(rom);
@@ -187,7 +192,7 @@ public class Main extends Application {
     }
 
     private void drawImage(byte[] data) {
-        this.pixelWriter.setPixels(
+        Platform.runLater(() -> this.pixelWriter.setPixels(
                 0,
                 0,
                 Display.WIDTH,
@@ -196,7 +201,7 @@ public class Main extends Application {
                 data,
                 0,
                 Display.WIDTH * 4
-        );
+        ));
     }
 
     private void disassemble(File file) {
