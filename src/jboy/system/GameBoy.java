@@ -23,6 +23,7 @@ public class GameBoy implements Runnable {
     }
 
     public void loadROM(int[] rom) {
+        this.cpu.reset();
         this.memory.loadROM(rom);
         this.getCartridgeInfo();
     }

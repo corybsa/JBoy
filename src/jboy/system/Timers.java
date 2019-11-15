@@ -11,20 +11,20 @@ package jboy.system;
  * 11:  16384 Hz
  *
  * Since I'm using machine cycles the frequencies are:
- * 00:  1024 Hz
- * 01: 65536 Hz
- * 10: 16384 Hz
- * 11:  4096 Hz
+ * 00:  4194304/4096 = 256 machine cycles
+ * 01:  4194304/262144 = 4 machine cycles
+ * 10:  4194304/65536 = 16 machine cycles
+ * 11:  4194304/16384 = 64 machine cycles
  */
 class Timers {
     static int divCounter = 0;
     static int timaCounter = 0;
 
     public interface TAC {
-        int CLOCK1 = 1024;
-        int CLOCK2 = 65536;
-        int CLOCK3 = 16384;
-        int CLOCK4 = 4096;
+        int CLOCK1 = 256;
+        int CLOCK2 = 4;
+        int CLOCK3 = 16;
+        int CLOCK4 = 64;
     }
 
     static int getFrequency(int frequency) {

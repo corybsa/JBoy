@@ -99,30 +99,64 @@ public class Display extends Observable<byte[]> {
     }
 
     private byte[] getColor(byte color) {
+        /*
+
+        FF47 - BGP - BG Palette Data
+        Bit 7-6 - Shade for Color BLACK
+        Bit 5-4 - Shade for Color DARK GRAY
+        Bit 3-2 - Shade for Color LIGHT GRAY
+        Bit 1-0 - Shade for Color WHITE
+
+        */
         byte red = (byte)0xFF;
         byte green = (byte)0xFF;
         byte blue = (byte)0xFF;
 
+        int palette = this.memory.getByteAt(0xFF47);
+        int high = 0;
+        int low = 0;
+
         switch(color) {
             case PixelColor.WHITE:
-                red = (byte)0xFF;
-                green = (byte)0xFF;
-                blue = (byte)0xFF;
-                break;
+               high = 1;
+               low = 0;
+               break;
             case PixelColor.LIGHT_GRAY:
-                red = (byte)0xCC;
-                green = (byte)0xCC;
-                blue = (byte)0xCC;
+                high = 3;
+                low = 2;
                 break;
             case PixelColor.DARK_GRAY:
-                red = 0x77;
-                green = 0x77;
-                blue = 0x77;
+                high = 5;
+                low = 4;
                 break;
             case PixelColor.BLACK:
-                red = 0x00;
-                green = 0x00;
-                blue = 0x00;
+                high = 7;
+                low = 6;
+                break;
+        }
+
+        int paletteColor = ((palette & (0x01 << high)) >> low) | ((palette & (0x01 << low)) >> low);
+
+        switch(paletteColor) {
+            case PixelColor.WHITE:
+                red = (byte)0x9B;
+                green = (byte)0xBC;
+                blue = (byte)0x0F;
+                break;
+            case PixelColor.LIGHT_GRAY:
+                red = (byte)0x8B;
+                green = (byte)0xAC;
+                blue = (byte)0x0F;
+                break;
+            case PixelColor.DARK_GRAY:
+                red = 0x30;
+                green = 0x62;
+                blue = 0x30;
+                break;
+            case PixelColor.BLACK:
+                red = 0x0F;
+                green = 0x38;
+                blue = 0x0F;
                 break;
         }
 

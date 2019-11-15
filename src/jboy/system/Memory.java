@@ -59,8 +59,7 @@ public class Memory extends Observable<Integer> {
     private int[] eram = new int[0x1E00];
     private int[] oam = new int[0xA0];
     private int[] fea0_feff = new int[0x60];
-    private int[] io = new int[0x4C];
-    private int[] ff4c_ff7f = new int[0x34];
+    private int[] io = new int[0x80];
     private int[] hram = new int[0x7F];
     private int[] ime = new int[1];
 
@@ -117,14 +116,24 @@ public class Memory extends Observable<Integer> {
             addr = (0x9F - (0xFE9F - address)) & 0xFFFF;
             return this.oam[addr];
         } else if(address <= 0xFEFF) {
-            addr = (0x5F - (0xFEFF - address)) & 0xFFFF;
-            return this.fea0_feff[addr];
-        } else if(address <= 0xFF4B) {
-            addr = (0x4B - (0xFF4B - address)) & 0xFFFF;
-            return this.io[addr];
+            // Reading from this area on DMG always returns 0.
+            return 0x00;
+
+            /*addr = (0x5F - (0xFEFF - address)) & 0xFFFF;
+            return this.fea0_feff[addr];*/
         } else if(address <= 0xFF7F) {
-            addr = (0x33 - (0xFF7F - address)) & 0xFFFF;
-            return this.ff4c_ff7f[addr];
+            addr = (0x4B - (0xFF4B - address)) & 0xFFFF;
+
+            if(address == IORegisters.LCD_STATUS) {
+                int lcdc = this.getByteAt(IORegisters.LCDC);
+
+                // When LCD is off bits 0 through 2 return 0
+                if((lcdc & 0x80) == 0x80) {
+                    return this.io[addr] & 0xF8;
+                }
+            }
+
+            return this.io[addr];
         } else if(address <= 0xFFFE) {
             addr = (0x7E - (0xFFFE - address)) & 0xFFFF;
             return this.hram[addr];
@@ -135,6 +144,8 @@ public class Memory extends Observable<Integer> {
 
     public void setByteAt(int address, int value) {
         int addr;
+
+        // TODO: restrict access to VRAM and OAM when necessary
 
         if(address <= 0x7FFF) {
             this.switchBank(address, value);
@@ -153,16 +164,25 @@ public class Memory extends Observable<Integer> {
         } else if(address <= 0xDFFF) {
             addr = (0x1FFF - (0xDFFF - address)) & 0xFFFF;
             this.wram[addr] = value;
+
+            // Writes to this area are copied to eram
+            if(addr < 0x1E00) {
+                this.eram[addr] = value;
+            }
         } else if(address <= 0xFDFF) {
             addr = (0x1DFF - (0xFDFF - address)) & 0xFFFF;
+
+            // Writes to this area are redirected to 0xC000 through 0xDDFF (wram)
             this.eram[addr] = value;
+            this.wram[addr] = value;
         } else if(address <= 0xFE9F) {
             addr = (0x9F - (0xFE9F - address)) & 0xFFFF;
             this.oam[addr] = value;
         } else if(address <= 0xFEFF) {
-            addr = (0x5F - (0xFEFF - address)) & 0xFFFF;
-            this.fea0_feff[addr] = value;
-        } else if(address <= 0xFF4B) {
+            // writes are ignored on the GameBoy.
+            /*addr = (0x5F - (0xFEFF - address)) & 0xFFFF;
+            this.fea0_feff[addr] = value;*/
+        } else if(address <= 0xFF7F) {
             addr = (0x4B - (0xFF4B - address)) & 0xFFFF;
 
             if(address == IORegisters.DIVIDER) {
@@ -182,9 +202,6 @@ public class Memory extends Observable<Integer> {
             if(address == IORegisters.LCDC_Y_COORDINATE || address == IORegisters.LY_COMPARE) {
                 this.compareLY();
             }
-        } else if(address <= 0xFF7F) {
-            addr = (0x33 - (0xFF7F - address)) & 0xFFFF;
-            this.ff4c_ff7f[addr] = value;
         } else if(address <= 0xFFFE) {
             addr = (0x7E - (0xFFFE - address)) & 0xFFFF;
             this.hram[addr] = value;
@@ -202,9 +219,10 @@ public class Memory extends Observable<Integer> {
         int ly = this.getByteAt(IORegisters.LCDC_Y_COORDINATE);
 
         if(lyc == ly) {
+            int status = this.getByteAt(IORegisters.LCD_STATUS);
             int interruptFlags = this.getByteAt(IORegisters.INTERRUPT_FLAGS);
 
-            this.setByteAt(IORegisters.LCD_STATUS, (1 << 6));
+            this.setByteAt(IORegisters.LCD_STATUS, status | (1 << 6));
             this.setByteAt(IORegisters.INTERRUPT_FLAGS, interruptFlags | Interrupts.LCD_STAT);
         }
     }

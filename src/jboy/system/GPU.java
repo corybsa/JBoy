@@ -201,15 +201,15 @@ public class GPU extends Observable<Double> {
 
         for(pixelIndex = 0; pixelIndex < 8; pixelIndex++) {
             int mask = 1 << (7 - pixelIndex);
-            int lsb = (byte1 & mask) >> (7 - pixelIndex);
-            int msb = (byte2 & mask) >> (7 - pixelIndex);
+            int msb = (byte1 & mask) >> (7 - pixelIndex);
+            int lsb = (byte2 & mask) >> (7 - pixelIndex);
 
             if(lsb == 1 && msb == 1) {
                 pixelValue = Display.PixelColor.BLACK;
             } else if(lsb == 1 && msb == 0) {
-                pixelValue = Display.PixelColor.LIGHT_GRAY;
-            } else if(lsb == 0 && msb == 1) {
                 pixelValue = Display.PixelColor.DARK_GRAY;
+            } else if(lsb == 0 && msb == 1) {
+                pixelValue = Display.PixelColor.LIGHT_GRAY;
             } else {
                 pixelValue = Display.PixelColor.WHITE;
             }
@@ -270,50 +270,7 @@ public class GPU extends Observable<Double> {
 
                 byte color = this.tiles[tileNum][row % 8][col % 8];
                 this.backgroundMap[row][col][col % 8] = color;
-                byte[] pixels = this.getColor(color);
-
-                index = ((row * BG_WIDTH) + col) * 4;
-
-                this.backgroundTiles[index] = pixels[0];
-                this.backgroundTiles[index + 1] = pixels[1];
-                this.backgroundTiles[index + 2] = pixels[2];
-                this.backgroundTiles[index + 3] = pixels[3];
             }
         }
-    }
-
-    private byte[] getColor(byte color) {
-        byte red = (byte)0xFF;
-        byte green = (byte)0xFF;
-        byte blue = (byte)0xFF;
-
-        switch(color) {
-            case Display.PixelColor.WHITE:
-                red = (byte)0xFF;
-                green = (byte)0xFF;
-                blue = (byte)0xFF;
-                break;
-            case Display.PixelColor.LIGHT_GRAY:
-                red = (byte)0xCC;
-                green = (byte)0xCC;
-                blue = (byte)0xCC;
-                break;
-            case Display.PixelColor.DARK_GRAY:
-                red = 0x77;
-                green = 0x77;
-                blue = 0x77;
-                break;
-            case Display.PixelColor.BLACK:
-                red = 0x00;
-                green = 0x00;
-                blue = 0x00;
-                break;
-        }
-
-        return new byte[] { blue, green, red, (byte)0xFF };
-    }
-
-    public byte[] getBackgroundTiles() {
-        return this.backgroundTiles;
     }
 }

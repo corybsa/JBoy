@@ -102,8 +102,13 @@ public class CPU extends Observable<CpuInfo> {
     private int PC;
 
     private Observer<? super CpuInfo> observer;
+
+    private boolean isRunning = false;
     private boolean ime = true;
+    private boolean pendingEnableIME = false;
     private boolean isStopped = false;
+    private boolean haltBug = false;
+
     private long cycles = 0;
     private long cyclesSinceLastSync = 0;
     private long lastSyncTime = 0;
@@ -133,6 +138,8 @@ public class CPU extends Observable<CpuInfo> {
      * Sets registers to default values.
      */
     void reset() {
+        this.isRunning = false;
+
         this.setAF(0x01B0);
         this.setBC(0x0013);
         this.setDE(0x00D8);
@@ -163,6 +170,7 @@ public class CPU extends Observable<CpuInfo> {
         this.memory.setByteAt(IORegisters.SOUND_OUTPUT_CONTROL, 0xF3);
         this.memory.setByteAt(IORegisters.SOUND_ENABLE, 0xF1);
         this.memory.setByteAt(IORegisters.LCDC, 0x91);
+        this.memory.setByteAt(IORegisters.LCD_STATUS, 0x80);
         this.memory.setByteAt(IORegisters.SCROLL_Y, 0x00);
         this.memory.setByteAt(IORegisters.SCROLL_X, 0x00);
         this.memory.setByteAt(IORegisters.LY_COMPARE, 0x00);
@@ -299,9 +307,18 @@ public class CPU extends Observable<CpuInfo> {
      */
     public void tick() {
         if(this.isStopped) {
+            int flags = this.memory.getByteAt(IORegisters.INTERRUPT_FLAGS);
+            int ie = this.memory.getByteAt(IORegisters.INTERRUPT_ENABLE);
+
             this.checkInterrupts();
             this.gpu.tick(this.cycles);
-            this.cycles += 5;
+
+            if((ie & flags & 0x1F) != 0) {
+                this.isStopped = false;
+            }
+
+            // the GameBoy takes another 4 clock cycles to dispatch events when halted, or 1 machine cycle.
+            this.cycles += 1;
             return;
         }
 
@@ -312,8 +329,14 @@ public class CPU extends Observable<CpuInfo> {
 
         this.synchronize();
 
+        // check if the last instruction was ei.
+        if(this.pendingEnableIME) {
+            this.ime = true;
+            this.pendingEnableIME = false;
+        }
+
         // Check if there are any interrupts that need to be serviced.
-        boolean shouldServiceInterrupts = this.ime && (this.getInterruptFlag() & this.getInterruptEnable()) != 0;
+        boolean shouldServiceInterrupts = (this.getInterruptFlag() & this.getInterruptEnable()) != 0;
 
         if(shouldServiceInterrupts) {
             this.checkInterrupts();
@@ -334,7 +357,9 @@ public class CPU extends Observable<CpuInfo> {
      * The main loop. This ticks the CPU and runs forever.
      */
     void run() {
-        while(true) {
+        this.isRunning = true;
+
+        while(this.isRunning) {
             if(!this.breakpoints.isEmpty() && this.breakpoints.contains(this.PC)) {
                 break;
             }
@@ -421,7 +446,8 @@ public class CPU extends Observable<CpuInfo> {
      * Increment the various timer registers.
      */
     private void incrementTimers() {
-        if(Timers.divCounter >= 256) {
+        // The div register increments at a rate of 16384Hz. 4194304Hz / 16384Hz = 256 clock cycles = 64 machine cycles.
+        if(Timers.divCounter >= 64) {
             this.incrementDIV();
             Timers.divCounter = 0;
         }
@@ -435,9 +461,11 @@ public class CPU extends Observable<CpuInfo> {
             if(Timers.timaCounter >= (CPU.FREQUENCY / tacFreq)) {
                 int tima = this.memory.getByteAt(IORegisters.TIMER);
 
-                if(tima == 0xFF) {
+                if(tima > 0xFF) {
                     tima = this.memory.getByteAt(IORegisters.TIMER_MODULO);
-                    this.requestInterrupt(Interrupts.TIMER);
+                    int interruptFlag = this.getInterruptFlag();
+                    interruptFlag |= Interrupts.TIMER;
+                    this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, interruptFlag);
                 } else {
                     tima += 1;
                 }
@@ -448,12 +476,12 @@ public class CPU extends Observable<CpuInfo> {
     }
 
     /**
-     * The DIV register increments once every second, or once every 256 CPU cycles. It overflows once 0xFF is reached.
+     * The DIV register increments once every second, or once every 64 cycles. It overflows once 0xFF is reached.
      */
     private void incrementDIV() {
         int div = this.memory.getByteAt(IORegisters.DIVIDER);
 
-        if(div == 0xFF) {
+        if(div > 0xFF) {
             div = 0x00;
         } else {
             div++;
@@ -467,7 +495,9 @@ public class CPU extends Observable<CpuInfo> {
      * @param n The amount to increment PC.
      */
     private void incrementPC(int n) {
-        this.PC += n;
+        if(!this.haltBug) {
+            this.PC += n;
+        }
     }
 
     /**
@@ -509,21 +539,19 @@ public class CPU extends Observable<CpuInfo> {
      * @param vector The address to reset to.
      */
     private void serviceInterrupt(int interrupt, int vector) {
+        this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, this.getInterruptFlag() & ~interrupt);
+
+        // The IME is really a flag saying "enable/disable jumps to interrupt vectors."
+        if(this.ime) {
+            this.rst(vector);
+        }
+
         this.ime = false;
         this.isStopped = false;
-        this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, this.getInterruptFlag() & ~interrupt);
-        this.rst(vector);
-        this.incrementCycles(5);
-    }
 
-    /**
-     * Requests an interrupt.
-     * @param interrupt The interrupt to request.
-     */
-    private void requestInterrupt(int interrupt) {
-        int interruptFlag = this.getInterruptFlag();
-        interruptFlag |= interrupt;
-        this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, interruptFlag);
+        // The GameBoy takes 20 clock cycles to dispatch an interrupt. We are measuring in machine cycles so
+        // we increment cycles by 5.
+        this.incrementCycles(5);
     }
 
     /**
@@ -1636,23 +1664,27 @@ public class CPU extends Observable<CpuInfo> {
      * @param ops unused
      */
     Void daa(int[] ops) {
+        boolean sub = (this.F & CPU.FLAG_SUB) == CPU.FLAG_SUB;
+        boolean half = (this.F & CPU.FLAG_HALF) == CPU.FLAG_HALF;
+        boolean carry = (this.F & CPU.FLAG_CARRY) == CPU.FLAG_CARRY;
+
         // after an addition, adjust A if a HALF_CARRY or CARRY occurred or if the result is out of bounds.
-        if((this.F & FLAG_ZERO) != FLAG_ZERO) {
-            if((this.F & FLAG_CARRY) == FLAG_CARRY || this.A > 0x99) {
+        if(!sub) {
+            if(carry || this.A > 0x99) {
                 this.A = (this.A + 0x60) & 0xFF;
                 this.setFlags(CPU.FLAG_CARRY);
             }
 
-            if((this.F & FLAG_HALF) == FLAG_HALF || (this.A & 0x0F) > 0x09) {
+            if(half || (this.A & 0x0F) > 0x09) {
                 this.A = (this.A + 0x06) & 0xFF;
             }
         } else {
             // after a subtraction, only adjust if a HALF_CARRY or CARRY occurred.
-            if((this.F & FLAG_CARRY) == FLAG_CARRY) {
+            if(carry) {
                 this.A = (this.A - 0x60) & 0xFF;
             }
 
-            if((this.F & FLAG_HALF) == FLAG_HALF) {
+            if(half) {
                 this.A = (this.A - 0x06) & 0xFF;
             }
         }
@@ -1660,45 +1692,14 @@ public class CPU extends Observable<CpuInfo> {
         // set zero flag if A register is zero.
         if(this.A == 0) {
             this.setFlags(CPU.FLAG_ZERO);
+        } else {
+            this.resetFlags(CPU.FLAG_ZERO);
         }
 
         // half carry always reset.
-        this.setFlags(CPU.FLAG_HALF);
+        this.resetFlags(CPU.FLAG_HALF);
 
         return null;
-
-
-        // TODO: This is the one from the internet. I'm keeping it just in case mine doesn't work.
-        // after an addition, adjust A if a HALF_CARRY or CARRY occurred or if the result is out of bounds.
-        /*if(!this.areFlagsSet(CPU.FLAG_ZERO)) {
-            if(this.areFlagsSet(CPU.FLAG_CARRY) || this.A > 0x99) {
-                this.A = (this.A + 0x60) & 0xFF;
-                this.setFlags(CPU.FLAG_CARRY);
-            }
-
-            if(this.areFlagsSet(CPU.FLAG_HALF) || (this.A & 0x0F) > 0x09) {
-                this.A = (this.A + 0x06) & 0xFF;
-            }
-        } else {
-            // after a subtraction, only adjust if a HALF_CARRY or CARRY occurred.
-            if(this.areFlagsSet(CPU.FLAG_CARRY)) {
-                this.A -= 0x60;
-            }
-
-            if(this.areFlagsSet(CPU.FLAG_HALF)) {
-                this.A -= 0x06;
-            }
-        }
-
-        // set zero flag if A register is zero.
-        if(this.A == 0) {
-            this.setFlags(CPU.FLAG_ZERO);
-        }
-
-        // half carry always reset.
-        this.setFlags(CPU.FLAG_HALF);
-
-        return null;*/
     }
 
     /**
@@ -2410,7 +2411,21 @@ public class CPU extends Observable<CpuInfo> {
      * @param ops unused.
      */
     Void halt(int[] ops) {
-        this.isStopped = true;
+        int flags = this.memory.getByteAt(IORegisters.INTERRUPT_FLAGS);
+        int ie = this.memory.getByteAt(IORegisters.INTERRUPT_ENABLE);
+
+        if(this.ime) {
+            this.isStopped = true;
+        } else {
+            if((ie & flags & 0x1F) == 0) {
+                this.isStopped = true;
+            }
+
+            if((ie & flags & 0x1F) != 0) {
+                this.haltBug = true;
+            }
+        }
+
         return null;
     }
 
@@ -3702,11 +3717,11 @@ public class CPU extends Observable<CpuInfo> {
     }
 
     /**
-     * OP code 0xFB - Enables the IME
+     * OP code 0xFB - Enables the IME. The IME is not enabled until the next cycle.
      * @param ops unused.
      */
     Void ei(int[] ops) {
-        this.ime = true;
+        this.pendingEnableIME = true;
         return null;
     }
 
