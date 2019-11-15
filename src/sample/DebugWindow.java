@@ -231,6 +231,10 @@ class DebugWindow {
         this.updateWatchAddresses(memoryInfo.getMemory());
     }
 
+    void tick() {
+        this.gameBoy.tick();
+    }
+
     private void addWatchAddress(int address) {
         this.memoryWatch.add(address);
         this.memoryWatch.sort(Collections.reverseOrder());

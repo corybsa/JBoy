@@ -10,6 +10,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.image.PixelFormat;
 import javafx.scene.image.PixelWriter;
 import javafx.scene.image.WritableImage;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -104,6 +105,7 @@ public class Main extends Application {
 
         miLoadRom.setOnAction(x -> {
             FileChooser chooser = new FileChooser();
+            chooser.setInitialDirectory(new File("resources/roms/tests/mooneye"));
             File file = chooser.showOpenDialog(this.stage);
 
             if(file != null) {
@@ -245,6 +247,12 @@ public class Main extends Application {
         this.debugWindow.setScene(debugScene);
         this.debugWindow.setHeight(400);
         this.debugWindow.setWidth(600);
+
+        debugScene.setOnKeyPressed(event -> {
+            if(event.getCode() == KeyCode.F7) {
+                dbgWindow.tick();
+            }
+        });
 
         this.gameBoy.setIsDebugging(true);
 
