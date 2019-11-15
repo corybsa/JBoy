@@ -1,0 +1,7 @@
+blargg:
+    cpu_instrs: infinite loop on test 3
+
+mooneye:
+    daa: pass
+    div_write: pass
+    ie_push:  (bgb is R3: unwanted cancel)
