@@ -2,6 +2,62 @@ blargg:
     cpu_instrs: infinite loop on test 3
 
 mooneye:
-    daa: pass
-    div_write: pass
-    ie_push:  (bgb is R3: unwanted cancel)
+    daa:
+        - JBoy: test ok
+        - BGB: test ok
+
+    div_write:
+        - JBoy: test ok
+        - BGB: test ok
+
+    ie_push: R1:
+        - JBoy: R1: not cancelled
+        - BGB: R3: unwanted cancel
+
+    rapid_toggle:
+        - JBoy: no intr
+        - BGB: B: OK   C: OK
+
+    tim00:
+        - JBoy:
+        - BGB:
+
+    tim00_div_trigger:
+        - JBoy:
+        - BGB:
+
+    tim01:
+        - JBoy:
+        - BGB:
+
+    tim01_div_trigger:
+        - JBoy:
+        - BGB:
+
+    tim10:
+        - JBoy:
+        - BGB:
+
+    tim10_div_trigger:
+        - JBoy:
+        - BGB:
+
+    tim11:
+        - JBoy:
+        - BGB:
+
+    tim11_div_trigger:
+        - JBoy:
+        - BGB:
+
+    tima_reload:
+        - JBoy:
+        - BGB:
+
+    tima_write_reloading:
+        - JBoy:
+        - BGB:
+
+    tma_write_reloading:
+        - JBoy:
+        - BGB:
