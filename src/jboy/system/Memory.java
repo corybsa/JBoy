@@ -186,6 +186,7 @@ public class Memory extends Observable<Integer> {
             addr = (0x4B - (0xFF4B - address)) & 0xFFFF;
 
             if(address == IORegisters.DIVIDER) {
+                Timers.systemCounter = (Timers.systemCounter & 0x00FF);
                 this.io[addr] = 0;
                 return;
             }
@@ -208,6 +209,11 @@ public class Memory extends Observable<Integer> {
         } else {
             this.ime[0] = value;
         }
+    }
+
+    void updateDiv(int value) {
+        int divAddr = (0x4B - (0xFF4B - IORegisters.DIVIDER)) & 0xFFFF;
+        this.io[divAddr] = value;
     }
 
     /**

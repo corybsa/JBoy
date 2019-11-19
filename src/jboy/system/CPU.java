@@ -115,6 +115,8 @@ public class CPU extends Observable<CpuInfo> {
 
     private final Memory memory;
     private final GPU gpu;
+    private final Timers timers;
+
     private final HashMap<Integer, Instruction> instructions;
     private final CpuInfo info;
     private ArrayList<Integer> breakpoints;
@@ -123,6 +125,7 @@ public class CPU extends Observable<CpuInfo> {
         this.instructions = new Instructions(this);
         this.memory = memory;
         this.gpu = gpu;
+        this.timers = new Timers(this.memory);
         this.info = new CpuInfo(this);
         this.breakpoints = new ArrayList<>();
 
@@ -147,9 +150,9 @@ public class CPU extends Observable<CpuInfo> {
         this.setSP(0xFFFE);
         this.setPC(0x100);
 
-        this.memory.setByteAt(IORegisters.TIMER, 0x00);
-        this.memory.setByteAt(IORegisters.TIMER_MODULO, 0x00);
-        this.memory.setByteAt(IORegisters.TIMER_CONTROL, 0x00);
+        this.memory.setByteAt(IORegisters.TIMA, 0x00);
+        this.memory.setByteAt(IORegisters.TMA, 0x00);
+        this.memory.setByteAt(IORegisters.TAC, 0x00);
         this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, 0xE1);
         this.memory.setByteAt(IORegisters.SOUND1_SWEEP, 0x80);
         this.memory.setByteAt(IORegisters.SOUND1_LENGTH_WAVE, 0xBF);
@@ -344,10 +347,7 @@ public class CPU extends Observable<CpuInfo> {
             Instruction instruction = this.getInstruction(this.memory.getByteAt(this.PC++));
             this.execute(instruction);
             this.gpu.tick(this.cycles);
-
-            // The DIV register needs to be updated every cycle.
-            Timers.divCounter += instruction.getOpCycles();
-            this.incrementTimers();
+            this.timers.tick(instruction.getOpCycles());
         }
 
         this.updateObserver();
@@ -440,54 +440,6 @@ public class CPU extends Observable<CpuInfo> {
         } catch(InterruptedException e) {
             // if sleep is interrupted, I don't think it matters.
         }
-    }
-
-    /**
-     * Increment the various timer registers.
-     */
-    private void incrementTimers() {
-        // The div register increments at a rate of 16384Hz. 4194304Hz / 16384Hz = 256 clock cycles = 64 machine cycles.
-        if(Timers.divCounter >= 64) {
-            this.incrementDIV();
-            Timers.divCounter = 0;
-        }
-
-        int tac = this.memory.getByteAt(IORegisters.TIMER_CONTROL);
-        boolean isTacEnabled = (tac >> 2) == 1;
-
-        if(isTacEnabled) {
-            int tacFreq = Timers.getFrequency(tac & 0x03);
-
-            if(Timers.timaCounter >= (CPU.FREQUENCY / tacFreq)) {
-                int tima = this.memory.getByteAt(IORegisters.TIMER);
-
-                if(tima > 0xFF) {
-                    tima = this.memory.getByteAt(IORegisters.TIMER_MODULO);
-                    int interruptFlag = this.getInterruptFlag();
-                    interruptFlag |= Interrupts.TIMER;
-                    this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, interruptFlag);
-                } else {
-                    tima += 1;
-                }
-
-                this.memory.setByteAt(IORegisters.TIMER, tima);
-            }
-        }
-    }
-
-    /**
-     * The DIV register increments once every second, or once every 64 cycles. It overflows once 0xFF is reached.
-     */
-    private void incrementDIV() {
-        int div = this.memory.getByteAt(IORegisters.DIVIDER);
-
-        if(div > 0xFF) {
-            div = 0x00;
-        } else {
-            div++;
-        }
-
-        this.memory.setByteAt(IORegisters.DIVIDER, div);
     }
 
     /**

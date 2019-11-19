@@ -5,9 +5,9 @@ public interface IORegisters {
     int SERIAL_TRANSFER_DATA = 0xFF01;
     int SERIAL_TRANSFER_CONTROL = 0xFF02;
     int DIVIDER = 0xFF04;
-    int TIMER = 0xFF05;
-    int TIMER_MODULO = 0xFF06;
-    int TIMER_CONTROL = 0xFF07;
+    int TIMA = 0xFF05;
+    int TMA = 0xFF06;
+    int TAC = 0xFF07;
     int INTERRUPT_FLAGS = 0xFF0F;
     int SOUND1_SWEEP = 0xFF10;
     int SOUND1_LENGTH_WAVE = 0xFF11;
