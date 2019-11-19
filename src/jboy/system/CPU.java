@@ -76,7 +76,7 @@ import java.util.HashMap;
  */
 public class CPU extends Observable<CpuInfo> {
     // The frequency of the clock in MHz.
-    public static final int FREQUENCY = 1048576;
+    public static final int FREQUENCY = 4194304;
 
     // Value of the Zero flag is 0b10000000
     public static final int FLAG_ZERO = 0x80;
@@ -317,8 +317,8 @@ public class CPU extends Observable<CpuInfo> {
                 this.isStopped = false;
             }
 
-            // the GameBoy takes another 4 clock cycles to dispatch events when halted, or 1 machine cycle.
-            this.cycles += 1;
+            // the GameBoy takes another 4 clock cycles to dispatch events when halted.
+            this.cycles += 4;
             return;
         }
 
@@ -391,10 +391,10 @@ public class CPU extends Observable<CpuInfo> {
      */
     private void synchronize() {
         // Our target sleep time is the length in time the previous instruction took.
-        long target = this.cyclesSinceLastSync * 75_000L / CPU.FREQUENCY;
+        long target = this.cyclesSinceLastSync * 18750 / CPU.FREQUENCY;
 
         // Get the current nanoseconds since 1970.
-        long nanoseconds = Instant.now().getEpochSecond() * 75_000L;
+        long nanoseconds = Instant.now().getEpochSecond() * 18750;
 
         // The sleep duration is the previous instruction time plus how long it's been since we last synced.
         // We subtract the nanoseconds to see if the CPU is running too fast.
@@ -410,7 +410,7 @@ public class CPU extends Observable<CpuInfo> {
         }
 
         // Check if sleepDuration is between zero and the time it takes to complete a whole frame.
-        if(sleepDuration > 0 && sleepDuration < (Display.LCDC_PERIOD * 75_000L / CPU.FREQUENCY)) {
+        if(sleepDuration > 0 && sleepDuration < (Display.LCDC_PERIOD * 18750 / CPU.FREQUENCY)) {
             this.sleep(sleepDuration);
 
             // Need to keep track of how long it's been since we last synced.
@@ -549,9 +549,8 @@ public class CPU extends Observable<CpuInfo> {
         this.ime = false;
         this.isStopped = false;
 
-        // The GameBoy takes 20 clock cycles to dispatch an interrupt. We are measuring in machine cycles so
-        // we increment cycles by 5.
-        this.incrementCycles(5);
+        // The GameBoy takes 20 clock cycles to dispatch an interrupt
+        this.incrementCycles(20);
     }
 
     /**
@@ -1595,9 +1594,9 @@ public class CPU extends Observable<CpuInfo> {
                 this.incrementPC(ops[0] - 127);
             }*/
 
-            this.incrementCycles(3);
+            this.incrementCycles(12);
         } else {
-            this.incrementCycles(2);
+            this.incrementCycles(8);
         }
 
         return null;
@@ -1717,9 +1716,9 @@ public class CPU extends Observable<CpuInfo> {
                 this.incrementPC(ops[0] - 127);
             }*/
 
-            this.incrementCycles(3);
+            this.incrementCycles(12);
         } else {
-            this.incrementCycles(2);
+            this.incrementCycles(8);
         }
 
         return null;
@@ -1805,9 +1804,9 @@ public class CPU extends Observable<CpuInfo> {
                 this.incrementPC(ops[0] - 127);
             }*/
 
-            this.incrementCycles(3);
+            this.incrementCycles(12);
         } else {
-            this.incrementCycles(2);
+            this.incrementCycles(8);
         }
 
         return null;
@@ -1895,9 +1894,9 @@ public class CPU extends Observable<CpuInfo> {
                 this.incrementPC(ops[0] - 127);
             }*/
 
-            this.incrementCycles(3);
+            this.incrementCycles(12);
         } else {
-            this.incrementCycles(2);
+            this.incrementCycles(8);
         }
 
         return null;
@@ -3118,9 +3117,9 @@ public class CPU extends Observable<CpuInfo> {
             this.PC = this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP));
             this.SP += 2;
 
-            this.incrementCycles(5);
+            this.incrementCycles(20);
         } else {
-            this.incrementCycles(2);
+            this.incrementCycles(8);
         }
 
         return null;
@@ -3145,9 +3144,9 @@ public class CPU extends Observable<CpuInfo> {
         if((this.F & FLAG_ZERO) != FLAG_ZERO) {
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
 
-            this.incrementCycles(4);
+            this.incrementCycles(16);
         } else {
-            this.incrementCycles(3);
+            this.incrementCycles(12);
         }
 
         return null;
@@ -3175,9 +3174,9 @@ public class CPU extends Observable<CpuInfo> {
 
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
             this.SP -= 2;
-            this.incrementCycles(6);
+            this.incrementCycles(24);
         } else {
-            this.incrementCycles(3);
+            this.incrementCycles(12);
         }
 
         return null;
@@ -3222,9 +3221,9 @@ public class CPU extends Observable<CpuInfo> {
             this.PC = this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP));
             this.SP += 2;
 
-            this.incrementCycles(5);
+            this.incrementCycles(20);
         } else {
-            this.incrementCycles(2);
+            this.incrementCycles(8);
         }
 
         return null;
@@ -3249,9 +3248,9 @@ public class CPU extends Observable<CpuInfo> {
         if((this.F & FLAG_ZERO) == FLAG_ZERO) {
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
 
-            this.incrementCycles(4);
+            this.incrementCycles(16);
         } else {
-            this.incrementCycles(3);
+            this.incrementCycles(12);
         }
 
         return null;
@@ -3269,9 +3268,9 @@ public class CPU extends Observable<CpuInfo> {
 
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
             this.SP -= 2;
-            this.incrementCycles(6);
+            this.incrementCycles(24);
         } else {
-            this.incrementCycles(3);
+            this.incrementCycles(12);
         }
 
         return null;
@@ -3319,9 +3318,9 @@ public class CPU extends Observable<CpuInfo> {
             this.PC = this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP));
             this.SP += 2;
 
-            this.incrementCycles(5);
+            this.incrementCycles(20);
         } else {
-            this.incrementCycles(2);
+            this.incrementCycles(8);
         }
 
         return null;
@@ -3346,9 +3345,9 @@ public class CPU extends Observable<CpuInfo> {
         if((this.F & FLAG_CARRY) != FLAG_CARRY) {
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
 
-            this.incrementCycles(4);
+            this.incrementCycles(16);
         } else {
-            this.incrementCycles(3);
+            this.incrementCycles(12);
         }
 
         return null;
@@ -3366,9 +3365,9 @@ public class CPU extends Observable<CpuInfo> {
 
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
             this.SP -= 2;
-            this.incrementCycles(6);
+            this.incrementCycles(24);
         } else {
-            this.incrementCycles(3);
+            this.incrementCycles(12);
         }
 
         return null;
@@ -3413,9 +3412,9 @@ public class CPU extends Observable<CpuInfo> {
             this.PC = this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP));
             this.SP += 2;
 
-            this.incrementCycles(5);
+            this.incrementCycles(20);
         } else {
-            this.incrementCycles(2);
+            this.incrementCycles(8);
         }
 
         return null;
@@ -3442,9 +3441,9 @@ public class CPU extends Observable<CpuInfo> {
         if((this.F & FLAG_CARRY) == FLAG_CARRY) {
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
 
-            this.incrementCycles(4);
+            this.incrementCycles(16);
         } else {
-            this.incrementCycles(3);
+            this.incrementCycles(12);
         }
 
         return null;
@@ -3462,9 +3461,9 @@ public class CPU extends Observable<CpuInfo> {
 
             this.PC = this.combineBytes(ops[0], ops[1]) - 2;
             this.SP -= 2;
-            this.incrementCycles(6);
+            this.incrementCycles(24);
         } else {
-            this.incrementCycles(3);
+            this.incrementCycles(12);
         }
 
         return null;

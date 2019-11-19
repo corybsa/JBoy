@@ -31,10 +31,10 @@ public class GPU extends Observable<Double> {
     }
 
     private interface Timings {
-        int HBLANK = 51;
-        int VBLANK = 114;
-        int OAM = 20;
-        int VRAM = 43;
+        int HBLANK = 204;
+        int VBLANK = 456;
+        int OAM = 80;
+        int VRAM = 172;
     }
 
     GPU(Memory memory, Display display) {
