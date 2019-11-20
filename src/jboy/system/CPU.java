@@ -184,6 +184,8 @@ public class CPU extends Observable<CpuInfo> {
         this.memory.setByteAt(IORegisters.WINDOW_X, 0x00);
         this.memory.setByteAt(IORegisters.INTERRUPT_ENABLE, 0x00);
 
+        this.gpu.reset();
+
         this.updateObserver();
     }
 
@@ -321,7 +323,7 @@ public class CPU extends Observable<CpuInfo> {
             }
 
             // the GameBoy takes another 4 clock cycles to dispatch events when halted.
-            this.cycles += 4;
+            this.incrementCycles(4);
             return;
         }
 
@@ -347,7 +349,6 @@ public class CPU extends Observable<CpuInfo> {
             Instruction instruction = this.getInstruction(this.memory.getByteAt(this.PC++));
             this.execute(instruction);
             this.gpu.tick(this.cycles);
-            this.timers.tick(instruction.getOpCycles());
         }
 
         this.updateObserver();
@@ -391,10 +392,10 @@ public class CPU extends Observable<CpuInfo> {
      */
     private void synchronize() {
         // Our target sleep time is the length in time the previous instruction took.
-        long target = this.cyclesSinceLastSync * 18750 / CPU.FREQUENCY;
+        long target = (this.cyclesSinceLastSync * 75000L) / CPU.FREQUENCY;
 
         // Get the current nanoseconds since 1970.
-        long nanoseconds = Instant.now().getEpochSecond() * 18750;
+        long nanoseconds = Instant.now().getEpochSecond() * 75000L;
 
         // The sleep duration is the previous instruction time plus how long it's been since we last synced.
         // We subtract the nanoseconds to see if the CPU is running too fast.
@@ -410,7 +411,7 @@ public class CPU extends Observable<CpuInfo> {
         }
 
         // Check if sleepDuration is between zero and the time it takes to complete a whole frame.
-        if(sleepDuration > 0 && sleepDuration < (Display.LCDC_PERIOD * 18750 / CPU.FREQUENCY)) {
+        if(sleepDuration > 0 && sleepDuration < ((Display.LCDC_PERIOD * 75000L) / CPU.FREQUENCY)) {
             this.sleep(sleepDuration);
 
             // Need to keep track of how long it's been since we last synced.
@@ -459,6 +460,7 @@ public class CPU extends Observable<CpuInfo> {
     private void incrementCycles(int n) {
         this.cycles += n;
         this.cyclesSinceLastSync += n;
+        this.timers.tick(n);
     }
 
     /**
@@ -480,6 +482,8 @@ public class CPU extends Observable<CpuInfo> {
             this.serviceInterrupt(Interrupts.SERIAL, 0x58);
         } else if((enabledInterrupts & Interrupts.JOYPAD) == Interrupts.JOYPAD) {
             this.serviceInterrupt(Interrupts.JOYPAD, 0x60);
+        } else {
+            this.timers.tick(4);
         }
     }
 
@@ -503,6 +507,7 @@ public class CPU extends Observable<CpuInfo> {
 
         // The GameBoy takes 20 clock cycles to dispatch an interrupt
         this.incrementCycles(20);
+        this.timers.tick(20);
     }
 
     /**

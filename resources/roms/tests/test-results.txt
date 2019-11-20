@@ -6,21 +6,33 @@ mooneye:
         - JBoy: test ok
         - BGB: test ok
 
+    div_timing:
+        - JBoy: B: OK   C: OK   D: OK
+        - BGB: B: OK   C: OK   D: OK
+
     div_write:
         - JBoy: test ok
         - BGB: test ok
 
-    ie_push: R1:
+    ie_push:
         - JBoy: R1: not cancelled
         - BGB: R3: unwanted cancel
 
+    mem_oam:
+        - JBoy: test ok
+        - BGB: test ok
+
     rapid_toggle:
-        - JBoy: no intr
+        - JBoy: B: OK   C: D9!   test failed
         - BGB: B: OK   C: OK
 
+    reg_f:
+        - JBoy: C: OK   E: OK
+        - BGB: C: OK   E: OK
+
     tim00:
-        - JBoy:
-        - BGB:
+        - JBoy: D: OK   E: 05!   test failed
+        - BGB: D: OK   E: OK
 
     tim00_div_trigger:
         - JBoy:
@@ -61,3 +73,7 @@ mooneye:
     tma_write_reloading:
         - JBoy:
         - BGB:
+
+    unused_hwio-GS:
+        - JBoy: freezes
+        - BGB: test ok

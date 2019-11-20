@@ -16,11 +16,12 @@ class Timers {
     static int systemCounter = 0xABCC;
     static int timaCounter = 0x00;
 
+    // The frequencies in Hz.
     public interface TAC {
-        int CLOCK1 = 1024;
-        int CLOCK2 = 16;
-        int CLOCK3 = 64;
-        int CLOCK4 = 256;
+        int CLOCK0 = 4096;
+        int CLOCK1 = 262144;
+        int CLOCK2 = 65536;
+        int CLOCK3 = 16384;
     }
 
     private Memory memory;
@@ -29,15 +30,15 @@ class Timers {
         this.memory = memory;
     }
 
-    private int getFrequency(int frequency) {
+    static int getFrequency(int frequency) {
         if(frequency == 0b00) {
-            return TAC.CLOCK1;
+            return TAC.CLOCK0;
         } else if(frequency == 0b01) {
-            return TAC.CLOCK2;
+            return TAC.CLOCK1;
         } else if(frequency == 0b10) {
-            return TAC.CLOCK3;
+            return TAC.CLOCK2;
         } else {
-            return TAC.CLOCK4;
+            return TAC.CLOCK3;
         }
     }
 
@@ -48,18 +49,21 @@ class Timers {
         boolean isEnabled = (tac & 0x04) == 0x04;
 
         if(isEnabled) {
-            int tacFreq = this.getFrequency(tac & 0x03);
+            int tacFreq = Timers.getFrequency(tac & 0x03);
 
             if(Timers.timaCounter >= (CPU.FREQUENCY / tacFreq)) {
                 int tima = this.memory.getByteAt(IORegisters.TIMA) + 1;
 
                 if(tima > 0xFF) {
+                    // TODO: The interrupt is delayed by 4 clocks
+                    // TODO: The value of TIMA is 0x00 during this delay, NOT the value in TMA
                     tima = this.memory.getByteAt(IORegisters.TMA);
                     int flags = this.memory.getByteAt(IORegisters.INTERRUPT_FLAGS);
                     flags |= Interrupts.TIMER;
                     this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, flags);
                 }
 
+                Timers.timaCounter = tima;
                 this.memory.setByteAt(IORegisters.TIMA, tima);
             }
         }

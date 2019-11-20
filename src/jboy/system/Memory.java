@@ -47,7 +47,7 @@ import io.reactivex.Observer;
  *                        - These bytes work just like WRAM, except that they can be accessed slightly faster by a certain instruction.
  *                        - This is a great place to store temporary variables because of the speed.
  *
- *     - 0xFFFF         : IME (Interrupt Master Enable or Interrupt Enable Register)
+ *     - 0xFFFF         : IE (Interrupt Enable Register)
  *                        - Special byte of I/O.
  *                        - It's here because of how the CPU works internally.
  */
@@ -61,7 +61,7 @@ public class Memory extends Observable<Integer> {
     private int[] fea0_feff = new int[0x60];
     private int[] io = new int[0x80];
     private int[] hram = new int[0x7F];
-    private int[] ime = new int[1];
+    private int[] ie = new int[1];
 
     private RomBank romBankType;
     private int currentRomBank = 1;
@@ -128,9 +128,61 @@ public class Memory extends Observable<Integer> {
                 int lcdc = this.getByteAt(IORegisters.LCDC);
 
                 // When LCD is off bits 0 through 2 return 0
-                if((lcdc & 0x80) == 0x80) {
-                    return this.io[addr] & 0xF8;
+                if((lcdc & 0x80) != 0x80) {
+                    return (0x80 | this.io[addr]) & 0xF8;
+                } else {
+                    return (0x80 | this.io[addr]);
                 }
+            }
+
+            // the upper 2 bits of the P1 always return 1
+            if(address == IORegisters.JOYPAD) {
+                return (0xC0 | this.io[addr]);
+            }
+
+            // bits 1 through 6 of SIO return 1
+            if(address == IORegisters.SERIAL_TRANSFER_CONTROL) {
+                return (0x7E | this.io[addr]);
+            }
+
+            // the upper 5 bits of TAC always return 1
+            if(address == IORegisters.TAC) {
+                return (0xF8 | this.io[addr]);
+            }
+
+            // the upper 3 bits of IF always return 1
+            if(address == IORegisters.INTERRUPT_FLAGS) {
+                return (0xE0 | this.io[addr]);
+            }
+
+            // the 7th bit of nr10 always returns 1
+            if(address == IORegisters.SOUND1_SWEEP) {
+                return (0x80 | this.io[addr]);
+            }
+
+            // bits 0 though 6 of nr30 always return 1
+            if(address == IORegisters.SOUND3_ENABLE) {
+                return (0x7F | this.io[addr]);
+            }
+
+            // bits 0 through 4 and bit 7 of nr32 always return 1
+            if(address == IORegisters.SOUND3_OUTPUT_LEVEL) {
+                return (0x9F | this.io[addr]);
+            }
+
+            // bits 6 and 7 of nr41 always return 1
+            if(address == IORegisters.SOUND4_LENGTH) {
+                return (0xC0 | this.io[addr]);
+            }
+
+            // bits 0 through 5 of nr44 always return 1
+            if(address == IORegisters.SOUND4_INITIAL) {
+                return (0x3F | this.io[addr]);
+            }
+
+            // bits 4 through 6 of nr52 always return 1
+            if(address == IORegisters.SOUND_ENABLE) {
+                return (0x70 | this.io[addr]);
             }
 
             return this.io[addr];
@@ -138,7 +190,7 @@ public class Memory extends Observable<Integer> {
             addr = (0x7E - (0xFFFE - address)) & 0xFFFF;
             return this.hram[addr];
         } else {
-            return this.ime[0];
+            return this.ie[0];
         }
     }
 
@@ -186,9 +238,37 @@ public class Memory extends Observable<Integer> {
             addr = (0x4B - (0xFF4B - address)) & 0xFFFF;
 
             if(address == IORegisters.DIVIDER) {
-                Timers.systemCounter = (Timers.systemCounter & 0x00FF);
+                // TIMA can be increased if the system counter has reached half the clocks it needs to increase
+                int tac = this.getByteAt(IORegisters.TAC);
+                int tacFreq = Timers.getFrequency(tac & 0x03);
+                int target = (CPU.FREQUENCY / tacFreq);
+
+                if(Timers.systemCounter >= (target / 2)) {
+                    this.incrementTima();
+                }
+
+                Timers.systemCounter = 0;
                 this.io[addr] = 0;
                 return;
+            }
+
+            if(address == IORegisters.TAC) {
+                // When disabling the timer, if the system counter has reached half the clocks it needs to increase, TIMA will increase
+                int tac  = this.getByteAt(IORegisters.TAC);
+                int oldEnable = (tac & 0x04);
+                int newEnable = (value & 0x04);
+
+                if((oldEnable == 0x04) && (newEnable == 0)) {
+                    this.incrementTima();
+                }
+
+                // When changing TAC value, if the old selected bit was 0, the new one is 1 and the new enable bit is 1, TIMA will increase
+                int oldValue = (tac & 0x03);
+                int newValue = (value & 0x03);
+
+                if((oldValue == 0) && (newValue == 1) && (newEnable == 0x04)) {
+                    this.incrementTima();
+                }
             }
 
             if(address == IORegisters.INTERRUPT_FLAGS) {
@@ -207,13 +287,27 @@ public class Memory extends Observable<Integer> {
             addr = (0x7E - (0xFFFE - address)) & 0xFFFF;
             this.hram[addr] = value;
         } else {
-            this.ime[0] = value;
+            this.ie[0] = value;
         }
     }
 
     void updateDiv(int value) {
         int divAddr = (0x4B - (0xFF4B - IORegisters.DIVIDER)) & 0xFFFF;
         this.io[divAddr] = value;
+    }
+
+    private void incrementTima() {
+        int tima = this.getByteAt(IORegisters.TIMA) + 1;
+
+        if(tima > 0xFF) {
+            tima = this.getByteAt(IORegisters.TMA);
+            int flags = this.getByteAt(IORegisters.INTERRUPT_FLAGS);
+            flags |= Interrupts.TIMER;
+            this.setByteAt(IORegisters.INTERRUPT_FLAGS, flags);
+        }
+
+        Timers.timaCounter = tima;
+        this.setByteAt(IORegisters.TIMA, tima);
     }
 
     /**

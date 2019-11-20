@@ -19,7 +19,6 @@ public class GPU extends Observable<Double> {
     private double lastFrame = Instant.now().getEpochSecond();
 
     private byte[][][] backgroundMap = new byte[BG_HEIGHT][BG_WIDTH][8];
-    private byte[] backgroundTiles = new byte[BG_HEIGHT * BG_WIDTH * 4];
 
     private Observer<? super Double> observer;
 
@@ -110,6 +109,18 @@ public class GPU extends Observable<Double> {
                 }
                 break;
         }
+    }
+
+    void reset() {
+        this.mode = Mode.HBLANK;
+        this.scanline = 0;
+        this.ticks = 0;
+        this.previousCycles = 0;
+        this.tiles = new byte[384][8][8];
+        this.backgroundMap = new byte[BG_HEIGHT][BG_WIDTH][8];
+
+        this.setLY(this.scanline);
+//        this.display.render(this.backgroundMap);
     }
 
     /**
