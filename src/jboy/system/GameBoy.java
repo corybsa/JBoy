@@ -1,7 +1,10 @@
 package jboy.system;
 
 import io.reactivex.disposables.Disposable;
+import jboy.disassembler.Disassembler;
 import jboy.other.GameBoyInfo;
+
+import java.util.ArrayList;
 
 public class GameBoy implements Runnable {
     private final Timers timers;
@@ -9,6 +12,8 @@ public class GameBoy implements Runnable {
     private final GPU gpu;
     private final Display display;
     private final Memory memory;
+    private int[] rom;
+    private Disassembler disassembler;
     private boolean isCartLoaded = false;
     private boolean isDebugging = false;
 
@@ -27,7 +32,19 @@ public class GameBoy implements Runnable {
     public void loadROM(int[] rom) {
         this.cpu.reset();
         this.memory.loadROM(rom);
-        this.getCartridgeInfo();
+        this.rom = rom;
+        this.isCartLoaded = true;
+
+        if(this.isDebugging) {
+            byte[] cart = new byte[rom.length];
+
+            for(int i = 0; i < rom.length; i++) {
+                cart[i] = (byte)rom[i];
+            }
+
+            this.disassembler = new Disassembler(cart);
+            this.disassembler.disassemble();
+        }
     }
 
     @Override
@@ -43,6 +60,14 @@ public class GameBoy implements Runnable {
     public String getCartridgeInfo() {
         this.isCartLoaded = true;
         return new Cartridge(this.memory.getROM()).toString();
+    }
+
+    public int getCartridgeSize() {
+        return this.rom.length;
+    }
+
+    public int[] getRom() {
+        return this.rom;
     }
 
     public GameBoyInfo getInfo() {
@@ -67,6 +92,14 @@ public class GameBoy implements Runnable {
 
     public GPU getGpu() {
         return this.gpu;
+    }
+
+    public ArrayList<String> getDisassembly() {
+        if(this.disassembler != null) {
+            return this.disassembler.getDisassemblyList();
+        }
+
+        return null;
     }
 
     public void setIsDebugging(boolean state) {

@@ -5,6 +5,8 @@ import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import jboy.disassembler.Disassembler;
+import jboy.disassembler.Instructions;
 import jboy.other.*;
 import jboy.system.*;
 
@@ -43,6 +45,9 @@ class DebugWindow {
     private Label timerTIMA;
     private Label timerTimaClocks;
     private Label timerFrequency;
+
+    private ListView<String> disassembly;
+    private Disassembler disassembler;
 
     private TextField tfBreakpoint;
     private ListView<String> breakpoints;
@@ -174,7 +179,8 @@ class DebugWindow {
 
     void createBreakpointControls() {
         this.breakpoints = new ListView<>();
-//        this.breakpoints.setPrefSize(200, 238);
+        this.breakpoints.setMaxWidth(298);
+        this.breakpoints.setMaxHeight(222);
 
         Label lblCreateBreakpoint = new Label("Create breakpoint: ");
 
@@ -232,6 +238,12 @@ class DebugWindow {
         this.mainLayout.getChildren().add(vboxMemory);
     }
 
+    void createDisassembly() {
+        this.disassembly = new ListView<>();
+
+        this.mainLayout.getChildren().add(this.disassembly);
+    }
+
     void updateWindow(GameBoyInfo info) {
         CpuInfo cpuInfo = info.getCpuInfo();
         MemoryInfo memoryInfo = info.getMemoryInfo();
@@ -270,6 +282,7 @@ class DebugWindow {
         this.breakpoints.getItems().addAll(cpuInfo.getBreakpoints());
 
         this.updateWatchAddresses(memoryInfo.getMemory());
+        this.updateDisassembly();
     }
 
     void tick() {
@@ -308,5 +321,30 @@ class DebugWindow {
         }
 
         tfBreakpoint.setText("");
+    }
+
+    private void updateDisassembly() {
+        this.disassembly.getItems().clear();
+        ArrayList<String> disassembly = this.gameBoy.getDisassembly();
+
+        if(disassembly == null) {
+            return;
+        }
+
+        int pc = this.gameBoy.getCpu().getPC();
+
+        int begin = pc - 4;
+        int end = pc + 5;
+
+        if(begin < 0) {
+            begin = 0;
+        }
+
+        if(end > this.gameBoy.getCartridgeSize()) {
+            end = this.gameBoy.getCartridgeSize();
+        }
+
+        this.disassembly.getItems().addAll(disassembly.subList(begin, end));
+        this.disassembly.getSelectionModel().select(4);
     }
 }

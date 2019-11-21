@@ -240,6 +240,7 @@ public class Main extends Application {
         dbgWindow.createMemoryControls();
         dbgWindow.createCpuControls();
         dbgWindow.createBreakpointControls();
+        dbgWindow.createDisassembly();
 
         Scene debugScene = new Scene(dbgWindow.getLayout());
         this.debugWindow = new Stage();
@@ -247,7 +248,7 @@ public class Main extends Application {
         this.debugWindow.setTitle("Debugger");
         this.debugWindow.setScene(debugScene);
         this.debugWindow.setHeight(400);
-        this.debugWindow.setWidth(775);
+        this.debugWindow.setWidth(1000);
 
         debugScene.setOnKeyPressed(event -> {
             if(event.getCode() == KeyCode.F7) {
