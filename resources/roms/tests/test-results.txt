@@ -23,7 +23,7 @@ mooneye:
         - BGB: test ok
 
     rapid_toggle:
-        - JBoy: B: OK   C: D9!   test failed
+        - JBoy: B: OK   C: OK
         - BGB: B: OK   C: OK
 
     reg_f:
@@ -31,15 +31,15 @@ mooneye:
         - BGB: C: OK   E: OK
 
     tim00:
-        - JBoy: D: OK   E: 05!   test failed
+        - JBoy: D: 04!   E: OK   test failed
         - BGB: D: OK   E: OK
 
     tim00_div_trigger:
-        - JBoy: D: OK   E: OK
+        - JBoy: D: OK   E: 05!   test failed
         - BGB:
 
     tim01:
-        - JBoy: D: 08!   E: 09!   test failed
+        - JBoy: D: OK   E: OK
         - BGB:
 
     tim01_div_trigger:
@@ -47,19 +47,19 @@ mooneye:
         - BGB:
 
     tim10:
-        - JBoy: D: OK   E: 05!   test failed
+        - JBoy: D: 04!   E: OK   test failed
         - BGB:
 
     tim10_div_trigger:
-        - JBoy: D: OK   E: 06!   test failed
+        - JBoy: D: 05!   E: OK   test failed
         - BGB:
 
     tim11:
-        - JBoy: D: OK   E: 05!   test failed
+        - JBoy: D: 04!   E: OK   test failed
         - BGB:
 
     tim11_div_trigger:
-        - JBoy: D: OK   E: OK
+        - JBoy: D: OK   E: 05!   test failed
         - BGB:
 
     tima_reload:
@@ -67,11 +67,11 @@ mooneye:
         - BGB:
 
     tima_write_reloading:
-        - JBoy: D: 80!   C: FE!   E: OK   L: OK   test failed
+        - JBoy: D: 80!   C: FE!   E: OK   L: 7F!   test failed
         - BGB:
 
     tma_write_reloading:
-        - JBoy: D: 7F!   C: OK   E: 7f!   L: OK   test failed
+        - JBoy: D: 7F!   C: FE!   E: 7f!   L: FE!   test failed
         - BGB:
 
     unused_hwio-GS:

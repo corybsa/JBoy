@@ -24,7 +24,7 @@ public class Timers {
     static boolean isFlagsChanged = false;
     static int flagValue = 1;
     static boolean timaGlitch = false;
-    private int overflowCycles = 0;
+//    private int overflowCycles = 0;
 
     // The frequencies in Hz.
     public interface TAC {
@@ -66,7 +66,7 @@ public class Timers {
         Timers.isFlagsChanged = false;
         Timers.flagValue = 1;
         Timers.timaGlitch = false;
-        this.overflowCycles = 0;
+//        this.overflowCycles = 0;
     }
 
     void tick(int cycles) {
@@ -81,9 +81,10 @@ public class Timers {
                 if(isEnabled) {
                     Timers.timaCounter += cycles;
                     int tacFreq = Timers.getFrequency(tac & 0x03);
+                    int tacClocks = CPU.FREQUENCY / tacFreq;
 
                     // Check if TIMA has passed the max amount of clocks.
-                    if(Timers.timaCounter >= (CPU.FREQUENCY / tacFreq)) {
+                    if(Timers.timaCounter >= tacClocks) {
                         int tima = this.memory.getByteAt(IORegisters.TIMA) + 1;
 
                         if(tima > 0xFF) {
@@ -93,21 +94,23 @@ public class Timers {
 
                             // Keep track of the delay
                             Timers.state = TimerState.OVERFLOW;
-                            this.overflowCycles = Timers.timaCounter - (CPU.FREQUENCY / tacFreq);
+//                            this.overflowCycles = Timers.timaCounter - (CPU.FREQUENCY / tacFreq);
                         } else {
                             this.memory.setByteAt(IORegisters.TIMA, tima);
                         }
+
+                        Timers.timaCounter = (Timers.timaCounter - tacClocks);
                     }
                 }
                 break;
             case OVERFLOW:
                 // Check if TIMA overflowed last cycle.
-                this.overflowCycles += cycles;
+//                this.overflowCycles += cycles;
 
                 // The TMA load takes 4 clock cycles.
-                if(this.overflowCycles < 4) {
+                /*if(this.overflowCycles < 4) {
                     return;
-                }
+                }*/
 
                 // If a value is written to TIMA during the overflow period, the new value will override the TMA load.
                 if(!Timers.isTimaChanged) {

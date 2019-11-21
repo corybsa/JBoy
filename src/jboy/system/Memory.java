@@ -238,12 +238,10 @@ public class Memory extends Observable<Integer> {
             addr = (0x4B - (0xFF4B - address)) & 0xFFFF;
 
             if(address == IORegisters.DIVIDER) {
-                // TIMA can be increased if the system counter has reached half the clocks it needs to increase
-                int tac = this.getByteAt(IORegisters.TAC);
-                int tacFreq = Timers.getFrequency(tac & 0x03);
-                int target = (CPU.FREQUENCY / tacFreq);
+                int targetBit = this.getTimerSystemBit();
 
-                if(Timers.systemCounter >= (target / 2)) {
+                // TIMA can be increased if the system counter has reached half the clocks it needs to increase
+                if(((Timers.systemCounter & targetBit) == targetBit)) {
                     this.incrementTima();
                 }
 
@@ -266,29 +264,30 @@ public class Memory extends Observable<Integer> {
             }
 
             if(address == IORegisters.TAC) {
-                // When disabling the timer, if the system counter has reached half the clocks it
-                // needs to increase, TIMA will increase
                 int tac  = this.getByteAt(IORegisters.TAC);
                 int oldEnable = (tac & 0x04);
                 int newEnable = (value & 0x04);
+                int targetBit = this.getTimerSystemBit();
 
-                if((oldEnable == 0x04) && (newEnable == 0)) {
+                // When disabling the timer, if the system counter has reached half the clocks it
+                // needs to increase, TIMA will increase
+                if((oldEnable == 0x04) && (newEnable == 0) && ((Timers.systemCounter & targetBit) == targetBit)) {
                     this.incrementTima();
                 }
 
-                // When changing TAC value, if the old selected bit was 0, the new one is 1 and the
-                // new enable bit is 1, TIMA will increase
                 int oldValue = (tac & 0x03);
                 int newValue = (value & 0x03);
 
+                // When changing TAC value, if the old selected bit was 0, the new one is 1 and the
+                // new enable bit is 1, TIMA will increase
                 if((oldValue == 0) && (newValue == 1) && (newEnable == 0x04)) {
                     this.incrementTima();
                 }
             }
 
             if(address == IORegisters.INTERRUPT_FLAGS) {
-                // TODO: if TIMA has a pending overflow, the written value will overwrite the automatic flag set to 1.
-                // TODO: if a 0 is written during this time, the interrupt won't happen.
+                // If TIMA has a pending overflow, the written value will overwrite the automatic flag set to 1.
+                // If a 0 is written during this time, the interrupt won't happen.
                 if(Timers.state == Timers.TimerState.OVERFLOW) {
                     Timers.isFlagsChanged = true;
                 } else if(Timers.state == Timers.TimerState.LOADING_TMA) {
@@ -318,6 +317,11 @@ public class Memory extends Observable<Integer> {
     void updateDiv(int value) {
         int divAddr = (0x4B - (0xFF4B - IORegisters.DIVIDER)) & 0xFFFF;
         this.io[divAddr] = value;
+    }
+
+    private int getTimerSystemBit() {
+        int tac = this.getByteAt(IORegisters.TAC) & 0x03;
+        return 1 << (9 - (2 * tac));
     }
 
     private void incrementTima() {
