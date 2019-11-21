@@ -252,8 +252,22 @@ public class Memory extends Observable<Integer> {
                 return;
             }
 
+            if(address == IORegisters.TIMA) {
+                if(Timers.state == Timers.TimerState.OVERFLOW) {
+                    // If a value is written to TIMA during the overflow period, the new value will override the TMA load.
+                    Timers.isTimaChanged = true;
+                    Timers.timaGlitch = true;
+                } else if(Timers.state == Timers.TimerState.LOADING_TMA) {
+                    // If a value is written to TIMA during the period when TMA is being loaded, the write will be ignored.
+                    Timers.isTimaChanged = true;
+                }
+
+                this.io[addr] = value;
+            }
+
             if(address == IORegisters.TAC) {
-                // When disabling the timer, if the system counter has reached half the clocks it needs to increase, TIMA will increase
+                // When disabling the timer, if the system counter has reached half the clocks it
+                // needs to increase, TIMA will increase
                 int tac  = this.getByteAt(IORegisters.TAC);
                 int oldEnable = (tac & 0x04);
                 int newEnable = (value & 0x04);
@@ -262,7 +276,8 @@ public class Memory extends Observable<Integer> {
                     this.incrementTima();
                 }
 
-                // When changing TAC value, if the old selected bit was 0, the new one is 1 and the new enable bit is 1, TIMA will increase
+                // When changing TAC value, if the old selected bit was 0, the new one is 1 and the
+                // new enable bit is 1, TIMA will increase
                 int oldValue = (tac & 0x03);
                 int newValue = (value & 0x03);
 
@@ -272,6 +287,15 @@ public class Memory extends Observable<Integer> {
             }
 
             if(address == IORegisters.INTERRUPT_FLAGS) {
+                // TODO: if TIMA has a pending overflow, the written value will overwrite the automatic flag set to 1.
+                // TODO: if a 0 is written during this time, the interrupt won't happen.
+                if(Timers.state == Timers.TimerState.OVERFLOW) {
+                    Timers.isFlagsChanged = true;
+                } else if(Timers.state == Timers.TimerState.LOADING_TMA) {
+                    Timers.isFlagsChanged = true;
+                    Timers.flagValue = (value & Interrupts.TIMER) >> 2;
+                }
+
                 this.io[addr] = 0xE0 | value;
             } else {
                 this.io[addr] = value;

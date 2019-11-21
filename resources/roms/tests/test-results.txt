@@ -35,43 +35,43 @@ mooneye:
         - BGB: D: OK   E: OK
 
     tim00_div_trigger:
-        - JBoy:
+        - JBoy: D: OK   E: OK
         - BGB:
 
     tim01:
-        - JBoy:
+        - JBoy: D: 08!   E: 09!   test failed
         - BGB:
 
     tim01_div_trigger:
-        - JBoy:
+        - JBoy: D: 0A!   E: 0B!   test failed
         - BGB:
 
     tim10:
-        - JBoy:
+        - JBoy: D: OK   E: 05!   test failed
         - BGB:
 
     tim10_div_trigger:
-        - JBoy:
+        - JBoy: D: OK   E: 06!   test failed
         - BGB:
 
     tim11:
-        - JBoy:
+        - JBoy: D: OK   E: 05!   test failed
         - BGB:
 
     tim11_div_trigger:
-        - JBoy:
+        - JBoy: D: OK   E: OK
         - BGB:
 
     tima_reload:
-        - JBoy:
+        - JBoy: B: OK   C: OK   D: FF!   E: 00!   H: FF!   L: 00!   test failed
         - BGB:
 
     tima_write_reloading:
-        - JBoy:
+        - JBoy: D: 80!   C: FE!   E: OK   L: OK   test failed
         - BGB:
 
     tma_write_reloading:
-        - JBoy:
+        - JBoy: D: 7F!   C: OK   E: 7f!   L: OK   test failed
         - BGB:
 
     unused_hwio-GS:
