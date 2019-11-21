@@ -330,7 +330,7 @@ public class Memory extends Observable<Integer> {
             this.setByteAt(IORegisters.INTERRUPT_FLAGS, flags);
         }
 
-        Timers.timaCounter = tima;
+//        Timers.timaCounter = tima;
         this.setByteAt(IORegisters.TIMA, tima);
     }
 

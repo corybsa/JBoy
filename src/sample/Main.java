@@ -236,6 +236,7 @@ public class Main extends Application {
 
         dbgWindow.createRegisters();
         dbgWindow.createFlagCheckboxes();
+        dbgWindow.createTimer();
         dbgWindow.createMemoryControls();
         dbgWindow.createCpuControls();
         dbgWindow.createBreakpointControls();
@@ -246,7 +247,7 @@ public class Main extends Application {
         this.debugWindow.setTitle("Debugger");
         this.debugWindow.setScene(debugScene);
         this.debugWindow.setHeight(400);
-        this.debugWindow.setWidth(600);
+        this.debugWindow.setWidth(775);
 
         debugScene.setOnKeyPressed(event -> {
             if(event.getCode() == KeyCode.F7) {

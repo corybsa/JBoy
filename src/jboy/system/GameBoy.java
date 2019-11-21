@@ -4,6 +4,7 @@ import io.reactivex.disposables.Disposable;
 import jboy.other.GameBoyInfo;
 
 public class GameBoy implements Runnable {
+    private final Timers timers;
     private final CPU cpu;
     private final GPU gpu;
     private final Display display;
@@ -15,9 +16,10 @@ public class GameBoy implements Runnable {
 
     public GameBoy() {
         this.memory = new Memory();
+        this.timers = new Timers(this.memory);
         this.display = new Display(this.memory);
         this.gpu = new GPU(this.memory, this.display);
-        this.cpu = new CPU(this.memory, this.gpu);
+        this.cpu = new CPU(this.memory, this.gpu, this.timers);
 
         this.memorySubscription = this.memory.subscribe(this.gpu::updateTiles);
     }
@@ -53,6 +55,10 @@ public class GameBoy implements Runnable {
 
     public Memory getMemory() {
         return this.memory;
+    }
+
+    public Timers getTimers() {
+        return this.timers;
     }
 
     public Display getDisplay() {

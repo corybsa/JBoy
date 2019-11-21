@@ -10,16 +10,16 @@ package jboy.system;
  * 10:  4194304/65536 =  64 clock cycles
  * 11:  4194304/16384 = 256 clock cycles
  */
-class Timers {
+public class Timers {
     // The DIV counter is part of a 16 bit system counter, with DIV being the upper 8 bits. The default for the
     // system clock is 0xABCC.
-    static int systemCounter = 0xABCC;
+    public static int systemCounter = 0xABCC;
 
     // This is to keep track of
-    static int timaCounter = 0;
+    public static int timaCounter = 0;
 
     // Variables to keep track of TIMA overflow
-    static TimerState state = TimerState.COUNTING;
+    public static TimerState state = TimerState.COUNTING;
     static boolean isTimaChanged = false;
     static boolean isFlagsChanged = false;
     static int flagValue = 1;
@@ -46,7 +46,7 @@ class Timers {
         this.memory = memory;
     }
 
-    static int getFrequency(int frequency) {
+    public static int getFrequency(int frequency) {
         if(frequency == 0b00) {
             return TAC.CLOCK0;
         } else if(frequency == 0b01) {
@@ -56,6 +56,17 @@ class Timers {
         } else {
             return TAC.CLOCK3;
         }
+    }
+
+    void reset() {
+        Timers.timaCounter = 0;
+        Timers.systemCounter = 0xABCC;
+        Timers.state = TimerState.COUNTING;
+        Timers.isTimaChanged = false;
+        Timers.isFlagsChanged = false;
+        Timers.flagValue = 1;
+        Timers.timaGlitch = false;
+        this.overflowCycles = 0;
     }
 
     void tick(int cycles) {
@@ -68,6 +79,7 @@ class Timers {
                 boolean isEnabled = (tac & 0x04) == 0x04;
 
                 if(isEnabled) {
+                    Timers.timaCounter += cycles;
                     int tacFreq = Timers.getFrequency(tac & 0x03);
 
                     // Check if TIMA has passed the max amount of clocks.
@@ -82,9 +94,7 @@ class Timers {
                             // Keep track of the delay
                             Timers.state = TimerState.OVERFLOW;
                             this.overflowCycles = Timers.timaCounter - (CPU.FREQUENCY / tacFreq);
-                            Timers.timaCounter = tima;
                         } else {
-                            Timers.timaCounter = tima;
                             this.memory.setByteAt(IORegisters.TIMA, tima);
                         }
                     }

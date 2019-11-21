@@ -9,6 +9,7 @@ public class GameBoyInfo extends Observable<GameBoyInfo> {
     private GameBoy gameBoy;
     private CpuInfo cpuInfo;
     private MemoryInfo memoryInfo;
+    private TimerInfo timerInfo;
     private Observer<? super GameBoyInfo> observer;
 
     private Disposable cpuSubscription;
@@ -18,6 +19,7 @@ public class GameBoyInfo extends Observable<GameBoyInfo> {
         this.gameBoy = gb;
         this.cpuInfo = new CpuInfo(this.gameBoy.getCpu());
         this.memoryInfo = new MemoryInfo(this.gameBoy.getMemory());
+        this.timerInfo = new TimerInfo(this.gameBoy.getMemory(), this.gameBoy.getTimers());
 
         this.cpuSubscription = this.gameBoy.getCpu().subscribe(val -> this.observer.onNext(this));
         this.memorySubscription = this.gameBoy.getMemory().subscribe(val -> this.observer.onNext(this));
@@ -34,6 +36,10 @@ public class GameBoyInfo extends Observable<GameBoyInfo> {
 
     public MemoryInfo getMemoryInfo() {
         return this.memoryInfo;
+    }
+
+    public TimerInfo getTimerInfo() {
+        return this.timerInfo;
     }
 
     public void unsubscribe() {

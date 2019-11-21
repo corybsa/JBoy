@@ -36,6 +36,14 @@ class DebugWindow {
     private CheckBox h;
     private CheckBox c;
 
+    private Label timer;
+    private Label timerState;
+    private Label timerTacState;
+    private Label timerTMA;
+    private Label timerTIMA;
+    private Label timerTimaClocks;
+    private Label timerFrequency;
+
     private TextField tfBreakpoint;
     private ListView<String> breakpoints;
 
@@ -72,6 +80,7 @@ class DebugWindow {
         this.lcdc = new Label("LCDC: 0x00");
         this.ly = new Label("LY: 0x00");
         this.lcdStat = new Label("STAT: 0x00");
+        this.timer = new Label("Timer: 0xABCC");
 
         VBox vboxCpuRegisters = new VBox(
                 this.af,
@@ -127,6 +136,28 @@ class DebugWindow {
         this.cpuInfo.getChildren().add(vboxFlags);
     }
 
+    void createTimer() {
+        this.timerState = new Label("Timer State: Counting");
+        this.timer = new Label("Timer: 0xABCC");
+        this.timerTacState = new Label("TAC: Enabled");
+        this.timerTMA = new Label("TMA: 0x00");
+        this.timerTIMA = new Label("TIMA: 0x00");
+        this.timerTimaClocks = new Label("TIMA Clocks: 0");
+        this.timerFrequency = new Label("Freq: 0Hz (0 clocks)");
+
+        VBox vboxTimer = new VBox(
+                this.timerState,
+                this.timer,
+                this.timerTacState,
+                this.timerTMA,
+                this.timerTIMA,
+                this.timerTimaClocks,
+                this.timerFrequency
+        );
+
+        this.cpuInfo.getChildren().add(vboxTimer);
+    }
+
     void createCpuControls() {
         Button tick = new Button("Tick");
         tick.setOnAction(x -> this.gameBoy.tick());
@@ -143,7 +174,7 @@ class DebugWindow {
 
     void createBreakpointControls() {
         this.breakpoints = new ListView<>();
-        this.breakpoints.setPrefHeight(238);
+//        this.breakpoints.setPrefSize(200, 238);
 
         Label lblCreateBreakpoint = new Label("Create breakpoint: ");
 
@@ -204,6 +235,7 @@ class DebugWindow {
     void updateWindow(GameBoyInfo info) {
         CpuInfo cpuInfo = info.getCpuInfo();
         MemoryInfo memoryInfo = info.getMemoryInfo();
+        TimerInfo timerInfo = info.getTimerInfo();
 
         int flags = cpuInfo.getCpu().getAF();
 
@@ -224,6 +256,15 @@ class DebugWindow {
         this.n.setSelected((flags & CPU.FLAG_SUB) == CPU.FLAG_SUB);
         this.h.setSelected((flags & CPU.FLAG_HALF) == CPU.FLAG_HALF);
         this.c.setSelected((flags & CPU.FLAG_CARRY) == CPU.FLAG_CARRY);
+
+        this.timerState.setText(timerInfo.getTimerState());
+        this.timer.setText(timerInfo.getTimer());
+        this.timerState.setText(timerInfo.getTimerState());
+        this.timerTacState.setText(timerInfo.getTacState());
+        this.timerTMA.setText(timerInfo.getTMA());
+        this.timerTIMA.setText(timerInfo.getTIMA());
+        this.timerTimaClocks.setText(timerInfo.getTimaClocks());
+        this.timerFrequency.setText(timerInfo.getFrequency());
 
         this.breakpoints.getItems().clear();
         this.breakpoints.getItems().addAll(cpuInfo.getBreakpoints());

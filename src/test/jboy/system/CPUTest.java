@@ -12,7 +12,7 @@ class CPUTest {
 
     @BeforeAll
     static void testBeforeAll() {
-        cpu = new CPU(null, null);
+        cpu = new CPU(null, null, null);
     }
 
     @BeforeEach

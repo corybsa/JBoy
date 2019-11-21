@@ -121,11 +121,11 @@ public class CPU extends Observable<CpuInfo> {
     private final CpuInfo info;
     private ArrayList<Integer> breakpoints;
 
-    public CPU(Memory memory, GPU gpu) {
+    public CPU(Memory memory, GPU gpu, Timers timers) {
         this.instructions = new Instructions(this);
         this.memory = memory;
         this.gpu = gpu;
-        this.timers = new Timers(this.memory);
+        this.timers = timers;
         this.info = new CpuInfo(this);
         this.breakpoints = new ArrayList<>();
 
@@ -185,6 +185,7 @@ public class CPU extends Observable<CpuInfo> {
         this.memory.setByteAt(IORegisters.INTERRUPT_ENABLE, 0x00);
 
         this.gpu.reset();
+        this.timers.reset();
 
         this.updateObserver();
     }
