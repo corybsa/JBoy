@@ -1,8 +1,5 @@
 package jboy.system;
 
-import io.reactivex.Observable;
-import io.reactivex.Observer;
-
 /**
  * The GameBoy has 64KB of Memory.
  *
@@ -51,7 +48,7 @@ import io.reactivex.Observer;
  *                        - Special byte of I/O.
  *                        - It's here because of how the CPU works internally.
  */
-public class Memory extends Observable<Integer> {
+public class Memory {
     private int[] cartridge = new int[0x800000];
     private int[] vram = new int[0x2000];
     private int[] sram = new int[0x8000];
@@ -63,23 +60,18 @@ public class Memory extends Observable<Integer> {
     private int[] hram = new int[0x7F];
     private int[] ie = new int[1];
 
+    private GPU gpu;
+
     private RomBank romBankType;
     private int currentRomBank = 1;
     private int currentRamBank = 0;
     private boolean isRomEnabled = true;
     private boolean isRamEnabled = false;
 
-    private Observer<? super Integer> observer;
-
     enum RomBank {
         NONE,
         MBC1,
         MBC2
-    }
-
-    @Override
-    protected void subscribeActual(Observer<? super Integer> observer) {
-        this.observer = observer;
     }
 
     public void loadROM(int[] rom) {
@@ -89,6 +81,10 @@ public class Memory extends Observable<Integer> {
 
     int[] getROM() {
         return this.cartridge;
+    }
+
+    public void setGpuRef(GPU gpu) {
+        this.gpu = gpu;
     }
 
     public int getByteAt(int address) {
@@ -204,7 +200,7 @@ public class Memory extends Observable<Integer> {
         } else if(address <= 0x9FFF) {
             addr = (0x1FFF - (0x9FFF - address)) & 0xFFFF;
             this.vram[addr] = value;
-            this.observer.onNext(address);
+            this.gpu.updateTiles(address);
         } else if(address <= 0xBFFF) {
             addr = (0x1FFF - (0xBFFF - address)) & 0xFFFF;
 

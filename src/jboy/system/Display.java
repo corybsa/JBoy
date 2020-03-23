@@ -1,9 +1,8 @@
 package jboy.system;
 
-import io.reactivex.Observable;
-import io.reactivex.Observer;
+import java.util.function.Function;
 
-public class Display extends Observable<byte[]> {
+public class Display {
     // The refresh rate of the display in frames per second. 59.7 / 4 = 14.925
     static final float FREQUENCY = 59.7f;
 
@@ -15,8 +14,7 @@ public class Display extends Observable<byte[]> {
 
     private byte[] tiles = new byte[HEIGHT * WIDTH * 4];
     private Memory memory;
-
-    private Observer<? super byte[]> observer;
+    private Function<byte[], Void> draw;
 
     public interface VBlankArea {
         int START = 144;
@@ -32,11 +30,6 @@ public class Display extends Observable<byte[]> {
 
     Display(Memory memory) {
         this.memory = memory;
-    }
-
-    @Override
-    protected void subscribeActual(Observer<? super byte[]> observer) {
-        this.observer = observer;
     }
 
     void render(byte[][][] backgroundMap) {
@@ -58,7 +51,11 @@ public class Display extends Observable<byte[]> {
             this.renderSprites(lcdc);
         }
 
-        observer.onNext(this.tiles);
+        this.draw.apply(this.tiles);
+    }
+
+    public void setDrawFunction(Function<byte[], Void> func) {
+        this.draw = func;
     }
 
     private void renderViewport(byte[][][] backgroundMap) {

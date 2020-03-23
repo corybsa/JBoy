@@ -1,11 +1,8 @@
 package jboy.system;
 
-import io.reactivex.Observable;
-import io.reactivex.Observer;
-
 import java.time.Instant;
 
-public class GPU extends Observable<Double> {
+public class GPU  {
     public static final int BG_HEIGHT = 256;
     public static final int BG_WIDTH = 256;
 
@@ -19,8 +16,6 @@ public class GPU extends Observable<Double> {
     private double lastFrame = Instant.now().getEpochSecond();
 
     private byte[][][] backgroundMap = new byte[BG_HEIGHT][BG_WIDTH][8];
-
-    private Observer<? super Double> observer;
 
     public enum Mode {
         HBLANK,
@@ -40,11 +35,6 @@ public class GPU extends Observable<Double> {
         this.memory = memory;
         this.display = display;
         this.mode = Mode.HBLANK;
-    }
-
-    @Override
-    public void subscribeActual(Observer<? super Double> observer) {
-        this.observer = observer;
     }
 
     public void tick(long cycles) {
@@ -79,14 +69,14 @@ public class GPU extends Observable<Double> {
                     this.scanline++;
 
                     if(this.scanline > Display.VBlankArea.END) {
-                        double now = Instant.now().getEpochSecond();
+                        /*double now = Instant.now().getEpochSecond();
                         double delta = now - this.lastFrame;
 
                         if(delta > 0 && this.observer != null) {
                             this.observer.onNext((1.0 / delta) * 60.0d);
                         }
 
-                        this.lastFrame = now;
+                        this.lastFrame = now;*/
 
                         this.scanline = 0;
                         this.changeMode(Mode.OAM);

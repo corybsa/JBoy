@@ -1,6 +1,5 @@
 package sample;
 
-import io.reactivex.disposables.Disposable;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
@@ -37,9 +36,6 @@ public class Main extends Application {
     private GameBoy gameBoy;
 
     private GameBoyInfo gbInfo;
-    private Disposable debugInfo;
-    private Disposable displaySubscription;
-    private Disposable gpuSubscription;
 
     private Stage debugWindow;
 
@@ -70,6 +66,7 @@ public class Main extends Application {
         primaryStage.setScene(scene);
         primaryStage.show();
         this.gameBoy = new GameBoy();
+        this.gameBoy.getDisplay().setDrawFunction(this::drawImage);
 
         // close the debug window if it's open.
         this.stage.setOnCloseRequest(x -> {
@@ -146,26 +143,6 @@ public class Main extends Application {
         if(this.gameThread != null) {
             this.gameThread.interrupt();
         }
-
-        if(this.debugInfo != null) {
-            this.debugInfo.dispose();
-        }
-
-        if(this.displaySubscription != null) {
-            this.displaySubscription.dispose();
-        }
-
-        if(this.gpuSubscription != null) {
-            this.gpuSubscription.dispose();
-        }
-
-        if(this.gbInfo != null) {
-            this.gbInfo.unsubscribe();
-        }
-
-        if(this.gameBoy != null) {
-            this.gameBoy.unsubscribe();
-        }
     }
 
     private void loadRom(File file) {
@@ -176,11 +153,6 @@ public class Main extends Application {
             for(int i = 0; i < bytes.length; i++) {
                 rom[i] = bytes[i] & 0xFF;
             }
-
-            this.displaySubscription = this.gameBoy.getDisplay().subscribe(this::drawImage);
-            this.gpuSubscription = this.gameBoy.getGpu().subscribe(fps -> {
-                Platform.runLater(() -> this.stage.setTitle("JBoy | " + String.format("%.1f", fps)));
-            });
 
             this.gameBoy.loadROM(rom);
 
@@ -193,7 +165,7 @@ public class Main extends Application {
         }
     }
 
-    private void drawImage(byte[] data) {
+    private Void drawImage(byte[] data) {
         Platform.runLater(() -> this.pixelWriter.setPixels(
                 0,
                 0,
@@ -204,6 +176,8 @@ public class Main extends Application {
                 0,
                 Display.WIDTH * 4
         ));
+
+        return null;
     }
 
     private void disassemble(File file) {
@@ -259,11 +233,11 @@ public class Main extends Application {
         this.gameBoy.setIsDebugging(true);
 
         this.gbInfo = this.gameBoy.getInfo();
-        this.debugInfo = this.gbInfo.subscribe(info -> {
+        /*this.debugInfo = this.gbInfo.subscribe(info -> {
             Platform.runLater(() -> {
                 dbgWindow.updateWindow(info);
             });
-        });
+        });*/
 
         this.gameBoy.resetCpu();
         this.debugWindow.show();

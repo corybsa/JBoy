@@ -1,6 +1,5 @@
 package jboy.system;
 
-import io.reactivex.disposables.Disposable;
 import jboy.disassembler.Disassembler;
 import jboy.other.GameBoyInfo;
 
@@ -17,8 +16,6 @@ public class GameBoy implements Runnable {
     private boolean isCartLoaded = false;
     private boolean isDebugging = false;
 
-    private Disposable memorySubscription;
-
     public GameBoy() {
         this.memory = new Memory();
         this.timers = new Timers(this.memory);
@@ -26,7 +23,7 @@ public class GameBoy implements Runnable {
         this.gpu = new GPU(this.memory, this.display);
         this.cpu = new CPU(this.memory, this.gpu, this.timers);
 
-        this.memorySubscription = this.memory.subscribe(this.gpu::updateTiles);
+        this.memory.setGpuRef(this.gpu);
     }
 
     public void loadROM(int[] rom) {
@@ -132,11 +129,5 @@ public class GameBoy implements Runnable {
 
     public void resetCpu() {
         this.cpu.reset();
-    }
-
-    public void unsubscribe() {
-        if(this.memorySubscription != null) {
-            this.memorySubscription.dispose();
-        }
     }
 }

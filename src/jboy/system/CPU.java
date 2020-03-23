@@ -1,7 +1,5 @@
 package jboy.system;
 
-import io.reactivex.Observable;
-import io.reactivex.Observer;
 import jboy.other.CpuInfo;
 
 import java.time.Instant;
@@ -74,7 +72,7 @@ import java.util.HashMap;
  *     </li>
  * </ul>
  */
-public class CPU extends Observable<CpuInfo> {
+public class CPU {
     // The frequency of the clock in MHz.
     public static final int FREQUENCY = 4194304;
 
@@ -100,8 +98,6 @@ public class CPU extends Observable<CpuInfo> {
     private int L;
     private int SP;
     private int PC;
-
-    private Observer<? super CpuInfo> observer;
 
     private boolean isRunning = false;
     private boolean ime = true;
@@ -130,11 +126,6 @@ public class CPU extends Observable<CpuInfo> {
         this.breakpoints = new ArrayList<>();
 
         this.reset();
-    }
-
-    @Override
-    protected void subscribeActual(Observer<? super CpuInfo> observer) {
-        this.observer = observer;
     }
 
     /**
@@ -186,8 +177,6 @@ public class CPU extends Observable<CpuInfo> {
 
         this.gpu.reset();
         this.timers.reset();
-
-        this.updateObserver();
     }
 
     // region Register setters and getters
@@ -351,8 +340,6 @@ public class CPU extends Observable<CpuInfo> {
             this.execute(instruction);
             this.gpu.tick(this.cycles);
         }
-
-        this.updateObserver();
     }
 
     /**
@@ -602,24 +589,14 @@ public class CPU extends Observable<CpuInfo> {
 
     public void addBreakpoint(int breakpoint) {
         this.breakpoints.add(breakpoint);
-
-        this.updateObserver();
     }
 
     public void removeBreakpoint(int breakpoint) {
         this.breakpoints.remove(breakpoint);
-
-        this.updateObserver();
     }
 
     public ArrayList<Integer> getBreakpoints() {
         return this.breakpoints;
-    }
-
-    private void updateObserver() {
-        if(this.observer != null) {
-            this.observer.onNext(this.info.update(this));
-        }
     }
 
     // TODO: Delete this if my version of daa works.
