@@ -88,24 +88,20 @@ public class CPU {
     // Value of the Carry flag is 0b00010000
     public static final int FLAG_CARRY = 0x10;
 
-    private int A;
-    private int B;
-    private int C;
-    private int D;
-    private int E;
-    private int F;
-    private int H;
-    private int L;
-    private int SP;
-    private int PC;
+    public Registers registers;
 
     private boolean isRunning = false;
-    private boolean ime = true;
-    private boolean pendingEnableIME = false;
-    private boolean isStopped = false;
-    private boolean haltBug = false;
 
-    private long cycles = 0;
+    private boolean ime = false;
+    private boolean pendingEnableIME = false;
+
+    private boolean isStopped = false;
+
+    public boolean isHalted = false;
+    public boolean haltBug = false;
+    public boolean haltSkip = false;
+
+    public long cycles = 0;
     private long cyclesSinceLastSync = 0;
     private long lastSyncTime = 0;
 
@@ -119,6 +115,7 @@ public class CPU {
 
     public CPU(Memory memory, GPU gpu, Timers timers) {
         this.instructions = new Instructions(this);
+        this.registers = new Registers();
         this.memory = memory;
         this.gpu = gpu;
         this.timers = timers;
@@ -131,15 +128,23 @@ public class CPU {
     /**
      * Sets registers to default values.
      */
-    void reset() {
+    public void reset() {
         this.isRunning = false;
 
-        this.setAF(0x01B0);
-        this.setBC(0x0013);
-        this.setDE(0x00D8);
-        this.setHL(0x014D);
-        this.setSP(0xFFFE);
-        this.setPC(0x100);
+        this.registers.setAF(0x01B0);
+        this.registers.setBC(0x0013);
+        this.registers.setDE(0x00D8);
+        this.registers.setHL(0x014D);
+        this.registers.SP = 0xFFFE;
+        this.registers.PC = 0x100;
+        this.cycles = 0;
+        this.cyclesSinceLastSync = 0;
+        this.lastSyncTime = 0;
+        this.ime = false;
+        this.pendingEnableIME = false;
+        this.isHalted = false;
+        this.haltBug = false;
+        this.haltSkip = false;
 
         this.memory.setByteAt(IORegisters.TIMA, 0x00);
         this.memory.setByteAt(IORegisters.TMA, 0x00);
@@ -179,133 +184,45 @@ public class CPU {
         this.timers.reset();
     }
 
-    // region Register setters and getters
-    public int getA() {
-        return this.A;
-    }
-
-    public int getB() {
-        return this.B;
-    }
-
-    public int getC() {
-        return this.C;
-    }
-
-    public int getD() {
-        return this.D;
-    }
-
-    public int getE() {
-        return this.E;
-    }
-
-    public int getF() {
-        return this.F;
-    }
-
-    public int getH() {
-        return this.H;
-    }
-
-    public int getL() {
-        return this.L;
-    }
-
-    public int getAF() {
-        return (this.A << 8) + this.F;
-    }
-
-    public int getBC() {
-        return (this.B << 8) + this.C;
-    }
-
-    public int getDE() {
-        return (this.D << 8) + this.E;
-    }
-
-    public int getHL() {
-        return (this.H << 8) + this.L;
-    }
-
-    public void setA(int n) {
-        this.A = n;
-    }
-
-    public void setB(int n) {
-        this.B = n;
-    }
-
-    public void setC(int n) {
-        this.C = n;
-    }
-
-    public void setD(int n) {
-        this.D = n;
-    }
-
-    public void setE(int n) {
-        this.E = n;
-    }
-
-    public void setF(int n) {
-        this.F = (n & 0xF0);
-    }
-
-    public void setH(int n) {
-        this.H = n;
-    }
-
-    public void setL(int n) {
-        this.L = n;
-    }
-
-    public void setAF(int n) {
-        this.A = (n & 0xFF00) >> 8;
-        this.F = n & 0x00F0;
-    }
-
-    public void setBC(int n) {
-        this.B = (n & 0xFF00) >> 8;
-        this.C = n & 0x00FF;
-    }
-
-    public void setDE(int n) {
-        this.D = (n & 0xFF00) >> 8;
-        this.E = n & 0x00FF;
-    }
-
-    public void setHL(int n) {
-        this.H = (n & 0xFF00) >> 8;
-        this.L = n & 0x00FF;
-    }
-
-    public int getSP() {
-        return this.SP;
-    }
-
-    public int getPC() {
-        return this.PC;
-    }
-
-    public void setPC(int n) {
-        this.PC = n;
-    }
-
-    public void setSP(int n) {
-        this.SP = n;
-    }
-    // endregion
-
     /**
      * Tick one clock cycle
      */
     public void tick() {
         if(this.isStopped) {
-            int flags = this.memory.getByteAt(IORegisters.INTERRUPT_FLAGS);
-            int ie = this.memory.getByteAt(IORegisters.INTERRUPT_ENABLE);
+            /*
+            * the only way to exit stop mode is with the joypad
+            */
 
-            this.checkInterrupts();
+            /*
+            SAMEBOY CODE FOR STOP MODE
+
+            if (gb->stopped) {
+                GB_timing_sync(gb);  // this.synchronize()
+                GB_advance_cycles(gb, 4);
+                if ((gb->io_registers[GB_IO_JOYP] & 0xF) != 0xF) { // LISTEN FOR JOYPAD INTERRUPTS
+                    leave_stop_mode(gb);
+                    GB_advance_cycles(gb, 8);
+                }
+                return;
+            }
+
+            static void leave_stop_mode(GB_gameboy_t *gb)
+            {
+                // The CPU takes more time to wake up then the other components
+                for (unsigned i = 0x200; i--;) {
+                    GB_advance_cycles(gb, 0x10);
+                }
+                gb->stopped = false;
+                gb->oam_ppu_blocked = false;
+                gb->vram_ppu_blocked = false;
+                gb->cgb_palettes_ppu_blocked = false;
+            }
+
+            */
+
+            /*
+            MY (OLD) CODE FOR STOP MODE.
+            NEED JOYPAD SUPPORT
             this.gpu.tick(this.cycles);
 
             if((ie & flags & 0x1F) != 0) {
@@ -315,6 +232,8 @@ public class CPU {
             // the GameBoy takes another 4 clock cycles to dispatch events when halted.
             this.incrementCycles(4);
             return;
+
+            */
         }
 
         // Set cycles to 0 every frame to prevent integer overflow.
@@ -331,14 +250,21 @@ public class CPU {
         }
 
         // Check if there are any interrupts that need to be serviced.
-        boolean shouldServiceInterrupts = (this.getInterruptFlag() & this.getInterruptEnable()) != 0;
+        boolean shouldServiceInterrupts = (this.getIF() & this.getIE()) != 0;
 
-        if(shouldServiceInterrupts) {
-            this.checkInterrupts();
+        if(this.isHalted && this.ime && shouldServiceInterrupts) {
+            this.isHalted = false;
+
+            if(!this.haltSkip) {
+                this.checkInterrupts();
+            }
         } else {
-            Instruction instruction = this.getInstruction(this.memory.getByteAt(this.PC++));
-            this.execute(instruction);
-            this.gpu.tick(this.cycles);
+            if(shouldServiceInterrupts) {
+                this.checkInterrupts();
+            } else {
+                this.decode(this.memory.getByteAt(this.registers.PC++));
+                this.gpu.tick(this.cycles);
+            }
         }
     }
 
@@ -349,7 +275,7 @@ public class CPU {
         this.isRunning = true;
 
         while(this.isRunning) {
-            if(!this.breakpoints.isEmpty() && this.breakpoints.contains(this.PC)) {
+            if(!this.breakpoints.isEmpty() && this.breakpoints.contains(this.registers.PC)) {
                 break;
             }
 
@@ -363,7 +289,7 @@ public class CPU {
      * @param flags The flags to check.
      */
     public void setFlags(int flags) {
-        this.F = this.F | flags;
+        this.registers.F = (this.registers.F | flags) & 0xF0;
     }
 
     /**
@@ -372,7 +298,7 @@ public class CPU {
      * @param flags The flags to check.
      */
     public void resetFlags(int flags) {
-        this.F = this.F & ~flags;
+        this.registers.F = (this.registers.F & ~flags) & 0xF0;
     }
 
     /**
@@ -436,9 +362,7 @@ public class CPU {
      * @param n The amount to increment PC.
      */
     private void incrementPC(int n) {
-        if(!this.haltBug) {
-            this.PC += n;
-        }
+        this.registers.PC += n;
     }
 
     /**
@@ -458,7 +382,7 @@ public class CPU {
      */
     private void checkInterrupts() {
         // TODO: interrupts are not working properly. Run blargg on bgb and compare.
-        int enabledInterrupts = this.getInterruptEnable() & this.getInterruptFlag();
+        int enabledInterrupts = this.getIE() & this.getIF();
 
         if((enabledInterrupts & Interrupts.VBLANK) == Interrupts.VBLANK) {
             this.serviceInterrupt(Interrupts.VBLANK, 0x40);
@@ -483,7 +407,7 @@ public class CPU {
      * @param vector The address to reset to.
      */
     private void serviceInterrupt(int interrupt, int vector) {
-        this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, this.getInterruptFlag() & ~interrupt);
+        this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, this.getIF() & ~interrupt);
 
         // The IME is really a flag saying "enable/disable jumps to interrupt vectors."
         if(this.ime) {
@@ -491,66 +415,863 @@ public class CPU {
         }
 
         this.ime = false;
-        this.isStopped = false;
 
         // The GameBoy takes 20 clock cycles to dispatch an interrupt
         this.incrementCycles(20);
-        this.timers.tick(20);
     }
 
     /**
-     * Fetches the current instruction.
-     * @param opCode The op code to fetch.
-     * @return The instruction to be executed.
+     * Decode op code to find out which instruction to execute.
+     * @param opCode The op code to decode
      */
-    private Instruction getInstruction(int opCode) {
-        // Check if the op code is an 8-bit operation.
+    private void decode(int opCode) {
+        if(this.haltBug) {
+            this.registers.PC--;
+            this.haltBug = false;
+        }
+
         if(opCode != 0xCB) {
-            return this.instructions.get(opCode);
+            int x = opCode >> 6;
+            int y = (opCode & 0b00111000) >> 3;
+            int z = opCode & 0b00000111;
+            int p = y >> 1;
+            int q = y % 2;
+
+            switch(x) {
+                case 0b00:
+                    this.doMiscOperation(y, z, q, p);
+                    break;
+                case 0b01:
+                    this.doLoadOperation(y, z);
+                    break;
+                case 0b10:
+                    this.doMathOperation(y, z);
+                    break;
+                case 0b11:
+                    this.doJumpOperation(y, z, q, p);
+                    break;
+            }
         } else {
-            // The code is a 16-bit operation, so we need to combine the current op code and the next one in memory
-            // to get the full op code.
-            int code = this.combineBytes(opCode, this.memory.getByteAt(this.PC));
-            return this.instructions.get(code);
+            this.decodeCB(this.memory.getByteAt(this.registers.PC++));
         }
     }
 
     /**
-     * Execute the {@link Instruction instruction}.
-     * @param instruction The instruction to execute.
+     * Decode CB-prefixed op code to find out which instruction to execute.
+     * @param opCode The op code to decode
      */
-    private void execute(Instruction instruction) {
-        switch(instruction.getOpSize()) {
-            case 0:
-                instruction.getOperation().apply(null);
+    private void decodeCB(int opCode) {
+        int x = opCode >> 6;
+        int y = (opCode & 0b00111000) >> 3;
+        int z = opCode & 0b00000111;
+
+        switch(x) {
+            case 0b00:
+                switch(y) {
+                    case 0b000: // rlc
+                        if(z != 0b110) { // rlc [b, c, d, e, h, l,, a]
+                            this.registers.set8BitRegister(z, this.rlc(this.registers.get8BitRegister(z)));
+                        } else { // rlc (hl)
+                            this.memory.setByteAt(this.registers.getHL(), this.rlc(this.memory.getByteAt(this.registers.getHL())));
+                        }
+
+                        break;
+                    case 0b001: // rrc
+                        if(z != 0b110) { // rrc [b, c, d, e, h, l,, a]
+                            this.registers.set8BitRegister(z, this.rrc(this.registers.get8BitRegister(z)));
+                        } else { // rrc (hl)
+                            this.memory.setByteAt(this.registers.getHL(), this.rrc(this.memory.getByteAt(this.registers.getHL())));
+                        }
+
+                        break;
+                    case 0b010: // rl
+                        if(z != 0b110) { // rl [b, c, d, e, h, l,, a]
+                            this.registers.set8BitRegister(z, this.rl(this.registers.get8BitRegister(z)));
+                        } else { // rl (hl)
+                            this.memory.setByteAt(this.registers.getHL(), this.rl(this.memory.getByteAt(this.registers.getHL())));
+                        }
+
+                        break;
+                    case 0b011: // rr
+                        if(z != 0b110) { // rr [b, c, d, e, h, l,, a]
+                            this.registers.set8BitRegister(z, this.rr(this.registers.get8BitRegister(z)));
+                        } else { // rr (hl)
+                            this.memory.setByteAt(this.registers.getHL(), this.rr(this.memory.getByteAt(this.registers.getHL())));
+                        }
+
+                        break;
+                    case 0b100: // sla
+                        if(z != 0b110) { // sla [b, c, d, e, h, l,, a]
+                            this.registers.set8BitRegister(z, this.sla(this.registers.get8BitRegister(z)));
+                        } else { // sla (hl)
+                            this.memory.setByteAt(this.registers.getHL(), this.sla(this.memory.getByteAt(this.registers.getHL())));
+                        }
+
+                        break;
+                    case 0b101: // sra
+                        if(z != 0b110) { // sra [b, c, d, e, h, l,, a]
+                            this.registers.set8BitRegister(z, this.sra(this.registers.get8BitRegister(z)));
+                        } else { // sra (hl)
+                            this.memory.setByteAt(this.registers.getHL(), this.sra(this.memory.getByteAt(this.registers.getHL())));
+                        }
+
+                        break;
+                    case 0b110: // swap
+                        if(z != 0b110) { // swap [b, c, d, e, h, l,, a]
+                            this.registers.set8BitRegister(z, this.swap(this.registers.get8BitRegister(z)));
+                        } else { // swap (hl)
+                            this.memory.setByteAt(this.registers.getHL(), this.swap(this.memory.getByteAt(this.registers.getHL())));
+                        }
+
+                        break;
+                    case 0b111: // srl
+                        if(z != 0b110) { // srl [b, c, d, e, h, l,, a]
+                            this.registers.set8BitRegister(z, this.srl(this.registers.get8BitRegister(z)));
+                        } else { // srl (hl)
+                            this.memory.setByteAt(this.registers.getHL(), this.srl(this.memory.getByteAt(this.registers.getHL())));
+                        }
+
+                        break;
+                }
+
                 break;
-            case 1:
-                instruction.getOperation().apply(this.getNextByte());
+            case 0b01: // bit
+                if(z != 0b110) { // bit  [0, 1, 2, 3, 4, 5, 6, 7] [b, c, d, e, h, l, a]
+                    this.bit(y, this.registers.get8BitRegister(z));
+                } else { // bit  [0, 1, 2, 3, 4, 5, 6, 7] (hl)
+                    this.bit(y, this.memory.getByteAt(this.registers.getHL()));
+                }
+
                 break;
-            case 2:
-                instruction.getOperation().apply(this.getNext2Bytes());
+            case 0b10: // res
+                if(z != 0b110) { // res  [0, 1, 2, 3, 4, 5, 6, 7] [b, c, d, e, h, l, a]
+                    this.registers.set8BitRegister(z, this.res(y, this.registers.get8BitRegister(z)));
+                } else { // res  [0, 1, 2, 3, 4, 5, 6, 7] (hl)
+                    this.memory.setByteAt(this.registers.getHL(), this.res(y, this.memory.getByteAt(this.registers.getHL())));
+                }
+
+                break;
+            case 0b11: // set
+                if(z != 0b110) { // set  [0, 1, 2, 3, 4, 5, 6, 7] [b, c, d, e, h, l, a]
+                    this.registers.set8BitRegister(z, this.set(y, this.registers.get8BitRegister(z)));
+                } else { // set  [0, 1, 2, 3, 4, 5, 6, 7] (hl)
+                    this.memory.setByteAt(this.registers.getHL(), this.set(y, this.memory.getByteAt(this.registers.getHL())));
+                }
+
                 break;
         }
 
-        this.incrementPC(instruction.getOpSize());
-        this.incrementCycles(instruction.getOpCycles());
+        // all CB-prefixed op codes have the same size and cycle duration.
+        if(z != 0b110) {
+            this.incrementCycles(8);
+        } else {
+            this.incrementCycles(16);
+        }
+    }
+
+    /**
+     * Perform various operations.
+     * @param y Bits 5-3 of the op code
+     * @param z Bits 7-6 of the op code
+     * @param q Bit 3 of the op code
+     * @param p Bits 5-4 of the op code
+     */
+    private void doMiscOperation(int y, int z, int q, int p) {
+        switch(z) {
+            case 0b000: // relative jumps and assorted ops
+                switch(y) {
+                    case 0b000: // nop
+                        this.incrementCycles(4);
+                        break;
+                    case 0b001: // ld (xx), sp
+                        this.memory.setByteAt(this.getWord(), this.registers.SP);
+                        this.incrementCycles(20);
+                        this.incrementPC(2);
+                        break;
+                    case 0b010: // stop
+                        this.stop();
+                        this.incrementCycles(4);
+                        this.incrementPC(1);
+                        break;
+                    case 0b011: // jr x
+                        this.jumpRelative(this.getByte());
+                        this.incrementCycles(12);
+                        break;
+                    case 0b100: // jr nz x
+                        if ((this.registers.F & FLAG_ZERO) != FLAG_ZERO) {
+                            this.jumpRelative(this.getByte());
+                            this.incrementCycles(12);
+                        } else {
+                            this.incrementCycles(8);
+                            this.incrementPC(1);
+                        }
+
+                        break;
+                    case 0b101: // jr z x
+                        if ((this.registers.F & FLAG_ZERO) == FLAG_ZERO) {
+                            this.jumpRelative(this.getByte());
+                            this.incrementCycles(12);
+                        } else {
+                            this.incrementCycles(8);
+                            this.incrementPC(1);
+                        }
+
+                        break;
+                    case 0b110: // jr nc x
+                        if ((this.registers.F & FLAG_CARRY) != FLAG_CARRY) {
+                            this.jumpRelative(this.getByte());
+                            this.incrementCycles(12);
+                        } else {
+                            this.incrementCycles(8);
+                            this.incrementPC(1);
+                        }
+
+                        break;
+                    case 0b111: // jr c x
+                        if ((this.registers.F & FLAG_CARRY) == FLAG_CARRY) {
+                            this.jumpRelative(this.getByte());
+                            this.incrementCycles(12);
+                        } else {
+                            this.incrementCycles(8);
+                            this.incrementPC(1);
+                        }
+
+                        break;
+                }
+
+                break;
+            case 0b001: // 16-bit immediate/add
+                if(q == 0) {
+                    // ld [bc, de, hl, sp], xx
+                    this.registers.set16BitRegister(p, this.getWord(), false);
+                    this.incrementCycles(12);
+                    this.incrementPC(2);
+                } else if(q == 1) {
+                    this.registers.setHL(this.add16Bit(this.registers.getHL(), this.registers.get16BitRegister(p, false)));
+                    this.incrementCycles(8);
+                }
+
+                break;
+            case 0b010: // indirect loading
+                if(q == 0) {
+                    switch(p) {
+                        case 0b00: // ld (bc), a
+                            this.memory.setByteAt(this.registers.getBC(), this.registers.A);
+                            break;
+                        case 0b01: // ld (de), a
+                            this.memory.setByteAt(this.registers.getDE(), this.registers.A);
+                            break;
+                        case 0b10: // ld (hl+), a
+                            this.memory.setByteAt(this.registers.getHL(), this.registers.A);
+                            this.registers.setHL(this.registers.getHL() + 1);
+                            break;
+                        case 0b11: // ld (hl-), a
+                            this.memory.setByteAt(this.registers.getHL(), this.registers.A);
+                            this.registers.setHL(this.registers.getHL() - 1);
+                            break;
+                    }
+                } else if(q == 1) {
+                    switch(p) {
+                        case 0b00: // ld a, (bc)
+                            this.registers.A = this.memory.getByteAt(this.registers.getBC());
+                            break;
+                        case 0b01: // ld a, (de)
+                            this.registers.A = this.memory.getByteAt(this.registers.getDE());
+                            break;
+                        case 0b10: // ld a, (hl+)
+                            this.registers.A = this.memory.getByteAt(this.registers.getHL());
+                            this.registers.setHL(this.registers.getHL() + 1);
+                            break;
+                        case 0b11: // ld a, (hl-)
+                            this.registers.A = this.memory.getByteAt(this.registers.getHL());
+                            this.registers.setHL(this.registers.getHL() - 1);
+                            break;
+                    }
+                }
+
+                this.incrementCycles(8);
+                break;
+            case 0b011: // 16-bit inc/dec
+                if(q == 0) { // inc [bc, de, hl. sp]
+                    this.registers.set16BitRegister(p, this.registers.get16BitRegister(p, false) + 1, false);
+                } else if(q == 1) { // dec [bc, de, hl. sp]
+                    this.registers.set16BitRegister(p, this.registers.get16BitRegister(p, false) - 1, false);
+                }
+
+                this.incrementCycles(8);
+                break;
+            case 0b100: // 8-bit inc/dec
+                if(y == 0b110) { // inc (hl)
+                    int value = this.increment(this.memory.getByteAt(this.registers.getHL()));
+                    this.memory.setByteAt(this.registers.getHL(), value);
+                    this.incrementCycles(8);
+                } else { // inc [b, c, d, e, h, l, a]
+                    this.registers.set8BitRegister(y, this.increment(this.registers.get8BitRegister(y)));
+                    this.incrementCycles(4);
+                }
+
+                break;
+            case 0b101: // 8-bit dec
+                if(y == 0b110) { // dec (hl)
+                    int value = this.decrement(this.memory.getByteAt(this.registers.getHL()));
+                    this.memory.setByteAt(this.registers.getHL(), value);
+                    this.incrementCycles(8);
+                } else { // dec [b, c, d, e, h, l, a]
+                    this.registers.set8BitRegister(y, this.decrement(this.registers.get8BitRegister(y)));
+                    this.incrementCycles(4);
+                }
+                break;
+            case 0b110: // ld [b, c, d, e, h, l, (hl), a], x
+                if(y == 0b110) { // ld (hl), x
+                    this.memory.setByteAt(this.registers.getHL(), this.getByte());
+                } else {
+                    this.registers.set8BitRegister(y, this.getByte());
+                }
+
+                this.incrementCycles(8);
+                this.incrementPC(1);
+                break;
+            case 0b111: // assorted operations on accumulator/flags
+                this.doLogicOperation(y);
+                this.incrementCycles(4);
+                break;
+        }
+    }
+
+    /**
+     * Perform various load operations.
+     * @param y Bits 5-3 of the op code
+     * @param z Bits 7-6 of the op code
+     */
+    private void doLoadOperation(int y, int z) {
+        if(y == 0b110 && z == 0b110) { // halt
+            this.halt();
+            this.incrementCycles(4);
+        } else if(y == z) { // nop
+            this.incrementCycles(4);
+        } else {
+            if(z == 0b110) { // ld [b, c, d, e, h, l, a], (hl)
+                this.registers.set8BitRegister(y, this.memory.getByteAt(this.registers.getHL()));
+                this.incrementCycles(8);
+            } else if(y == 0b110) { // ld (hl), [b, c, d, e, h, l, a]
+                this.memory.setByteAt(this.registers.getHL(), this.registers.get8BitRegister(z));
+                this.incrementCycles(8);
+            } else { // ld [b, c, d, e, h, l, a], [b, c, d, e, h, l, a]
+                this.registers.set8BitRegister(y, this.registers.get8BitRegister(z));
+                this.incrementCycles(4);
+            }
+        }
+    }
+
+    /**
+     * Perform math operations: add, adc, sub, sbc, and, xor, or, cp
+     * @param y Bits 5-3 of the op code
+     * @param z Bits 7-6 of the op code
+     */
+    private void doMathOperation(int y, int z) {
+        switch(y) {
+            case 0b000: // add
+                if(z != 0b110) { // add a, [b, c, d, e, h, l, a]
+                    this.registers.A = this.add8Bit(this.registers.A, this.registers.get8BitRegister(z));
+                    this.incrementCycles(4);
+                } else { // add a, (hl)
+                    this.registers.A = this.add8Bit(this.registers.A, this.memory.getByteAt(this.registers.getHL()));
+                    this.incrementCycles(8);
+                }
+
+                break;
+            case 0b001: // adc
+                if(z != 0b110) { // adc a, [b, c, d, e, h, l, a]
+                    this.registers.A = this.adc(this.registers.A, this.registers.get8BitRegister(z));
+                    this.incrementCycles(4);
+                } else { // adc a, (hl)
+                    this.registers.A = this.adc(this.registers.A, this.memory.getByteAt(this.registers.getHL()));
+                    this.incrementCycles(8);
+                }
+
+                break;
+            case 0b010: // sub
+                if(z != 0b110) { // sub a, [b, c, d, e, h, l, a]
+                    this.registers.A = this.sub(this.registers.A, this.registers.get8BitRegister(z));
+                    this.incrementCycles(4);
+                } else { // sub a, (hl)
+                    this.registers.A = this.sub(this.registers.A, this.memory.getByteAt(this.registers.getHL()));
+                    this.incrementCycles(8);
+                }
+
+                break;
+            case 0b011: // sbc
+                if(z != 0b110) { // sbc a, [b, c, d, e, h, l, a]
+                    this.registers.A = this.sbc(this.registers.A, this.registers.get8BitRegister(z));
+                    this.incrementCycles(4);
+                } else { // sbc a, (hl)
+                    this.registers.A = this.sbc(this.registers.A, this.memory.getByteAt(this.registers.getHL()));
+                    this.incrementCycles(8);
+                }
+
+                break;
+            case 0b100: // and
+                if(z != 0b110) { // and a, [b, c, d, e, h, l, a]
+                    this.registers.A = this.and(this.registers.A, this.registers.get8BitRegister(z));
+                    this.incrementCycles(4);
+                } else { // and a, (hl)
+                    this.registers.A = this.and(this.registers.A, this.memory.getByteAt(this.registers.getHL()));
+                    this.incrementCycles(8);
+                }
+
+                break;
+            case 0b101: // xor
+                if(z != 0b110) { // xor a, [b, c, d, e, h, l, a]
+                    this.registers.A = this.xor(this.registers.A, this.registers.get8BitRegister(z));
+                    this.incrementCycles(4);
+                } else { // xor a, (hl)
+                    this.registers.A = this.xor(this.registers.A, this.memory.getByteAt(this.registers.getHL()));
+                    this.incrementCycles(8);
+                }
+
+                break;
+            case 0b110: // or
+                if(z != 0b110) { // or a, [b, c, d, e, h, l, a]
+                    this.registers.A = this.or(this.registers.A, this.registers.get8BitRegister(z));
+                    this.incrementCycles(4);
+                } else { // or a, (hl)
+                    this.registers.A = this.or(this.registers.A, this.memory.getByteAt(this.registers.getHL()));
+                    this.incrementCycles(8);
+                }
+
+                break;
+            case 0b111: // cp
+                if(z != 0b110) { // cp a, [b, c, d, e, h, l, a]
+                    this.cp(this.registers.A, this.registers.get8BitRegister(z));
+                    this.incrementCycles(4);
+                } else { // cp a, (hl)
+                    this.cp(this.registers.A, this.memory.getByteAt(this.registers.getHL()));
+                    this.incrementCycles(8);
+                }
+
+                break;
+        }
+    }
+
+    /**
+     * Perform jump, call and ret operations.
+     * @param y Bits 5-3 of the op code
+     * @param z Bits 7-6 of the op code
+     * @param q Bit 3 of the op code
+     * @param p Bits 5-4 of the op code
+     */
+    private void doJumpOperation(int y, int z, int q, int p) {
+        int high = this.memory.getByteAt(this.registers.SP + 1);
+        int low = this.memory.getByteAt(this.registers.SP);
+
+        switch(z) {
+            case 0b000: // conditional return
+                switch(y) {
+                    case 0b000: // ret nz
+                        if((this.registers.F & FLAG_ZERO) != FLAG_ZERO) {
+                            this.registers.PC = this.combineBytes(high, low);
+                            this.registers.SP += 2;
+                            this.incrementCycles(20);
+                        } else {
+                            this.incrementCycles(8);
+                        }
+
+                        break;
+                    case 0b001: // ret z
+                        if((this.registers.F & FLAG_ZERO) == FLAG_ZERO) {
+                            this.registers.PC = this.combineBytes(high, low);
+                            this.registers.SP += 2;
+                            this.incrementCycles(20);
+                        } else {
+                            this.incrementCycles(8);
+                        }
+
+                        break;
+                    case 0b010: // ret nc
+                        if((this.registers.F & FLAG_CARRY) != FLAG_CARRY) {
+                            this.registers.PC = this.combineBytes(high, low);
+                            this.registers.SP += 2;
+                            this.incrementCycles(20);
+                        } else {
+                            this.incrementCycles(8);
+                        }
+
+                        break;
+                    case 0b011: // ret c
+                        if((this.registers.F & FLAG_CARRY) == FLAG_CARRY) {
+                            this.registers.PC = this.combineBytes(high, low);
+                            this.registers.SP += 2;
+                            this.incrementCycles(20);
+                        } else {
+                            this.incrementCycles(8);
+                        }
+
+                        break;
+                    case 0b100: // ld (x), a
+                        this.memory.setByteAt(0xFF00 + this.getByte(), this.registers.A);
+                        this.incrementCycles(12);
+                        this.incrementPC(1);
+
+                        break;
+                    case 0b101: // add sp, x
+                        this.registers.SP = this.add16Bit(this.registers.SP, this.getByte());
+                        this.setFlags(FLAG_ZERO);
+                        this.incrementCycles(16);
+                        this.incrementPC(1);
+
+                        break;
+                    case 0b110: // ld a, (x)
+                        this.registers.A = this.memory.getByteAt(0xFF00 + this.getByte());
+                        this.incrementCycles(12);
+                        this.incrementPC(1);
+
+                        break;
+                    case 0b111: // ld hl sp+x
+                        int op = this.getByte();
+                        int result = this.registers.SP + op;
+
+                        if((result & 0xFFFF0000) != 0) {
+                            this.setFlags(FLAG_CARRY);
+                        } else {
+                            this.resetFlags(FLAG_CARRY);
+                        }
+
+                        if(((this.registers.SP & 0x0F) + (op & 0x0F)) > 0x0F) {
+                            this.setFlags(FLAG_HALF);
+                        } else {
+                            this.resetFlags(FLAG_HALF);
+                        }
+
+                        this.resetFlags(FLAG_ZERO | FLAG_SUB);
+                        this.registers.setHL(result & 0xFFFF);
+                        this.incrementCycles(12);
+                        this.incrementPC(1);
+
+                        break;
+                }
+
+                break;
+            case 0b001: // pop & various ops
+                if(q == 0) { // pop [bc, de, hl, af]
+                    this.registers.set16BitRegister(p, this.combineBytes(high, low), true);
+                    this.registers.SP += 2;
+                    this.incrementCycles(12);
+                } else if(q == 1) {
+                    switch(p) {
+                        case 0b00: // ret
+                            this.registers.PC = this.combineBytes(high, low);
+                            this.registers.SP += 2;
+                            this.incrementCycles(16);
+
+                            break;
+                        case 0b01: // reti
+                            this.registers.PC = this.combineBytes(high, low);
+                            this.registers.SP += 2;
+                            this.ime = true;
+                            this.incrementCycles(16);
+
+                            break;
+                        case 0b10: // jp hl
+                            this.registers.PC = this.registers.getHL();
+                            this.incrementCycles(4);
+
+                            break;
+                        case 0b11: // ld sp, hl
+                            this.registers.SP = this.registers.getHL();
+                            this.incrementCycles(8);
+
+                            break;
+                    }
+                }
+
+                break;
+            case 0b010: // conditional jump
+                if((p >> 1) == 0) {
+                    switch(y) {
+                        case 0b000: // jp nz xx
+                            if((this.registers.F & FLAG_ZERO) != FLAG_ZERO) {
+                                this.registers.PC = this.getWord() - 2;
+                                this.incrementCycles(16);
+                            } else {
+                                this.incrementCycles(12);
+                            }
+
+                            break;
+                        case 0b001: // jp z xx
+                            if((this.registers.F & FLAG_ZERO) == FLAG_ZERO) {
+                                this.registers.PC = this.getWord() - 2;
+                                this.incrementCycles(16);
+                            } else {
+                                this.incrementCycles(12);
+                            }
+
+                            break;
+                        case 0b010: // jp nc xx
+                            if((this.registers.F & FLAG_CARRY) != FLAG_CARRY) {
+                                this.registers.PC = this.getWord() - 2;
+                                this.incrementCycles(16);
+                            } else {
+                                this.incrementCycles(12);
+                            }
+
+                            break;
+                        case 0b011: // jp c xx
+                            if((this.registers.F & FLAG_CARRY) == FLAG_CARRY) {
+                                this.registers.PC = this.getWord() - 2;
+                                this.incrementCycles(16);
+                            } else {
+                                this.incrementCycles(12);
+                            }
+
+                            break;
+                    }
+
+                    this.incrementPC(2);
+                } else {
+                    switch(y) {
+                        case 0b100: // ld (c), a
+                            this.memory.setByteAt(0xFF00 + (this.registers.C & 0xFF), this.registers.A);
+                            this.incrementCycles(8);
+
+                            break;
+                        case 0b101: // ld (xx), a
+                            this.memory.setByteAt(this.getWord(), this.registers.A);
+                            this.incrementCycles(16);
+                            this.incrementPC(2);
+
+                            break;
+                        case 0b110: // ld a, (c)
+                            this.registers.A = this.memory.getByteAt(0xFF00 + (this.registers.C & 0xFF));
+                            this.incrementCycles(8);
+
+                            break;
+                        case 0b111: // ld a, (xx)
+                            this.registers.A = this.memory.getByteAt(this.getWord());
+                            this.incrementCycles(16);
+                            this.incrementPC(2);
+
+                            break;
+                    }
+                }
+
+                break;
+            case 0b011: // assorted operations
+                switch(y) {
+                    case 0b000: // jp xx
+                        this.registers.PC = this.getWord() - 2;
+                        this.incrementCycles(16);
+                        this.incrementPC(2);
+
+                        break;
+                    case 0b001: // cb-prefixed operations. do nothing
+                        break;
+                    case 0b010: // nop
+                    case 0b011: // nop
+                    case 0b100: // nop
+                    case 0b101: // nop
+                        this.incrementCycles(4);
+
+                        break;
+                    case 0b110: // di
+                        // DI immediately disables the IME and cancels any pending enabled caused by EI
+                        this.ime = false;
+                        this.pendingEnableIME = false;
+                        this.incrementCycles(4);
+
+                        break;
+                    case 0b111: // ei
+                        // EI takes an extra cycle for the IME to be enabled
+                        this.pendingEnableIME = true;
+                        this.incrementCycles(4);
+
+                        break;
+                }
+
+                break;
+            case 0b100: // conditional calls
+                switch(y) {
+                    case 0b000: // call nz xx
+                        if((this.registers.F & FLAG_ZERO) != FLAG_ZERO) {
+                            this.call();
+                        } else {
+                            this.incrementCycles(12);
+                            this.incrementPC(2);
+                        }
+
+                        break;
+                    case 0b001: // call z xx
+                        if((this.registers.F & FLAG_ZERO) == FLAG_ZERO) {
+                            this.call();
+                        } else {
+                            this.incrementCycles(12);
+                            this.incrementPC(2);
+                        }
+
+                        break;
+                    case 0b010: // call nc xx
+                        if((this.registers.F & FLAG_CARRY) != FLAG_CARRY) {
+                            this.call();
+                        } else {
+                            this.incrementCycles(12);
+                            this.incrementPC(2);
+                        }
+
+                        break;
+                    case 0b011: // call c xx
+                        if((this.registers.F & FLAG_CARRY) == FLAG_CARRY) {
+                            this.call();
+                        } else {
+                            this.incrementCycles(12);
+                            this.incrementPC(2);
+                        }
+
+                        break;
+                    case 0b100: // nop
+                    case 0b101: // nop
+                    case 0b110: // nop
+                    case 0b111: // nop
+                        this.incrementCycles(4);
+
+                        break;
+                }
+
+                break;
+            case 0b101: // push & various ops
+                if(q == 0) { // push [bc, de, hl, af]
+                    this.memory.setByteAt(this.registers.SP - 1, (this.registers.get16BitRegister(p, true) >> 8) & 0xFF);
+                    this.memory.setByteAt(this.registers.SP - 2, (this.registers.get16BitRegister(p, true)) & 0xFF);
+                    this.registers.SP -= 2;
+                    this.incrementCycles(16);
+                } else if(q == 1) {
+                    if(p == 0) { // call xx
+                        this.call();
+                    } else { // nop
+                        this.incrementCycles(4);
+                    }
+                }
+
+                break;
+            case 0b110: // operate on accumulator and immediate operand
+                switch(y) {
+                    case 0b000: // add a, x
+                        this.registers.A = this.add8Bit(this.registers.A, this.getByte());
+
+                        break;
+                    case 0b001: // adc a, x
+                        this.registers.A = this.adc(this.registers.A, this.getByte());
+
+                        break;
+                    case 0b010: // sub a, x
+                        this.registers.A = this.sub(this.registers.A, this.getByte());
+
+                        break;
+                    case 0b011: // sbc a, x
+                        this.registers.A = this.sbc(this.registers.A, this.getByte());
+
+                        break;
+                    case 0b100: // and a, x
+                        this.registers.A = this.and(this.registers.A, this.getByte());
+
+                        break;
+                    case 0b101: // xor a, x
+                        this.registers.A = this.xor(this.registers.A, this.getByte());
+
+                        break;
+                    case 0b110: // or a, x
+                        this.registers.A = this.or(this.registers.A, this.getByte());
+
+                        break;
+                    case 0b111: // adc a, x
+                        this.cp(this.registers.A, this.getByte());
+
+                        break;
+                }
+
+                this.incrementCycles(8);
+                this.incrementPC(1);
+
+                break;
+            case 0b111: // reset
+                this.rst(y * 8);
+                this.incrementCycles(16);
+
+                break;
+        }
+    }
+
+    /**
+     * Perform logic operations: rlca, rrca, rla, rra, daa, cpl, scf, ccf
+     * @param y Bits 5-3 of the op code
+     */
+    private void doLogicOperation(int y) {
+        switch(y) {
+            case 0b000: // rlca
+                this.rlca();
+                break;
+            case 0b001: // rrca
+                this.rrca();
+                break;
+            case 0b010: // rla
+                this.rla();
+                break;
+            case 0b011: // rra
+                this.rra();
+                break;
+            case 0b100: // daa
+                this.daa();
+                break;
+            case 0b101: // cpl
+                this.cpl();
+                break;
+            case 0b110: // scf
+                this.scf();
+                break;
+            case 0b111: // ccf
+                this.ccf();
+                break;
+        }
+    }
+
+    /**
+     * Perform a relative jump. Increments PC by the amount of the next byte (between -128 and 127)
+     */
+    private void jumpRelative(int op) {
+        if(op <= 127) {
+            this.incrementPC(op);
+        } else {
+            this.incrementPC((256 - op) * -1);
+        }
+    }
+
+    /**
+     * Store current PC on the stack and redirect PC to the called address.
+     */
+    private void call() {
+        this.memory.setByteAt(this.registers.SP - 1, ((this.registers.PC + 2) >> 8) & 0xFF);
+        this.memory.setByteAt(this.registers.SP - 2, ((this.registers.PC + 2)) & 0xFF);
+        this.registers.PC = this.getWord();
+        this.registers.SP -= 2;
+        this.incrementCycles(24);
     }
 
     /**
      * Get the next byte from memory.
-     * @return The next byte in memory as an array.
+     * @return The next byte in memory.
      */
-    private int[] getNextByte() {
-        return new int[] { this.memory.getByteAt(this.PC) };
+    private int getByte() {
+        return this.memory.getByteAt(this.registers.PC);
     }
 
     /**
      * Get the next 2 bytes from memory. The GameBoy is Little Endian so the high byte and the low byte
      * are the second and first bytes from the current location, respectively.
-     * @return The next byte in memory as an array.
+     * @return The next 2 bytes in memory.
      */
-    private int[] getNext2Bytes() {
-        return new int[] { this.memory.getByteAt(this.PC + 1), this.memory.getByteAt(this.PC) };
+    private int getWord() {
+        return this.combineBytes(
+                this.memory.getByteAt(this.registers.PC + 1),
+                this.memory.getByteAt(this.registers.PC)
+        );
     }
 
     /**
@@ -567,7 +1288,7 @@ public class CPU {
      * Gets the value of the interrupt flag.
      * @return The value at memory address 0xFF0F
      */
-    public int getInterruptFlag() {
+    public int getIF() {
         return this.memory.getByteAt(IORegisters.INTERRUPT_FLAGS);
     }
 
@@ -575,7 +1296,7 @@ public class CPU {
      * Gets the value of the interrupt enable.
      * @return The value at memory address 0xFFFF
      */
-    public int getInterruptEnable() {
+    public int getIE() {
         return this.memory.getByteAt(IORegisters.INTERRUPT_ENABLE);
     }
 
@@ -599,18 +1320,6 @@ public class CPU {
         return this.breakpoints;
     }
 
-    // TODO: Delete this if my version of daa works.
-    /**
-     * Checks if flags are set. If multiple flags should be queried, then they should bitwise or'd together.
-     * Example: if Z and H should be reset, then they should be passed in to this method like this: Z | H
-     * @param flags The flags to check.
-     * @return True if the all flags are set, false if at least one flag is not set.
-     */
-    public boolean areFlagsSet(int flags) {
-        return (this.F & flags) == flags;
-    }
-
-    // region Instruction helper methods
     /**
      * Increments a {@code value} by 1 and sets the necessary flags.
      * @param value The value to increment.
@@ -736,7 +1445,7 @@ public class CPU {
      * @return The 8-bit result of the addition.
      */
     private int adc(int num1, int num2) {
-        int carry = (this.getF() & FLAG_CARRY) >> 4;
+        int carry = (this.registers.F & FLAG_CARRY) >> 4;
         int result = num1 + num2 + carry;
 
         if((result & 0xFF00) != 0) {
@@ -762,24 +1471,25 @@ public class CPU {
     }
 
     /**
-     * Subtracts {@code value} from A and sets the necessary flags.
-     * @param value The value to subtract from A.
+     * Subtracts {@code num2} from {@code num1} and sets the necessary flags.
+     * @param num1 The value to subtract from.
+     * @param num2 The value to subtract.
      * @return The 8-bit result of the subtraction.
      */
-    private int sub(int value) {
-        if(value > this.A) {
+    private int sub(int num1, int num2) {
+        if(num2 > num1) {
             this.setFlags(FLAG_CARRY);
         } else {
             this.resetFlags(FLAG_CARRY);
         }
 
-        if((value & 0x0F) > (this.A & 0x0F)) {
+        if((num2 & 0x0F) > (num1 & 0x0F)) {
             this.setFlags(FLAG_HALF);
         } else {
             this.resetFlags(FLAG_HALF);
         }
 
-        int result = (this.A - value) & 0xFF;
+        int result = (num1 - num2) & 0xFF;
 
         if(result == 0) {
             this.setFlags(FLAG_ZERO);
@@ -793,13 +1503,14 @@ public class CPU {
     }
 
     /**
-     * Subtracts {@code value} and the current value of the carry flag from A and sets the necessary flags.
-     * @param value The value to subtract from A.
+     * Subtracts {@code num2} and the current value of the carry flag from {@code num1} and sets the necessary flags.
+     * @param num1 The value to subtract from.
+     * @param num2 The value to subtract
      * @return The 8-bit result of the subtraction.
      */
-    private int sbc(int value) {
-        int result = this.A - value;
-        result = result - ((this.getF() & FLAG_CARRY) >> 4);
+    private int sbc(int num1, int num2) {
+        int result = num1 - num2;
+        result = result - ((this.registers.F & FLAG_CARRY) >> 4);
 
         if(result < 0) {
             this.setFlags(FLAG_CARRY);
@@ -815,7 +1526,7 @@ public class CPU {
             this.resetFlags(FLAG_ZERO);
         }
 
-        if(((result ^ value ^ this.A) & 0x10) == 0x10) {
+        if(((result ^ num2 ^ num1) & 0x10) == 0x10) {
             this.setFlags(FLAG_HALF);
         } else {
             this.resetFlags(FLAG_HALF);
@@ -855,6 +1566,25 @@ public class CPU {
     }
 
     /**
+     * Shift A left by 1 bit. Carry flag is set to the 7th bit of A.
+     */
+    private void rlca() {
+        int carry = (this.registers.A & 0x80) >> 7;
+
+        if(carry == 1) {
+            this.setFlags(FLAG_CARRY);
+        }
+
+        // shift bit left by 1 and get the first 8 bits
+        this.registers.A = (this.registers.A << 1) & 0xFF;
+
+        // set the 0th bit to whatever was at the 7th bit.
+        this.registers.A = this.registers.A | carry;
+
+        this.resetFlags(FLAG_ZERO | FLAG_SUB | FLAG_HALF);
+    }
+
+    /**
      * Shifts {@code value} right, sets the carry flag and the 7th bit to the value of the 0th bit. Sets the necessary flags.
      * @param value The value to shift.
      * @return The shifted value.
@@ -884,12 +1614,30 @@ public class CPU {
     }
 
     /**
+     * Shift A right by 1 bit. Carry flag is set to the 0th bit of A.
+     */
+    private void rrca() {
+        int carry = this.registers.A & 0x01;
+
+        if(carry == 0x01) {
+            this.setFlags(FLAG_CARRY);
+        } else {
+            this.resetFlags(FLAG_CARRY);
+        }
+
+        // set the 7th bit to whatever was at the 0th bit.
+        this.registers.A = (((this.registers.A >> 1) & (~0x80)) | (carry << 7)) & 0xFF;
+
+        this.resetFlags(FLAG_ZERO | FLAG_SUB | FLAG_HALF);
+    }
+
+    /**
      * Shifts {@code value} left, sets the 0th bit to the value of the carry flag. Sets the necessary flags.
      * @param value The value to shift.
      * @return The shifted value.
      */
     private int rl(int value) {
-        int carry = this.getF() & FLAG_CARRY;
+        int carry = this.registers.F & FLAG_CARRY;
 
         if((value & 0x80) == 0x80) {
             this.setFlags(FLAG_CARRY);
@@ -909,12 +1657,33 @@ public class CPU {
     }
 
     /**
+     * Shift A left by 1. The 0th bit of A is set to the value of the CARRY flag. CARRY flag is set to the 7th bit of A.
+     */
+    private void rla() {
+        // get current state of carry flag.
+        int carry = (this.registers.F & FLAG_CARRY) >> 4;
+
+        // check the 7th bit of A.
+        if((this.registers.A & 0x80) == 0x80) {
+            this.setFlags(FLAG_CARRY);
+        } else {
+            this.resetFlags(FLAG_CARRY);
+        }
+
+        // shift A left by 1 bit, change the 0th bit to whatever the carry flag was.
+        this.registers.A = (((this.registers.A << 1) & (~0x01)) | carry) & 0xFF;
+
+        // all other flags are reset.
+        this.resetFlags(FLAG_ZERO | FLAG_SUB | FLAG_HALF);
+    }
+
+    /**
      * Shifts {@code value} right, sets the 7th bit to the value of the carry flag. Sets the necessary flags.
      * @param value The value to shift.
      * @return The shifted value.
      */
     private int rr(int value) {
-        int carry = this.getF() & FLAG_CARRY;
+        int carry = this.registers.F & FLAG_CARRY;
 
         if((value & 0x01) == 0x01) {
             this.setFlags(FLAG_CARRY);
@@ -931,6 +1700,27 @@ public class CPU {
         }
 
         return result;
+    }
+
+    /**
+     * Shift A right by 1. The 7th bit of A is set to the value of the CARRY flag. CARRY flag is set the 0th bit of A.
+     */
+    private void rra() {
+        // get current state of carry flag.
+        int carry = (this.registers.F & FLAG_CARRY) >> 4;
+
+        // check the 0th bit of A.
+        if((this.registers.A & 0x01) == 0x01) {
+            this.setFlags(FLAG_CARRY);
+        } else {
+            this.resetFlags(FLAG_CARRY);
+        }
+
+        // shift A right by 1 bit, change the 7th bit to whatever the carry flag was.
+        this.registers.A = (((this.registers.A >> 1) & (~0x80)) | (carry << 7)) & 0xFF;
+
+        // all other flags are reset.
+        this.resetFlags(FLAG_ZERO | FLAG_SUB | FLAG_HALF);
     }
 
     /**
@@ -1027,6 +1817,76 @@ public class CPU {
     }
 
     /**
+     * When performing addition and subtraction, binary coded decimal (BCD) representation is
+     * used to set the contents of register A to a BCD number.
+     */
+    private void daa() {
+        boolean sub = (this.registers.F & FLAG_SUB) == FLAG_SUB;
+        boolean half = (this.registers.F & FLAG_HALF) == FLAG_HALF;
+        boolean carry = (this.registers.F & FLAG_CARRY) == FLAG_CARRY;
+
+        // after an addition, adjust A if a HALF_CARRY or CARRY occurred or if the result is out of bounds.
+        if(!sub) {
+            if(carry || this.registers.A > 0x99) {
+                this.registers.A = (this.registers.A + 0x60) & 0xFF;
+                this.setFlags(FLAG_CARRY);
+            }
+
+            if(half || (this.registers.A & 0x0F) > 0x09) {
+                this.registers.A = (this.registers.A + 0x06) & 0xFF;
+            }
+        } else {
+            // after a subtraction, only adjust if a HALF_CARRY or CARRY occurred.
+            if(carry) {
+                this.registers.A = (this.registers.A - 0x60) & 0xFF;
+            }
+
+            if(half) {
+                this.registers.A = (this.registers.A - 0x06) & 0xFF;
+            }
+        }
+
+        // set zero flag if A register is zero.
+        if(this.registers.A == 0) {
+            this.setFlags(FLAG_ZERO);
+        } else {
+            this.resetFlags(FLAG_ZERO);
+        }
+
+        // half carry always reset.
+        this.resetFlags(FLAG_HALF);
+    }
+
+    /**
+     * Take the one's compliment of A and store the result in A.
+     */
+    private void cpl() {
+        this.registers.A = (~this.registers.A) & 0xFF;
+        this.setFlags(FLAG_SUB | FLAG_HALF);
+    }
+
+    /**
+     * Sets carry flag, resets half carry and subtraction flags.
+     */
+    private void scf() {
+        this.setFlags(FLAG_CARRY);
+        this.resetFlags(FLAG_SUB | FLAG_HALF);
+    }
+
+    /**
+     * Toggle the carry flag.
+     */
+    private void ccf() {
+        int carry = ((~this.registers.F & 0xFF) & FLAG_CARRY) >> 4;
+
+        if(carry == 1) {
+            this.setFlags(FLAG_CARRY);
+        } else {
+            this.resetFlags(FLAG_CARRY);
+        }
+    }
+
+    /**
      * Copies the compliment of the specified bit at {@code position}. Sets the necessary flags.
      * @param position The bit to operate on.
      * @param value The value to operate on.
@@ -1065,13 +1925,15 @@ public class CPU {
     }
 
     /**
-     * Performs a bitwise and operation on A and {@code value}.
-     * @param value The value to bitwise and with A
+     * Performs a bitwise and operation on {@code num1} and {@code num2}.
+     * @param num1 The first value to bitwise AND with
+     * @param num2 The second value to bitwise AND with
+     * @return The the result of the bitwise AND.
      */
-    private void and(int value) {
-        this.A &= value;
+    private int and(int num1, int num2) {
+        num1 &= num2;
 
-        if(this.A == 0) {
+        if(num1 == 0) {
             this.setFlags(FLAG_ZERO);
         } else {
             this.resetFlags(FLAG_ZERO);
@@ -1079,58 +1941,69 @@ public class CPU {
 
         this.resetFlags(FLAG_SUB | FLAG_CARRY);
         this.setFlags(FLAG_HALF);
+
+        return num1;
     }
 
     /**
-     * Performs a bitwise xor operation on A and {@code value}.
-     * @param value The value to bitwise xor with A
+     * Performs a bitwise xor operation on {@code num1} and {@code num2}.
+     * @param num1 The first value to bitwise XOR with
+     * @param num2 The second value to bitwise XOR with
+     * @return The the result of the bitwise XOR.
      */
-    private void xor(int value) {
-        this.A ^= value;
+    private int xor(int num1, int num2) {
+        num1 ^= num2;
 
-        if(this.A == 0) {
+        if(num1 == 0) {
             this.setFlags(FLAG_ZERO);
         } else {
             this.resetFlags(FLAG_ZERO);
         }
 
         this.resetFlags(FLAG_SUB | FLAG_HALF | FLAG_CARRY);
+
+        return num1;
     }
 
     /**
-     * Performs a bitwise or operation on A and {@code value}.
-     * @param value The value to bitwise or with A
+     * Performs a bitwise or operation on {@code num1} and {@code num2}.
+     * @param num1 The first value to bitwise OR with
+     * @param num2 The second value to bitwise OR with
+     * @return The the result of the bitwise OR.
      */
-    private void or(int value) {
-        this.A |= value;
+    private int or(int num1, int num2) {
+        num1 |= num2;
 
-        if(this.A == 0) {
+        if(num1 == 0) {
             this.setFlags(FLAG_ZERO);
         } else {
             this.resetFlags(FLAG_ZERO);
         }
 
         this.resetFlags(FLAG_SUB | FLAG_HALF | FLAG_CARRY);
+
+        return num1;
     }
 
     /**
-     * Compares the contents of A and {@code value} and sets flags if they are equal.
-     * @param value The value to bitwise and with A
+     * Compares the contents of {@code num1} and {@code num2} and sets flags if they are equal.
+     * @param num1 The first value to compare
+     * @param num2 The second value to compare
      */
-    private void cp(int value) {
-        if(this.A == value) {
+    private void cp(int num1, int num2) {
+        if(num1 == num2) {
             this.setFlags(FLAG_ZERO);
         } else {
             this.resetFlags(FLAG_ZERO);
         }
 
-        if((this.A & 0x0F) < (value & 0x0F)) {
+        if((num1 & 0x0F) < (num2 & 0x0F)) {
             this.setFlags(FLAG_HALF);
         } else {
             this.resetFlags(FLAG_HALF);
         }
 
-        if(this.A < value) {
+        if(num1 < num2) {
             this.setFlags(FLAG_CARRY);
         } else {
             this.resetFlags(FLAG_CARRY);
@@ -1144,4842 +2017,52 @@ public class CPU {
      * @param address The address to jump to.
      */
     private void rst(int address) {
-        this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
-        this.memory.setByteAt(this.SP - 2, this.PC & 0xFF);
-        this.SP -= 2;
-        this.PC = address;
-    }
-    // endregion
-
-    // region Instructions
-    /**
-     * OP codes
-     * 0x00, 0x40, 0x49, 0x52, 0x5B, 0x64, 0x6D, 0x7F,
-     * 0xD3, 0xDB, 0xDD, 0xE3, 0xE4, 0xEB, 0xEC, 0xED,
-     * 0xF4, 0xFC, 0xFD
-     * No operation.
-     * @param ops unused
-     */
-    Void nop(int[] ops) {
-        // nothing.
-        return null;
+        this.memory.setByteAt(this.registers.SP - 1, (this.registers.PC >> 8) & 0xFF);
+        this.memory.setByteAt(this.registers.SP - 2, this.registers.PC & 0xFF);
+        this.registers.SP -= 2;
+        this.registers.PC = address;
     }
 
     /**
-     * OP code 0x01 - Load immediate 2 bytes into BC.
-     * @param ops Immediate 2 bytes
+     * Stop the CPU.
      */
-    Void ld_bc_xx(int[] ops) {
-        this.setBC(this.combineBytes(ops[0], ops[1]));
-        return null;
-    }
-
-    /**
-     * OP code 0x02 - Load value of A into memory address at BC.
-     * @param ops unused
-     */
-    Void ld_bcp_a(int[] ops) {
-        this.memory.setByteAt(this.getBC(), this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0x03 - Increment BC.
-     * @param ops unused
-     */
-    Void inc_bc(int[] ops) {
-        // increment BC by 1 and get the first 8 bits
-        this.setBC((this.getBC() + 1) & 0xFFFF);
-        return null;
-    }
-
-    /**
-     * OP code 0x04 - Increment B.
-     * @param ops unused
-     */
-    Void inc_b(int[] ops) {
-        this.B = this.increment(this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0x05 - Decrement B.
-     * @param ops unused
-     */
-    Void dec_b(int[] ops) {
-        this.B = this.decrement(this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0x06 - Load immediate byte into B.
-     * @param ops Immediate 1 byte.
-     */
-    Void ld_b_x(int[] ops) {
-        this.B = ops[0];
-        return null;
-    }
-
-    /**
-     * OP code 0x07 - Shift A left by 1 bit. Carry flag is set to the 7th bit of A.
-     * @param ops unused
-     */
-    Void rlca(int[] ops) {
-        int carry = (this.A & 0x80) >> 7;
-
-        if(carry == 1) {
-            this.setFlags(FLAG_CARRY);
-        }
-
-        // shift bit left by 1 and get the first 8 bits
-        this.A = (this.A << 1) & 0xFF;
-
-        // set the 0th bit to whatever was at the 7th bit.
-        this.A = this.A | carry;
-
-        this.resetFlags(FLAG_ZERO | FLAG_SUB | FLAG_HALF);
-        return null;
-    }
-
-    /**
-     * OP code 0x08 - Load value of SP into address at xx.
-     * @param ops Immediate 2 bytes
-     */
-    Void ld_xxp_sp(int[] ops) {
-        this.memory.setByteAt(this.combineBytes(ops[0], ops[1]), this.SP);
-        return null;
-    }
-
-    /**
-     * OP code 0x09 - Add the value of BC to HL.
-     * @param ops unused
-     */
-    Void add_hl_bc(int[] ops) {
-        this.setHL(this.add16Bit(this.getHL(), this.getBC()));
-        return null;
-    }
-
-    /**
-     * OP code 0x0A - Load value at memory address BC into A.
-     * @param ops unused.
-     */
-    Void ld_a_bcp(int[] ops) {
-        this.A = this.memory.getByteAt(this.getBC());
-        return null;
-    }
-
-    /**
-     * OP code 0x0B - Decrement the value of BC.
-     * @param ops unused.
-     */
-    Void dec_bc(int[] ops) {
-        this.setBC((this.getBC() - 1) & 0xFFFF);
-        return null;
-    }
-
-    /**
-     * OP code 0x0C - Increment the value of C.
-     * @param ops unused.
-     */
-    Void inc_c(int[] ops) {
-        this.C = this.increment(this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0x0D - Decrement the value of C.
-     * @param ops unused.
-     */
-    Void dec_c(int[] ops) {
-        this.C = this.decrement(this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0x0E - Load immediate byte into C.
-     * @param ops Immediate 1 byte.
-     */
-    Void ld_c_x(int[] ops) {
-        this.C = ops[0];
-        return null;
-    }
-
-    /**
-     * OP code 0x0F - Shift A right by 1 bit. Carry flag is set to the 0th bit of A.
-     * @param ops unused.
-     */
-    Void rrca(int[] ops) {
-        int carry = this.A & 0x01;
-
-        if(carry == 0x01) {
-            this.setFlags(FLAG_CARRY);
-        } else {
-            this.resetFlags(FLAG_CARRY);
-        }
-
-        // set the 7th bit to whatever was at the 0th bit.
-        this.A = (((this.A >> 1) & (~0x80)) | (carry << 7)) & 0xFF;
-
-        this.resetFlags(FLAG_ZERO | FLAG_SUB | FLAG_HALF);
-        return null;
-    }
-
-    /**
-     * OP code 0x10 - Enter CPU very low power mode.
-     * - Execution of a STOP instruction stops both the system clock and oscillator circuit.
-     * - STOP mode is entered, and the LCD controller also stops.
-     * - However, the status of internal RAM register ports remains unchanged.
-     * - STOP mode can be canceled by a reset signal.
-     * - If the RESET terminal goes LOW in STOP mode, it becomes that of a normal reset status.
-     * - The following conditions should be met before a STOP instruction is executed and STOP mode is entered:
-     *   > All interrupt-enable (IE) flags are reset.
-     *   > Input to P10 - P13 is LOW for all.
-     * @param ops unused.
-     */
-    Void stop(int[] ops) {
+    private void stop() {
         this.isStopped = true;
-//        this.memory.setByteAt(IORegisters.INTERRUPT_ENABLE, 0x00);
-        // TODO: set P10 - P13 low
-        return null;
     }
 
     /**
-     * OP code 0x11 - Load immediate 2 bytes into DE.
-     * @param ops Immediate 2 bytes
+     * Halt the CPU.
      */
-    Void ld_de_xx(int[] ops) {
-        this.setDE(this.combineBytes(ops[0], ops[1]));
-        return null;
-    }
-
-    /**
-     * OP code 0x12 - Load the value of A in the memory address pointed to by DE.
-     * @param ops unused.
-     */
-    Void ld_dep_a(int[] ops) {
-        this.memory.setByteAt(this.getDE(), this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0x13 - Increment DE.
-     * @param ops unused
-     */
-    Void inc_de(int[] ops) {
-        this.setDE((this.getDE() + 1) & 0xFFFF);
-        return null;
-    }
-
-    /**
-     * OP code 0x14 - Increment the value of D.
-     * @param ops unused.
-     */
-    Void inc_d(int[] ops) {
-        this.D = this.increment(this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0x15 - Decrement the value of D.
-     * @param ops unused.
-     */
-    Void dec_d(int[] ops) {
-        this.D = this.decrement(this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0x16 - Load immediate byte into D.
-     * @param ops Immediate 1 byte.
-     */
-    Void ld_d_x(int[] ops) {
-        this.D = ops[0];
-        return null;
-    }
-
-    /**
-     * OP code 0x17 - Shift A left by 1. The 0th bit of A is set to the value of the CARRY flag. CARRY flag is set to the 7th bit of A.
-     * @param ops  unused.
-     */
-    Void rla(int[] ops) {
-        // get current state of carry flag.
-        int carry = (this.F & FLAG_CARRY) >> 4;
-
-        // check the 7th bit of A.
-        if((this.A & 0x80) == 0x80) {
-            this.setFlags(FLAG_CARRY);
-        } else {
-            this.resetFlags(FLAG_CARRY);
-        }
-
-        // shift A left by 1 bit, change the 0th bit to whatever the carry flag was.
-        this.A = (((this.A << 1) & (~0x01)) | carry) & 0xFF;
-
-        // all other flags are reset.
-        this.resetFlags(FLAG_ZERO | FLAG_SUB | FLAG_HALF);
-        return null;
-    }
-
-    /**
-     * OP code 0x18 - Increments PC by the amount of the next byte (between -128 and 127)
-     * @param ops Immediate 1 byte.
-     */
-    Void jr_x(int[] ops) {
-        this.incrementPC((byte)ops[0]);
-
-        // TODO: do I need to do this instead?
-        /*if(ops[0] > 126) {
-            this.incrementPC((ops[0] + 1) - 127);
-        } else {
-            this.incrementPC(ops[0] - 127);
-        }*/
-
-        return null;
-    }
-
-    /**
-     * OP code 0x19 - Add HL and DE and store the result in HL.
-     * @param ops unused.
-     */
-    Void add_hl_de(int[] ops) {
-        this.setHL(this.add16Bit(this.getHL(), this.getDE()));
-        return null;
-    }
-
-    /**
-     * OP code 0x1A - Load the value memory address pointed to by DE into A.
-     * @param ops unused.
-     */
-    Void ld_a_dep(int[] ops) {
-        this.A = this.memory.getByteAt(this.getDE());
-        return null;
-    }
-
-    /**
-     * OP code 0x1B - Decrement DE by 1.
-     * @param ops unused.
-     */
-    Void dec_de(int[] ops) {
-        this.setDE((this.getDE() - 1) & 0xFFFF);
-        return null;
-    }
-
-    /**
-     * OP code 0x1C - Increment E by 1.
-     * @param ops unused.
-     */
-    Void inc_e(int[] ops) {
-        this.E = this.increment(this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0x1D - Decrement E by 1.
-     * @param ops unused.
-     */
-    Void dec_e(int[] ops) {
-        this.E = this.decrement(this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0x1E - Load immediate byte into E.
-     * @param ops Immediate 1 byte.
-     */
-    Void ld_e_x(int[] ops) {
-        this.E = ops[0];
-        return null;
-    }
-
-    /**
-     * OP code 0x1F - Shift A right by 1. The 7th bit of A is set to the value of the CARRY flag. CARRY flag is set the 0th bit of A.
-     * @param ops unsued.
-     */
-    Void rra(int[] ops) {
-        // get current state of carry flag.
-        int carry = (this.F & FLAG_CARRY) >> 4;
-
-        // check the 0th bit of A.
-        if((this.A & 0x01) == 0x01) {
-            this.setFlags(FLAG_CARRY);
-        } else {
-            this.resetFlags(FLAG_CARRY);
-        }
-
-        // shift A right by 1 bit, change the 7th bit to whatever the carry flag was.
-        this.A = (((this.A >> 1) & (~0x80)) | (carry << 7)) & 0xFF;
-
-        // all other flags are reset.
-        this.resetFlags(FLAG_ZERO | FLAG_SUB | FLAG_HALF);
-        return null;
-    }
-
-    /**
-     * OP code 0x20 - Jump to given address relative to the current address if the zero flag is not set.
-     * @param ops The 8-bit offset
-     */
-    Void jr_nz_x(int[] ops) {
-        if((this.F & FLAG_ZERO) != FLAG_ZERO) {
-            this.incrementPC((byte)ops[0]);
-
-            // TODO: do I need to do this instead?
-            /*if(ops[0] > 126) {
-                this.incrementPC((ops[0] + 1) - 127);
-            } else {
-                this.incrementPC(ops[0] - 127);
-            }*/
-
-            this.incrementCycles(12);
-        } else {
-            this.incrementCycles(8);
-        }
-
-        return null;
-    }
-
-    /**
-     * OP code 0x21 - Load immediate 2 bytes into HL register.
-     * @param ops Immediate 2 bytes.
-     */
-    Void ld_hl_xx(int[] ops) {
-        this.setHL(this.combineBytes(ops[0], ops[1]));
-        return null;
-    }
-
-    /**
-     * OP code 0x22 - Load A into the memory address pointed to by HL and then increment HL by 1.
-     * @param ops unused.
-     */
-    Void ldi_hlp_a(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.A);
-        this.setHL(this.getHL() + 1);
-        return null;
-    }
-
-    /**
-     * OP code 0x23 - Increment HL by 1.
-     * @param ops unused.
-     */
-    Void inc_hl(int[] ops) {
-        this.setHL((this.getHL() + 1) & 0xFFFF);
-        return null;
-    }
-
-    /**
-     * OP code 0x24 - Increment H by 1.
-     * @param ops unused.
-     */
-    Void inc_h(int[] ops) {
-        this.H = this.increment(this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0x25 - Decrement H by 1.
-     * @param ops unused.
-     */
-    Void dec_h(int[] ops) {
-        this.H = this.decrement(this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0x26 - Load immediate byte into H.
-     * @param ops Immediate 1 byte.
-     */
-    Void ld_h_x(int[] ops) {
-        this.H = ops[0];
-        return null;
-    }
-
-    /**
-     * OP code 0x27 - When performing addition and subtraction, binary coded decimal (BCD) representation is
-     * used to set the contents of register A to a BCD number.
-     * @param ops unused
-     */
-    Void daa(int[] ops) {
-        boolean sub = (this.F & CPU.FLAG_SUB) == CPU.FLAG_SUB;
-        boolean half = (this.F & CPU.FLAG_HALF) == CPU.FLAG_HALF;
-        boolean carry = (this.F & CPU.FLAG_CARRY) == CPU.FLAG_CARRY;
-
-        // after an addition, adjust A if a HALF_CARRY or CARRY occurred or if the result is out of bounds.
-        if(!sub) {
-            if(carry || this.A > 0x99) {
-                this.A = (this.A + 0x60) & 0xFF;
-                this.setFlags(CPU.FLAG_CARRY);
-            }
-
-            if(half || (this.A & 0x0F) > 0x09) {
-                this.A = (this.A + 0x06) & 0xFF;
-            }
-        } else {
-            // after a subtraction, only adjust if a HALF_CARRY or CARRY occurred.
-            if(carry) {
-                this.A = (this.A - 0x60) & 0xFF;
-            }
-
-            if(half) {
-                this.A = (this.A - 0x06) & 0xFF;
-            }
-        }
-
-        // set zero flag if A register is zero.
-        if(this.A == 0) {
-            this.setFlags(CPU.FLAG_ZERO);
-        } else {
-            this.resetFlags(CPU.FLAG_ZERO);
-        }
-
-        // half carry always reset.
-        this.resetFlags(CPU.FLAG_HALF);
-
-        return null;
-    }
-
-    /**
-     * OP code 0x28 - Jump to given address relative to the current address if the zero flag is set.
-     * @param ops The 8-bit offset
-     */
-    Void jr_z_x(int[] ops) {
-        if((this.F & FLAG_ZERO) == FLAG_ZERO) {
-            this.incrementPC((byte)ops[0]);
-
-            // TODO: do I need to do this instead?
-            /*if(ops[0] > 126) {
-                this.incrementPC((ops[0] + 1) - 127);
-            } else {
-                this.incrementPC(ops[0] - 127);
-            }*/
-
-            this.incrementCycles(12);
-        } else {
-            this.incrementCycles(8);
-        }
-
-        return null;
-    }
-
-    /**
-     * OP code 0x29 - Add HL to HL and store the value in HL.
-     * @param ops unused.
-     */
-    Void add_hl_hl(int[] ops) {
-        this.setHL(this.add16Bit(this.getHL(), this.getHL()));
-        return null;
-    }
-
-    /**
-     * OP code 0x2A - Load the value in memory pointed to by HL into A, then increment HL by 1.
-     * @param ops unused.
-     */
-    Void ldi_a_hlp(int[] ops) {
-        this.A = this.memory.getByteAt(this.getHL());
-        this.setHL(this.getHL() + 1);
-        return null;
-    }
-
-    /**
-     * OP code 0x2B - Decrement HL by 1.
-     * @param ops unused.
-     */
-    Void dec_hl(int[] ops) {
-        this.setHL((this.getHL() - 1) & 0xFFFF);
-        return null;
-    }
-
-    /**
-     * OP code 0x2C - Increment L by 1.
-     * @param ops unused.
-     */
-    Void inc_l(int[] ops) {
-        this.L = this.increment(this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0x2D - Decrement L by 1.
-     * @param ops unused.
-     */
-    Void dec_l(int[] ops) {
-        this.L = this.decrement(this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0x2E - Load immediate byte into L.
-     * @param ops Immediate 1 byte.
-     */
-    Void ld_l_x(int[] ops) {
-        this.L = ops[0];
-        return null;
-    }
-
-    /**
-     * OP code 0x2F - Take the one's compliment of A and store the result in A.
-     * @param ops unused.
-     */
-    Void cpl(int[] ops) {
-        this.A = (~this.A) & 0xFF;
-        this.setFlags(FLAG_SUB | FLAG_HALF);
-        return null;
-    }
-
-    /**
-     * OP code 0x30 - Jump to given address relative to the current address if the carry flag is not set.
-     * @param ops The 8-bit offset
-     */
-    Void jr_nc_x(int[] ops) {
-        if((this.F & FLAG_CARRY) != FLAG_CARRY) {
-            this.incrementPC((byte)ops[0]);
-
-            // TODO: do I need to do this instead?
-            /*if(ops[0] > 126) {
-                this.incrementPC((ops[0] + 1) - 127);
-            } else {
-                this.incrementPC(ops[0] - 127);
-            }*/
-
-            this.incrementCycles(12);
-        } else {
-            this.incrementCycles(8);
-        }
-
-        return null;
-    }
-
-    /**
-     * OP code 0x31 - Load immediate 2 bytes into SP.
-     * @param ops Immediate 2 bytes
-     */
-    Void ld_sp_xx(int[] ops) {
-        this.setSP(this.combineBytes(ops[0], ops[1]));
-        return null;
-    }
-
-    /**
-     * OP code 0x32 - Load A into the memory address pointed to by HL and then decrement HL by 1.
-     * @param ops unused.
-     */
-    Void ldd_hlp_a(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.A);
-        this.setHL(this.getHL() - 1);
-        return null;
-    }
-
-    /**
-     * OP code 0x33 - Increment SP by 1.
-     * @param ops unused.
-     */
-    Void inc_sp(int[] ops) {
-        this.SP += 1;
-        return null;
-    }
-
-    /**
-     * OP code 0x34 - Increment the value in memory pointed to by HL by 1.
-     * @param ops unused.
-     */
-    Void inc_hlp(int[] ops) {
-        int value = this.increment(this.memory.getByteAt(this.getHL()));
-        this.memory.setByteAt(this.getHL(), value);
-        return null;
-    }
-
-    /**
-     * OP code 0x35 - Decrement the value in memory pointed to by HL by 1.
-     * @param ops unused.
-     */
-    Void dec_hlp(int[] ops) {
-        int value = this.decrement(this.memory.getByteAt(this.getHL()));
-        this.memory.setByteAt(this.getHL(), value);
-        return null;
-    }
-
-    /**
-     * OP code 0x36 - Load immediate byte into memory address pointed to by HL.
-     * @param ops Immediate 1 byte.
-     */
-    Void ld_hlp_x(int[] ops) {
-        this.memory.setByteAt(this.getHL(), ops[0]);
-        return null;
-    }
-
-    /**
-     * OP code 0x37 - Sets carry flag, resets half carry and subtraction flags.
-     * @param ops unused.
-     */
-    Void scf(int[] ops) {
-        this.setFlags(FLAG_CARRY);
-        this.resetFlags(FLAG_SUB | FLAG_HALF);
-        return null;
-    }
-
-    /**
-     * OP code 0x38 - Jump to given address relative to the current address if the carry flag is set.
-     * @param ops The 8-bit offset
-     */
-    Void jr_c_x(int[] ops) {
-        if((this.F & FLAG_CARRY) == FLAG_CARRY) {
-            this.incrementPC((byte)ops[0]);
-
-            // TODO: do I need to do this instead?
-            /*if(ops[0] > 126) {
-                this.incrementPC((ops[0] + 1) - 127);
-            } else {
-                this.incrementPC(ops[0] - 127);
-            }*/
-
-            this.incrementCycles(12);
-        } else {
-            this.incrementCycles(8);
-        }
-
-        return null;
-    }
-
-    /**
-     * OP code 0x39 - Add HL and SP and store the result in HL.
-     * @param ops unused.
-     */
-    Void add_hl_sp(int[] ops) {
-        this.setHL(this.add16Bit(this.getHL(), this.getSP()));
-        return null;
-    }
-
-    /**
-     * OP code 0x3A - Load the value in memory pointed to by HL into A, then decrement HL by 1.
-     * @param ops unused.
-     */
-    Void ldd_a_hlp(int[] ops) {
-        this.A = this.memory.getByteAt(this.getHL());
-        this.setHL(this.getHL() - 1);
-        return null;
-    }
-
-    /**
-     * OP code 0x3B - Decrement SP by 1.
-     * @param ops unused.
-     */
-    Void dec_sp(int[] ops) {
-        this.SP -= 1;
-        return null;
-    }
-
-    /**
-     * OP code 0x3C - Increment A by 1.
-     * @param ops unused.
-     */
-    Void inc_a(int[] ops) {
-        this.A = this.increment(this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0x3D - Decrement A by 1.
-     * @param ops unused.
-     */
-    Void dec_a(int[] ops) {
-        this.A = this.decrement(this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0x3E - Load immediate byte into A.
-     * @param ops Immediate 1 byte.
-     */
-    Void ld_a_x(int[] ops) {
-        this.A = ops[0];
-        return null;
-    }
-
-    /**
-     * OP code 0x3F - Toggle the carry flag.
-     * @param ops unused.
-     */
-    Void ccf(int[] ops) {
-        int carry = ((~this.getF() & 0xFF) & FLAG_CARRY) >> 4;
-
-        if(carry == 1) {
-            this.setFlags(FLAG_CARRY);
-        } else {
-            this.resetFlags(FLAG_CARRY);
-        }
-
-        return null;
-    }
-
-    /**
-     * OP code 0x41 - Load C into B.
-     * @param ops unused.
-     */
-    Void ld_b_c(int[] ops) {
-        this.B = this.C;
-        return null;
-    }
-
-    /**
-     * OP code 0x42 - Load D into B.
-     * @param ops unused.
-     */
-    Void ld_b_d(int[] ops) {
-        this.B = this.D;
-        return null;
-    }
-
-    /**
-     * OP code 0x43 - Load E into B.
-     * @param ops unused.
-     */
-    Void ld_b_e(int[] ops) {
-        this.B = this.E;
-        return null;
-    }
-
-    /**
-     * OP code 0x44 - Load H into B.
-     * @param ops unused.
-     */
-    Void ld_b_h(int[] ops) {
-        this.B = this.H;
-        return null;
-    }
-
-    /**
-     * OP code 0x45 - Load L into B.
-     * @param ops unused.
-     */
-    Void ld_b_l(int[] ops) {
-        this.B = this.L;
-        return null;
-    }
-
-    /**
-     * OP code 0x46 - Load value at memory address specified by HL into B.
-     * @param ops unused.
-     */
-    Void ld_b_hlp(int[] ops) {
-        this.B = this.memory.getByteAt(this.getHL());
-        return null;
-    }
-
-    /**
-     * OP code 0x47 - Load A into B.
-     * @param ops unused.
-     */
-    Void ld_b_a(int[] ops) {
-        this.B = this.A;
-        return null;
-    }
-
-    /**
-     * OP code 0x48 - Load B into C.
-     * @param ops unused.
-     */
-    Void ld_c_b(int[] ops) {
-        this.C = this.B;
-        return null;
-    }
-
-    /**
-     * OP code 0x4A - Load D into C.
-     * @param ops unused.
-     */
-    Void ld_c_d(int[] ops) {
-        this.C = this.D;
-        return null;
-    }
-
-    /**
-     * OP code 0x4B - Load E into C.
-     * @param ops unused.
-     */
-    Void ld_c_e(int[] ops) {
-        this.C = this.E;
-        return null;
-    }
-
-    /**
-     * OP code 0x4C - Load H into C.
-     * @param ops unused.
-     */
-    Void ld_c_h(int[] ops) {
-        this.C = this.H;
-        return null;
-    }
-
-    /**
-     * OP code 0x4D - Load L into C.
-     * @param ops unused.
-     */
-    Void ld_c_l(int[] ops) {
-        this.C = this.L;
-        return null;
-    }
-
-    /**
-     * OP code 0x4E - Load value at memory address specified by HL into C.
-     * @param ops unused.
-     */
-    Void ld_c_hlp(int[] ops) {
-        this.C = this.memory.getByteAt(this.getHL());
-        return null;
-    }
-
-    /**
-     * OP code 0x4F - Load A into C.
-     * @param ops unused.
-     */
-    Void ld_c_a(int[] ops) {
-        this.C = this.A;
-        return null;
-    }
-
-    /**
-     * OP code 0x50 - Load B into D.
-     * @param ops unused.
-     */
-    Void ld_d_b(int[] ops) {
-        this.D = this.B;
-        return null;
-    }
-
-    /**
-     * OP code 0x51 - Load C into D.
-     * @param ops unused.
-     */
-    Void ld_d_c(int[] ops) {
-        this.D = this.C;
-        return null;
-    }
-
-    /**
-     * OP code 0x53 - Load E into D.
-     * @param ops unused.
-     */
-    Void ld_d_e(int[] ops) {
-        this.D = this.E;
-        return null;
-    }
-
-    /**
-     * OP code 0x54 - Load H into D.
-     * @param ops unused.
-     */
-    Void ld_d_h(int[] ops) {
-        this.D = this.H;
-        return null;
-    }
-
-    /**
-     * OP code 0x55 - Load L into D.
-     * @param ops unused.
-     */
-    Void ld_d_l(int[] ops) {
-        this.D = this.L;
-        return null;
-    }
-
-    /**
-     * OP code 0x56 - Load value at memory address specified by HL into D.
-     * @param ops unused.
-     */
-    Void ld_d_hlp(int[] ops) {
-        this.D = this.memory.getByteAt(this.getHL());
-        return null;
-    }
-
-    /**
-     * OP code 0x57 - Load A into D.
-     * @param ops unused.
-     */
-    Void ld_d_a(int[] ops) {
-        this.D = this.A;
-        return null;
-    }
-
-    /**
-     * OP code 0x58 - Load B into E.
-     * @param ops unused.
-     */
-    Void ld_e_b(int[] ops) {
-        this.E = this.B;
-        return null;
-    }
-
-    /**
-     * OP code 0x59 - Load C into E.
-     * @param ops unused.
-     */
-    Void ld_e_c(int[] ops) {
-        this.nop(null);
-        return null;
-    }
-
-    /**
-     * OP code 0x5A - Load D into E.
-     * @param ops unused.
-     */
-    Void ld_e_d(int[] ops) {
-        this.E = this.D;
-        return null;
-    }
-
-    /**
-     * OP code 0x5C - Load H into E.
-     * @param ops unused.
-     */
-    Void ld_e_h(int[] ops) {
-        this.E = this.H;
-        return null;
-    }
-
-    /**
-     * OP code 0x5D - Load L into E.
-     * @param ops unused.
-     */
-    Void ld_e_l(int[] ops) {
-        this.E = this.L;
-        return null;
-    }
-
-    /**
-     * OP code 0x5E - Load value at memory address specified by HL into E.
-     * @param ops unused.
-     */
-    Void ld_e_hlp(int[] ops) {
-        this.E = this.memory.getByteAt(this.getHL());
-        return null;
-    }
-
-    /**
-     * OP code 0x5F - Load A into E.
-     * @param ops unused.
-     */
-    Void ld_e_a(int[] ops) {
-        this.E = this.A;
-        return null;
-    }
-
-    /**
-     * OP code 0x60 - Load B into H.
-     * @param ops unused.
-     */
-    Void ld_h_b(int[] ops) {
-        this.H = this.B;
-        return null;
-    }
-
-    /**
-     * OP code 0x61 - Load C into H.
-     * @param ops unused.
-     */
-    Void ld_h_c(int[] ops) {
-        this.H = this.C;
-        return null;
-    }
-
-    /**
-     * OP code 0x62 - Load D into H.
-     * @param ops unused.
-     */
-    Void ld_h_d(int[] ops) {
-        this.H = this.D;
-        return null;
-    }
-
-    /**
-     * OP code 0x63 - Load E into H.
-     * @param ops unused.
-     */
-    Void ld_h_e(int[] ops) {
-        this.H = this.E;
-        return null;
-    }
-
-    /**
-     * OP code 0x65 - Load L into H.
-     * @param ops unused.
-     */
-    Void ld_h_l(int[] ops) {
-        this.H = this.L;
-        return null;
-    }
-
-    /**
-     * OP code 0x66 - Load value at memory address specified by HL into H.
-     * @param ops unused.
-     */
-    Void ld_h_hlp(int[] ops) {
-        this.H = this.memory.getByteAt(this.getHL());
-        return null;
-    }
-
-    /**
-     * OP code 0x67 - Load A into H.
-     * @param ops unused.
-     */
-    Void ld_h_a(int[] ops) {
-        this.H = this.A;
-        return null;
-    }
-
-    /**
-     * OP code 0x68 - Load B into L.
-     * @param ops unused.
-     */
-    Void ld_l_b(int[] ops) {
-        this.L = this.B;
-        return null;
-    }
-
-    /**
-     * OP code 0x69 - Load C into L.
-     * @param ops unused.
-     */
-    Void ld_l_c(int[] ops) {
-        this.L = this.C;
-        return null;
-    }
-
-    /**
-     * OP code 0x6A - Load D into L.
-     * @param ops unused.
-     */
-    Void ld_l_d(int[] ops) {
-        this.L = this.D;
-        return null;
-    }
-
-    /**
-     * OP code 0x6B - Load E into L.
-     * @param ops unused.
-     */
-    Void ld_l_e(int[] ops) {
-        this.L = this.E;
-        return null;
-    }
-
-    /**
-     * OP code 0x6C - Load H into L.
-     * @param ops unused.
-     */
-    Void ld_l_h(int[] ops) {
-        this.L = this.H;
-        return null;
-    }
-
-    /**
-     * OP code 0x6E - Load value at memory address specified by HL into L.
-     * @param ops unused.
-     */
-    Void ld_l_hlp(int[] ops) {
-        this.L = this.memory.getByteAt(this.getHL());
-        return null;
-    }
-
-    /**
-     * OP code 0x6F - Load A into L.
-     * @param ops unused.
-     */
-    Void ld_l_a(int[] ops) {
-        this.L = this.A;
-        return null;
-    }
-
-    /**
-     * OP code 0x70 - Load B into the memory address specified by HL.
-     * @param ops unused.
-     */
-    Void ld_hlp_b(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0x71 - Load C into the memory address specified by HL.
-     * @param ops unused.
-     */
-    Void ld_hlp_c(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0x72 - Load D into the memory address specified by HL.
-     * @param ops unused.
-     */
-    Void ld_hlp_d(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0x73 - Load E into the memory address specified by HL.
-     * @param ops unused.
-     */
-    Void ld_hlp_e(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0x74 - Load H into the memory address specified by HL.
-     * @param ops unused.
-     */
-    Void ld_hlp_h(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0x75 - Load L into the memory address specified by HL.
-     * @param ops unused.
-     */
-    Void ld_hlp_l(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0x76 - Halt the CPU.
-     * @param ops unused.
-     */
-    Void halt(int[] ops) {
-        int flags = this.memory.getByteAt(IORegisters.INTERRUPT_FLAGS);
-        int ie = this.memory.getByteAt(IORegisters.INTERRUPT_ENABLE);
+    private void halt() {
+        int flags = this.getIF();
+        int ie = this.getIE();
 
         if(this.ime) {
-            this.isStopped = true;
+            /*
+                HALT executed normally. CPU stops executing instructions until (IE & IF & 1F) != 0. When
+                a flag in IF is set and the corresponding IE flag is also set, the CPU jumps to the interrupt
+                vector. The return address pushed to the stack is the next instruction to the HALT, not the
+                HALT itself. The IF flag corresponding to the vector the CPU has jumped in is cleared.
+            */
+            this.isHalted = true;
         } else {
             if((ie & flags & 0x1F) == 0) {
-                this.isStopped = true;
-            }
-
-            if((ie & flags & 0x1F) != 0) {
+                /*
+                    HALT mode is entered. It works like the IME = 1 case, but when an IF flag is set and
+                    the corresponding IE flag is also set, the CPU doesn't jump to the interrupt vector, it
+                    just continues executing instructions. The IF flags aren't cleared.
+                */
+                this.isHalted = true;
+                this.haltSkip = true;
+            } else {
+                /*
+                    HALT mode is not entered. HALT bug occurs: The CPU fails to increase PC when
+                    executing the next instruction. The IF flags aren't cleared. This results in weird
+                    behaviour.
+                */
+                this.isHalted = false;
                 this.haltBug = true;
             }
         }
-
-        return null;
     }
-
-    /**
-     * OP code 0x77 - Load A into the memory address specified by HL.
-     * @param ops unused.
-     */
-    Void ld_hlp_a(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0x78 - Load B into A.
-     * @param ops unused.
-     */
-    Void ld_a_b(int[] ops) {
-        this.A = this.B;
-        return null;
-    }
-
-    /**
-     * OP code 0x79 - Load C into A.
-     * @param ops unused.
-     */
-    Void ld_a_c(int[] ops) {
-        this.A = this.C;
-        return null;
-    }
-
-    /**
-     * OP code 0x7A - Load D into A.
-     * @param ops unused.
-     */
-    Void ld_a_d(int[] ops) {
-        this.A = this.D;
-        return null;
-    }
-
-    /**
-     * OP code 0x7B - Load E into A.
-     * @param ops unused.
-     */
-    Void ld_a_e(int[] ops) {
-        this.A = this.E;
-        return null;
-    }
-
-    /**
-     * OP code 0x7C - Load H into A.
-     * @param ops unused.
-     */
-    Void ld_a_h(int[] ops) {
-        this.A = this.H;
-        return null;
-    }
-
-    /**
-     * OP code 0x7D - Load L into A.
-     * @param ops unused.
-     */
-    Void ld_a_l(int[] ops) {
-        this.A = this.L;
-        return null;
-    }
-
-    /**
-     * OP code 0x7E - Load value at memory address specified by HL into A.
-     * @param ops unused.
-     */
-    Void ld_a_hlp(int[] ops) {
-        this.A = this.memory.getByteAt(this.getHL());
-        return null;
-    }
-
-    /**
-     * OP code 0x80 - Add A and B and store the result in A.
-     * @param ops unused.
-     */
-    Void add_a_b(int[] ops) {
-        this.A = this.add8Bit(this.A, this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0x81 - Add A and C and store the result in A.
-     * @param ops unused.
-     */
-    Void add_a_c(int[] ops) {
-        this.A = this.add8Bit(this.A, this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0x82 - Add A and D and store the result in A.
-     * @param ops unused.
-     */
-    Void add_a_d(int[] ops) {
-        this.A = this.add8Bit(this.A, this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0x83 - Add A and E and store the result in A.
-     * @param ops unused.
-     */
-    Void add_a_e(int[] ops) {
-        this.A = this.add8Bit(this.A, this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0x84 - Add A and H and store the result in A.
-     * @param ops unused.
-     */
-    Void add_a_h(int[] ops) {
-        this.A = this.add8Bit(this.A, this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0x85 - Add A and L and store the result in A.
-     * @param ops unused.
-     */
-    Void add_a_l(int[] ops) {
-        this.A = this.add8Bit(this.A, this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0x86 - Add A and the value in memory pointed to by HL and store the result in A.
-     * @param ops unused.
-     */
-    Void add_a_hlp(int[] ops) {
-        this.A = this.add8Bit(this.A, this.memory.getByteAt(this.getHL()));
-        return null;
-    }
-
-    /**
-     * OP code 0x87 - Add A and A and store the result in A.
-     * @param ops unused.
-     */
-    Void add_a_a(int[] ops) {
-        this.A = this.add8Bit(this.A, this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0x88 - Add A, B and the value of the carry flag and store the results in A.
-     * @param ops unused.
-     */
-    Void adc_a_b(int[] ops) {
-        this.A = this.adc(this.A, this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0x89 - Add A, C and the value of the carry flag and store the results in A.
-     * @param ops unused.
-     */
-    Void adc_a_c(int[] ops) {
-        this.A = this.adc(this.A, this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0x8A - Add A, D and the value of the carry flag and store the results in A.
-     * @param ops unused.
-     */
-    Void adc_a_d(int[] ops) {
-        this.A = this.adc(this.A, this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0x8B - Add A, E and the value of the carry flag and store the results in A.
-     * @param ops unused.
-     */
-    Void adc_a_e(int[] ops) {
-        this.A = this.adc(this.A, this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0x8C - Add A, H and the value of the carry flag and store the results in A.
-     * @param ops unused.
-     */
-    Void adc_a_h(int[] ops) {
-        this.A = this.adc(this.A, this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0x8D - Add A, L and the value of the carry flag and store the results in A.
-     * @param ops unused.
-     */
-    Void adc_a_l(int[] ops) {
-        this.A = this.adc(this.A, this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0x8E - Add A, the value in memory pointed to by HL and the value of the carry flag and store the results in A.
-     * @param ops unused.
-     */
-    Void adc_a_hlp(int[] ops) {
-        this.A = this.adc(this.A, this.memory.getByteAt(this.getHL()));
-        return null;
-    }
-
-    /**
-     * OP code 0x8F - Add A, B and the value of the carry flag and store the results in A.
-     * @param ops unused.
-     */
-    Void adc_a_a(int[] ops) {
-        this.A = this.adc(this.A, this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0x90 - Subtract B from A and store the result in A.
-     * @param ops unused.
-     */
-    Void sub_b(int[] ops) {
-        this.A = this.sub(this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0x91 - Subtract C from A and store the result in A.
-     * @param ops unused.
-     */
-    Void sub_c(int[] ops) {
-        this.A = this.sub(this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0x92 - Subtract D from A and store the result in A.
-     * @param ops unused.
-     */
-    Void sub_d(int[] ops) {
-        this.A = this.sub(this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0x93 - Subtract E from A and store the result in A.
-     * @param ops unused.
-     */
-    Void sub_e(int[] ops) {
-        this.A = this.sub(this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0x94 - Subtract H from A and store the result in A.
-     * @param ops unused.
-     */
-    Void sub_h(int[] ops) {
-        this.A = this.sub(this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0x95 - Subtract L from A and store the result in A.
-     * @param ops unused.
-     */
-    Void sub_l(int[] ops) {
-        this.A = this.sub(this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0x96 - Subtract the value in memory pointed to by HL from A and store the result in A.
-     * @param ops unused.
-     */
-    Void sub_hlp(int[] ops) {
-        this.A = this.sub(this.memory.getByteAt(this.getHL()));
-        return null;
-    }
-
-    /**
-     * OP code 0x97 - Subtract A from A and store the result in A.
-     * @param ops unused.
-     */
-    Void sub_a(int[] ops) {
-        this.A = this.sub(this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0x98 - Subtract B from A and store the result in A.
-     * @param ops unused.
-     */
-    Void sbc_a_b(int[] ops) {
-        this.A = this.sbc(this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0x99 - Subtract C from A and store the result in A.
-     * @param ops unused.
-     */
-    Void sbc_a_c(int[] ops) {
-        this.A = this.sbc(this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0x9A - Subtract D from A and store the result in A.
-     * @param ops unused.
-     */
-    Void sbc_a_d(int[] ops) {
-        this.A = this.sbc(this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0x9B - Subtract E from A and store the result in A.
-     * @param ops unused.
-     */
-    Void sbc_a_e(int[] ops) {
-        this.A = this.sbc(this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0x9C - Subtract H from A and store the result in A.
-     * @param ops unused.
-     */
-    Void sbc_a_h(int[] ops) {
-        this.A = this.sbc(this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0x9D - Subtract L from A and store the result in A.
-     * @param ops unused.
-     */
-    Void sbc_a_l(int[] ops) {
-        this.A = this.sbc(this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0x9E - Subtract the value in memory pointed to by HL from A and store the result in A.
-     * @param ops unused.
-     */
-    Void sbc_a_hlp(int[] ops) {
-        this.A = this.sbc(this.memory.getByteAt(this.getHL()));
-        return null;
-    }
-
-    /**
-     * OP code 0x9F - Subtract A from A and store the result in A.
-     * @param ops unused.
-     */
-    Void sbc_a_a(int[] ops) {
-        this.A = this.sbc(this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xA0 - Bitwise and A and B.
-     * @param ops Immediate 1 byte.
-     */
-    Void and_b(int[] ops) {
-        this.and(this.B);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xA1 - Bitwise and A and C.
-     * @param ops Immediate 1 byte.
-     */
-    Void and_c(int[] ops) {
-        this.and(this.C);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xA2 - Bitwise and A and D.
-     * @param ops Immediate 1 byte.
-     */
-    Void and_d(int[] ops) {
-        this.and(this.D);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xA3 - Bitwise and A and E.
-     * @param ops Immediate 1 byte.
-     */
-    Void and_e(int[] ops) {
-        this.and(this.E);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xA4 - Bitwise and A and H.
-     * @param ops Immediate 1 byte.
-     */
-    Void and_h(int[] ops) {
-        this.and(this.H);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xA5 - Bitwise and A and L.
-     * @param ops Immediate 1 byte.
-     */
-    Void and_l(int[] ops) {
-        this.and(this.L);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xA6 - Bitwise and A and the value in memory pointed to by HL.
-     * @param ops Immediate 1 byte.
-     */
-    Void and_hlp(int[] ops) {
-        this.and(this.memory.getByteAt(this.getHL()));
-
-        return null;
-    }
-
-    /**
-     * OP code 0xA7 - Bitwise and A and L.
-     * @param ops Immediate 1 byte.
-     */
-    Void and_a(int[] ops) {
-        this.and(this.A);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xA8 - Bitwise xor A and B.
-     * @param ops Immediate 1 byte.
-     */
-    Void xor_b(int[] ops) {
-        this.xor(this.B);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xA9 - Bitwise xor A and C.
-     * @param ops Immediate 1 byte.
-     */
-    Void xor_c(int[] ops) {
-        this.xor(this.C);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xAA - Bitwise xor A and D.
-     * @param ops Immediate 1 byte.
-     */
-    Void xor_d(int[] ops) {
-        this.xor(this.D);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xAB - Bitwise xor A and E.
-     * @param ops Immediate 1 byte.
-     */
-    Void xor_e(int[] ops) {
-        this.xor(this.E);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xAC - Bitwise xor A and H.
-     * @param ops Immediate 1 byte.
-     */
-    Void xor_h(int[] ops) {
-        this.xor(this.H);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xAD - Bitwise xor A and L.
-     * @param ops Immediate 1 byte.
-     */
-    Void xor_l(int[] ops) {
-        this.xor(this.L);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xAE - Bitwise xor A and the value in memory pointed to by HL.
-     * @param ops Immediate 1 byte.
-     */
-    Void xor_hlp(int[] ops) {
-        this.xor(this.memory.getByteAt(this.getHL()));
-
-        return null;
-    }
-
-    /**
-     * OP code 0xAF - Bitwise xor A and L.
-     * @param ops Immediate 1 byte.
-     */
-    Void xor_a(int[] ops) {
-        this.xor(this.A);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xB0 - Bitwise or A and B.
-     * @param ops Immediate 1 byte.
-     */
-    Void or_b(int[] ops) {
-        this.or(this.B);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xB1 - Bitwise or A and C.
-     * @param ops Immediate 1 byte.
-     */
-    Void or_c(int[] ops) {
-        this.or(this.C);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xB2 - Bitwise or A and D.
-     * @param ops Immediate 1 byte.
-     */
-    Void or_d(int[] ops) {
-        this.or(this.D);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xB3 - Bitwise or A and E.
-     * @param ops Immediate 1 byte.
-     */
-    Void or_e(int[] ops) {
-        this.or(this.E);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xB4 - Bitwise or A and H.
-     * @param ops Immediate 1 byte.
-     */
-    Void or_h(int[] ops) {
-        this.or(this.H);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xB5 - Bitwise or A and L.
-     * @param ops Immediate 1 byte.
-     */
-    Void or_l(int[] ops) {
-        this.or(this.L);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xB6 - Bitwise or A and the value in memory pointed to by HL.
-     * @param ops Immediate 1 byte.
-     */
-    Void or_hlp(int[] ops) {
-        this.or(this.memory.getByteAt(this.getHL()));
-
-        return null;
-    }
-
-    /**
-     * OP code 0xB7 - Bitwise or A and L.
-     * @param ops Immediate 1 byte.
-     */
-    Void or_a(int[] ops) {
-        this.or(this.A);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xB8 - Compare A and B.
-     * @param ops Immediate 1 byte.
-     */
-    Void cp_b(int[] ops) {
-        this.cp(this.B);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xB9 - Compare A and C.
-     * @param ops Immediate 1 byte.
-     */
-    Void cp_c(int[] ops) {
-        this.cp(this.C);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xBA - Compare A and D.
-     * @param ops Immediate 1 byte.
-     */
-    Void cp_d(int[] ops) {
-        this.cp(this.D);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xBB - Compare A and E.
-     * @param ops Immediate 1 byte.
-     */
-    Void cp_e(int[] ops) {
-        this.cp(this.E);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xBC - Compare A and H.
-     * @param ops Immediate 1 byte.
-     */
-    Void cp_h(int[] ops) {
-        this.cp(this.H);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xBD - Compare A and L.
-     * @param ops Immediate 1 byte.
-     */
-    Void cp_l(int[] ops) {
-        this.cp(this.L);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xBE - Compare A and the value in memory pointed to by HL.
-     * @param ops Immediate 1 byte.
-     */
-    Void cp_hlp(int[] ops) {
-        this.cp(this.memory.getByteAt(this.getHL()));
-
-        return null;
-    }
-
-    /**
-     * OP code 0xBF - Compare A and L.
-     * @param ops Immediate 1 byte.
-     */
-    Void cp_a(int[] ops) {
-        this.cp(this.A);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xC0 - If zero is not set, pop two bytes off the stack and return them to the PC.
-     * @param ops unused.
-     */
-    Void ret_nz(int[] ops) {
-        if((this.F & FLAG_ZERO) != FLAG_ZERO) {
-            this.PC = this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP));
-            this.SP += 2;
-
-            this.incrementCycles(20);
-        } else {
-            this.incrementCycles(8);
-        }
-
-        return null;
-    }
-
-    /**
-     * OP code 0xC1 - Pop two bytes off the stack and return them to the BC.
-     * @param ops unused.
-     */
-    Void pop_bc(int[] ops) {
-        this.setBC(this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP)));
-        this.SP += 2;
-
-        return null;
-    }
-
-    /**
-     * OP code 0xC2 - If the zero flag is not set, jump to the specified address.
-     * @param ops Immediate 2 bytes.
-     */
-    Void jp_nz_xx(int[] ops) {
-        if((this.F & FLAG_ZERO) != FLAG_ZERO) {
-            this.PC = this.combineBytes(ops[0], ops[1]) - 2;
-
-            this.incrementCycles(16);
-        } else {
-            this.incrementCycles(12);
-        }
-
-        return null;
-    }
-
-    /**
-     * OP code 0xC3 - Jump to the specified address.
-     * @param ops Immediate 2 bytes.
-     */
-    Void jp_xx(int[] ops) {
-        this.PC = this.combineBytes(ops[0], ops[1]) - 2;
-
-        return null;
-    }
-
-    /**
-     * OP code 0xC4 - If the zero is not set, call the specified address.
-     * @param ops Immediate 2 bytes.
-     */
-    Void call_nz_xx(int[] ops) {
-        if((this.F & FLAG_ZERO) != FLAG_ZERO) {
-            this.PC += 2;
-            this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
-            this.memory.setByteAt(this.SP - 2, (this.PC) & 0xFF);
-
-            this.PC = this.combineBytes(ops[0], ops[1]) - 2;
-            this.SP -= 2;
-            this.incrementCycles(24);
-        } else {
-            this.incrementCycles(12);
-        }
-
-        return null;
-    }
-
-    /**
-     * OP code 0xC5 - Push the contents of BC onto the stack.
-     * @param ops unused.
-     */
-    Void push_bc(int[] ops) {
-        this.memory.setByteAt(this.SP - 1, (this.getBC() >> 8) & 0xFF);
-        this.memory.setByteAt(this.SP - 2, (this.getBC()) & 0xFF);
-        this.SP -= 2;
-
-        return null;
-    }
-
-    /**
-     * OP code 0xC6 - Add A and an 8-bit number.
-     * @param ops Immediate 1 byte.
-     */
-    Void add_a_x(int[] ops) {
-        this.A = this.add8Bit(this.A, ops[0]);
-        return null;
-    }
-
-    /**
-     * OP code 0xC7 - Push PC onto stack and reset PC to 0x00.
-     * @param ops unused.
-     */
-    Void rst_00(int[] ops) {
-        this.rst(0x00);
-        return null;
-    }
-
-    /**
-     * OP code 0xC8 - If zero is set, pop two bytes off the stack and return them to the PC.
-     * @param ops unused.
-     */
-    Void ret_z(int[] ops) {
-        if((this.F & FLAG_ZERO) == FLAG_ZERO) {
-            this.PC = this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP));
-            this.SP += 2;
-
-            this.incrementCycles(20);
-        } else {
-            this.incrementCycles(8);
-        }
-
-        return null;
-    }
-
-    /**
-     * OP code 0xC9 - Pop two bytes off the stack and return them to the PC.
-     * @param ops unused.
-     */
-    Void ret(int[] ops) {
-        this.PC = this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP));
-        this.SP += 2;
-
-        return null;
-    }
-
-    /**
-     * OP code 0xCA - If the zero flag is set, jump to the specified address.
-     * @param ops Immediate 2 bytes.
-     */
-    Void jp_z_xx(int[] ops) {
-        if((this.F & FLAG_ZERO) == FLAG_ZERO) {
-            this.PC = this.combineBytes(ops[0], ops[1]) - 2;
-
-            this.incrementCycles(16);
-        } else {
-            this.incrementCycles(12);
-        }
-
-        return null;
-    }
-
-    /**
-     * OP code 0xCC - If the zero is set, call the specified address.
-     * @param ops Immediate 2 bytes.
-     */
-    Void call_z_xx(int[] ops) {
-        if((this.F & FLAG_ZERO) == FLAG_ZERO) {
-            this.PC += 2;
-            this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
-            this.memory.setByteAt(this.SP - 2, (this.PC) & 0xFF);
-
-            this.PC = this.combineBytes(ops[0], ops[1]) - 2;
-            this.SP -= 2;
-            this.incrementCycles(24);
-        } else {
-            this.incrementCycles(12);
-        }
-
-        return null;
-    }
-
-    /**
-     * OP code 0xCD - Call the specified address.
-     * @param ops Immediate 2 bytes.
-     */
-    Void call_xx(int[] ops) {
-        this.PC += 2;
-        this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
-        this.memory.setByteAt(this.SP - 2, (this.PC) & 0xFF);
-
-        this.PC = this.combineBytes(ops[0], ops[1]) - 2;
-        this.SP -= 2;
-
-        return null;
-    }
-
-    /**
-     * OP code 0xCE - Add A, an 8-bit value and the value of the carry flag and store the results in A.
-     * @param ops Immediate 1 byte.
-     */
-    Void adc_a_x(int[] ops) {
-        this.A = this.adc(this.A, ops[0]);
-        return null;
-    }
-
-    /**
-     * OP code 0xCF - Push PC onto stack and reset PC to 0x08.
-     * @param ops unused.
-     */
-    Void rst_08(int[] ops) {
-        this.rst(0x08);
-        return null;
-    }
-
-    /**
-     * OP code 0xD0 - If carry is not set, pop two bytes off the stack and return them to the PC.
-     * @param ops unused.
-     */
-    Void ret_nc(int[] ops) {
-        if((this.F & FLAG_CARRY) != FLAG_CARRY) {
-            this.PC = this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP));
-            this.SP += 2;
-
-            this.incrementCycles(20);
-        } else {
-            this.incrementCycles(8);
-        }
-
-        return null;
-    }
-
-    /**
-     * OP code 0xD1 - Pop two bytes off the stack and return them to the DE.
-     * @param ops unused.
-     */
-    Void pop_de(int[] ops) {
-        this.setDE(this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP)));
-        this.SP += 2;
-
-        return null;
-    }
-
-    /**
-     * OP code 0xD2 - If the carry flag is not set, jump to the specified address.
-     * @param ops Immediate 2 bytes.
-     */
-    Void jp_nc_xx(int[] ops) {
-        if((this.F & FLAG_CARRY) != FLAG_CARRY) {
-            this.PC = this.combineBytes(ops[0], ops[1]) - 2;
-
-            this.incrementCycles(16);
-        } else {
-            this.incrementCycles(12);
-        }
-
-        return null;
-    }
-
-    /**
-     * OP code 0xD4 - If the carry not is set, call the specified address.
-     * @param ops Immediate 2 bytes.
-     */
-    Void call_nc_xx(int[] ops) {
-        if((this.F & FLAG_CARRY) != FLAG_CARRY) {
-            this.PC += 2;
-            this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
-            this.memory.setByteAt(this.SP - 2, (this.PC) & 0xFF);
-
-            this.PC = this.combineBytes(ops[0], ops[1]) - 2;
-            this.SP -= 2;
-            this.incrementCycles(24);
-        } else {
-            this.incrementCycles(12);
-        }
-
-        return null;
-    }
-
-    /**
-     * OP code 0xD5 - Push the contents of DE onto the stack.
-     * @param ops unused.
-     */
-    Void push_de(int[] ops) {
-        this.memory.setByteAt(this.SP - 1, (this.getDE() >> 8) & 0xFF);
-        this.memory.setByteAt(this.SP - 2, (this.getDE()) & 0xFF);
-        this.SP -= 2;
-
-        return null;
-    }
-
-    /**
-     * OP code 0xD6 - Subtract immediate byte from A and store the result in A.
-     * @param ops Immediate 1 byte.
-     */
-    Void sub_x(int[] ops) {
-        this.A = this.sub(ops[0]);
-        return null;
-    }
-
-    /**
-     * OP code 0xD7 - Push PC onto stack and reset PC to 0x10.
-     * @param ops unused.
-     */
-    Void rst_10(int[] ops) {
-        this.rst(0x10);
-        return null;
-    }
-
-    /**
-     * OP code 0xD8 - If carry is set, pop two bytes off the stack and return them to the PC.
-     * @param ops unused.
-     */
-    Void ret_c(int[] ops) {
-        if((this.F & FLAG_CARRY) == FLAG_CARRY) {
-            this.PC = this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP));
-            this.SP += 2;
-
-            this.incrementCycles(20);
-        } else {
-            this.incrementCycles(8);
-        }
-
-        return null;
-    }
-
-    /**
-     * OP code 0xD9 - Pop two bytes off the stack and return them to the PC and enable the IME.
-     * @param ops unused.
-     */
-    Void reti(int[] ops) {
-        this.PC = this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP));
-        this.SP += 2;
-
-        this.ime = true;
-
-        return null;
-    }
-
-    /**
-     * OP code 0xDA - If the carry flag is set, jump to the specified address.
-     * @param ops Immediate 2 bytes.
-     */
-    Void jp_c_xx(int[] ops) {
-        if((this.F & FLAG_CARRY) == FLAG_CARRY) {
-            this.PC = this.combineBytes(ops[0], ops[1]) - 2;
-
-            this.incrementCycles(16);
-        } else {
-            this.incrementCycles(12);
-        }
-
-        return null;
-    }
-
-    /**
-     * OP code 0xDC - If the carry is set, call the specified address.
-     * @param ops Immediate 2 bytes.
-     */
-    Void call_c_xx(int[] ops) {
-        if((this.F & FLAG_CARRY) == FLAG_CARRY) {
-            this.PC += 2;
-            this.memory.setByteAt(this.SP - 1, (this.PC >> 8) & 0xFF);
-            this.memory.setByteAt(this.SP - 2, (this.PC) & 0xFF);
-
-            this.PC = this.combineBytes(ops[0], ops[1]) - 2;
-            this.SP -= 2;
-            this.incrementCycles(24);
-        } else {
-            this.incrementCycles(12);
-        }
-
-        return null;
-    }
-
-    /**
-     * OP code 0xDE - Subtract immediate byte from A and store the result in A.
-     * @param ops unused.
-     */
-    Void sbc_a_x(int[] ops) {
-        this.A = this.sbc(ops[0]);
-        return null;
-    }
-
-    /**
-     * OP code 0xDF - Push PC onto stack and reset PC to 0x18.
-     * @param ops unused.
-     */
-    Void rst_18(int[] ops) {
-        this.rst(0x18);
-        return null;
-    }
-
-    /**
-     * OP code 0xE0 - Load A into the value at memory address specified by 0xFF00 + immediate byte.
-     * @param ops Immediate 1 byte.
-     */
-    Void ld_xp_a(int[] ops) {
-        this.memory.setByteAt(0xFF00 + ops[0], this.A);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xE1 - Pop two bytes off the stack and return them to the HL.
-     * @param ops unused.
-     */
-    Void pop_hl(int[] ops) {
-        this.setHL(this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP)));
-        this.SP += 2;
-
-        return null;
-    }
-
-    /**
-     * OP code 0xE2 - Load A into the value at memory address specified by 0xFF00 + C.
-     * @param ops unused.
-     */
-    Void ld_cp_a(int[] ops) {
-        this.memory.setByteAt(0xFF00 + (this.C & 0xFF), this.A);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xE5 - Push the contents of HL onto the stack.
-     * @param ops unused.
-     */
-    Void push_hl(int[] ops) {
-        this.memory.setByteAt(this.SP - 1, (this.getHL() >> 8) & 0xFF);
-        this.memory.setByteAt(this.SP - 2, (this.getHL()) & 0xFF);
-        this.SP -= 2;
-
-        return null;
-    }
-
-    /**
-     * OP code 0xE6 - Bitwise and A and immediate byte.
-     * @param ops Immediate 1 byte.
-     */
-    Void and_x(int[] ops) {
-        this.and(ops[0]);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xE7 - Push PC onto stack and reset PC to 0x20.
-     * @param ops unused.
-     */
-    Void rst_20(int[] ops) {
-        this.rst(0x20);
-        return null;
-    }
-
-    /**
-     * OP code 0xE8 - Add immediate byte to SP.
-     * @param ops Immediate 1 byte.
-     */
-    Void add_sp_x(int[] ops) {
-        this.SP = this.add16Bit(this.SP, ops[0]);
-        this.setFlags(FLAG_ZERO);
-        return null;
-    }
-
-    /**
-     * OP code 0xE9 - Jump to the address pointed to by HL.
-     * @param ops unused.
-     */
-    Void jp_hlp(int[] ops) {
-        this.PC = this.getHL();
-
-        return null;
-    }
-
-    /**
-     * OP code 0xEA - Load A into the value at memory address specified by immediate 2 bytes.
-     * @param ops Immediate 2 bytes.
-     */
-    Void ld_xxp_a(int[] ops) {
-        this.memory.setByteAt(this.combineBytes(ops[0], ops[1]), this.A);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xEE - Bitwise xor A and immediate byte.
-     * @param ops Immediate 1 byte.
-     */
-    Void xor_x(int[] ops) {
-        this.xor(ops[0]);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xEF - Push PC onto stack and reset PC to 0x28.
-     * @param ops unused.
-     */
-    Void rst_28(int[] ops) {
-        this.rst(0x28);
-        return null;
-    }
-
-    /**
-     * OP code 0xF0 - Load value at memory address specified by 0xFF00 + immediate byte into A.
-     * @param ops Immediate 1 byte.
-     */
-    Void ld_a_xp(int[] ops) {
-        this.A = this.memory.getByteAt(0xFF00 + ops[0]);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xF1 - Pop two bytes off the stack and return them to the AF.
-     * @param ops unused.
-     */
-    Void pop_af(int[] ops) {
-        this.setAF(this.combineBytes(this.memory.getByteAt(this.SP + 1), this.memory.getByteAt(this.SP)));
-        this.SP += 2;
-
-        return null;
-    }
-
-    /**
-     * OP code 0xF2 - Load A into the value at memory address specified by 0xFF00 + C.
-     * @param ops unused.
-     */
-    Void ld_a_cp(int[] ops) {
-        this.A = this.memory.getByteAt(0xFF00 + (this.C & 0xFF));
-
-        return null;
-    }
-
-    /**
-     * OP code 0xF3 - Disables the IME
-     * @param ops unused.
-     */
-    Void di(int[] ops) {
-        this.ime = false;
-        return null;
-    }
-
-    /**
-     * OP code 0xF5 - Push the contents of AF onto the stack.
-     * @param ops unused.
-     */
-    Void push_af(int[] ops) {
-        this.memory.setByteAt(this.SP - 1, (this.getAF() >> 8) & 0xFF);
-        this.memory.setByteAt(this.SP - 2, (this.getAF()) & 0xFF);
-        this.SP -= 2;
-
-        return null;
-    }
-
-    /**
-     * OP code 0xF6 - Bitwise or A and immediate byte.
-     * @param ops Immediate 1 byte.
-     */
-    Void or_x(int[] ops) {
-        this.or(ops[0]);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xF7 - Push PC onto stack and reset PC to 0x30.
-     * @param ops unused.
-     */
-    Void rst_30(int[] ops) {
-        this.rst(0x30);
-        return null;
-    }
-
-    /**
-     * OP code 0xF8 - Immediate byte is added to SP and the result is stored in HL.
-     * @param ops Immediate 1 byte.
-     */
-    Void ld_hl_sp_x(int[] ops) {
-        int result = this.SP + ops[0];
-
-        if((result & 0xFFFF0000) != 0) {
-            this.setFlags(FLAG_CARRY);
-        } else {
-            this.resetFlags(FLAG_CARRY);
-        }
-
-        if(((this.SP & 0x0F) + (ops[0] & 0x0F)) > 0x0F) {
-            this.setFlags(FLAG_HALF);
-        } else {
-            this.resetFlags(FLAG_HALF);
-        }
-
-        this.resetFlags(FLAG_ZERO | FLAG_SUB);
-
-        this.setHL(result & 0xFFFF);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xF9 - Loads HL into SP.
-     * @param ops unused.
-     */
-    Void ld_sp_hl(int[] ops) {
-        this.SP = this.getHL();
-
-        return null;
-    }
-
-    /**
-     * OP code 0xFA - Loads the value in memory specified by the immediate 2 bytes into A.
-     * @param ops Immediate 2 bytes.
-     */
-    Void ld_a_xxp(int[] ops) {
-        this.A = this.memory.getByteAt(this.combineBytes(ops[0], ops[1]));
-
-        return null;
-    }
-
-    /**
-     * OP code 0xFB - Enables the IME. The IME is not enabled until the next cycle.
-     * @param ops unused.
-     */
-    Void ei(int[] ops) {
-        this.pendingEnableIME = true;
-        return null;
-    }
-
-    /**
-     * OP code 0xFE - Compare A and immediate byte.
-     * @param ops Immediate 1 byte.
-     */
-    Void cp_x(int[] ops) {
-        this.cp(ops[0]);
-
-        return null;
-    }
-
-    /**
-     * OP code 0xFF - Push PC onto stack and reset PC to 0x38.
-     * @param ops unused.
-     */
-    Void rst_38(int[] ops) {
-        this.rst(0x38);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB00 - Rotates the contents of B to the left.
-     * @param ops unused.
-     */
-    Void rlc_b(int[] ops) {
-        this.B = this.rlc(this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB01 - Rotates the contents of C to the left.
-     * @param ops unused.
-     */
-    Void rlc_c(int[] ops) {
-        this.C = this.rlc(this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB02 - Rotates the contents of D to the left.
-     * @param ops unused.
-     */
-    Void rlc_d(int[] ops) {
-        this.D = this.rlc(this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB03 - Rotates the contents of E to the left.
-     * @param ops unused.
-     */
-    Void rlc_e(int[] ops) {
-        this.E = this.rlc(this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB04 - Rotates the contents of H to the left.
-     * @param ops unused.
-     */
-    Void rlc_h(int[] ops) {
-        this.H = this.rlc(this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB05 - Rotates the contents of L to the left.
-     * @param ops unused.
-     */
-    Void rlc_l(int[] ops) {
-        this.L = this.rlc(this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB06 - Rotates the contents of the value in memory pointed to by HL to the left.
-     * @param ops unused.
-     */
-    Void rlc_hlp(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.rlc(this.memory.getByteAt(this.getHL())));
-        return null;
-    }
-
-    /**
-     * OP code 0xCB07 - Rotates the contents of A to the left.
-     * @param ops unused.
-     */
-    Void rlc_a(int[] ops) {
-        this.A = this.rlc(this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB08 - Rotates the contents of B to the right.
-     * @param ops unused.
-     */
-    Void rrc_b(int[] ops) {
-        this.B = this.rrc(this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB09 - Rotates the contents of C to the right.
-     * @param ops unused.
-     */
-    Void rrc_c(int[] ops) {
-        this.C = this.rrc(this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB0A - Rotates the contents of D to the right.
-     * @param ops unused.
-     */
-    Void rrc_d(int[] ops) {
-        this.D = this.rrc(this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB0B - Rotates the contents of E to the right.
-     * @param ops unused.
-     */
-    Void rrc_e(int[] ops) {
-        this.E = this.rrc(this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB0C - Rotates the contents of H to the right.
-     * @param ops unused.
-     */
-    Void rrc_h(int[] ops) {
-        this.H = this.rrc(this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB0D - Rotates the contents of L to the right.
-     * @param ops unused.
-     */
-    Void rrc_l(int[] ops) {
-        this.L = this.rrc(this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB0E - Rotates the contents of the value in memory pointed to by HL to the right.
-     * @param ops unused.
-     */
-    Void rrc_hlp(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.rrc(this.memory.getByteAt(this.getHL())));
-        return null;
-    }
-
-    /**
-     * OP code 0xCB0F - Rotates the contents of A to the right.
-     * @param ops unused.
-     */
-    Void rrc_a(int[] ops) {
-        this.A = this.rrc(this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB10 - Rotates the contents of B to the left.
-     * @param ops unused.
-     */
-    Void rl_b(int[] ops) {
-        this.B = this.rl(this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB11 - Rotates the contents of C to the left.
-     * @param ops unused.
-     */
-    Void rl_c(int[] ops) {
-        this.C = this.rl(this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB12 - Rotates the contents of D to the left.
-     * @param ops unused.
-     */
-    Void rl_d(int[] ops) {
-        this.D = this.rl(this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB13 - Rotates the contents of E to the left.
-     * @param ops unused.
-     */
-    Void rl_e(int[] ops) {
-        this.E = this.rl(this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB14 - Rotates the contents of H to the left.
-     * @param ops unused.
-     */
-    Void rl_h(int[] ops) {
-        this.H = this.rl(this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB15 - Rotates the contents of L to the left.
-     * @param ops unused.
-     */
-    Void rl_l(int[] ops) {
-        this.L = this.rl(this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB16 - Rotates the contents of the value in memory pointed to by HL to the left.
-     * @param ops unused.
-     */
-    Void rl_hlp(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.rl(this.memory.getByteAt(this.getHL())));
-        return null;
-    }
-
-    /**
-     * OP code 0xCB17 - Rotates the contents of A to the left.
-     * @param ops unused.
-     */
-    Void rl_a(int[] ops) {
-        this.A = this.rl(this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB18 - Rotates the contents of B to the right.
-     * @param ops unused.
-     */
-    Void rr_b(int[] ops) {
-        this.B = this.rr(this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB19 - Rotates the contents of C to the right.
-     * @param ops unused.
-     */
-    Void rr_c(int[] ops) {
-        this.C = this.rr(this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB1A - Rotates the contents of D to the right.
-     * @param ops unused.
-     */
-    Void rr_d(int[] ops) {
-        this.D = this.rr(this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB1B - Rotates the contents of E to the right.
-     * @param ops unused.
-     */
-    Void rr_e(int[] ops) {
-        this.E = this.rr(this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB1C - Rotates the contents of H to the right.
-     * @param ops unused.
-     */
-    Void rr_h(int[] ops) {
-        this.H = this.rr(this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB1D - Rotates the contents of L to the right.
-     * @param ops unused.
-     */
-    Void rr_l(int[] ops) {
-        this.L = this.rr(this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB1E - Rotates the contents of the value in memory pointed to by HL to the right.
-     * @param ops unused.
-     */
-    Void rr_hlp(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.rr(this.memory.getByteAt(this.getHL())));
-        return null;
-    }
-
-    /**
-     * OP code 0xCB1F - Rotates the contents of A to the right.
-     * @param ops unused.
-     */
-    Void rr_a(int[] ops) {
-        this.A = this.rr(this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB20 - Shifts the contents of B to the left.
-     * @param ops unused.
-     */
-    Void sla_b(int[] ops) {
-        this.B = this.sla(this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB21 - Shifts the contents of C to the left.
-     * @param ops unused.
-     */
-    Void sla_c(int[] ops) {
-        this.C = this.sla(this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB22 - Shifts the contents of D to the left.
-     * @param ops unused.
-     */
-    Void sla_d(int[] ops) {
-        this.D = this.sla(this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB23 - Shifts the contents of E to the left.
-     * @param ops unused.
-     */
-    Void sla_e(int[] ops) {
-        this.E = this.sla(this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB24 - Shifts the contents of H to the left.
-     * @param ops unused.
-     */
-    Void sla_h(int[] ops) {
-        this.H = this.sla(this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB25 - Shifts the contents of L to the left.
-     * @param ops unused.
-     */
-    Void sla_l(int[] ops) {
-        this.L = this.sla(this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB26 - Shifts the contents of the value in memory pointed to by HL to the left.
-     * @param ops unused.
-     */
-    Void sla_hlp(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.sla(this.memory.getByteAt(this.getHL())));
-        return null;
-    }
-
-    /**
-     * OP code 0xCB27 - Shifts the contents of A to the left.
-     * @param ops unused.
-     */
-    Void sla_a(int[] ops) {
-        this.A = this.sla(this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB28 - Shifts the contents of B to the right.
-     * @param ops unused.
-     */
-    Void sra_b(int[] ops) {
-        this.B = this.sra(this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB29 - Shifts the contents of C to the right.
-     * @param ops unused.
-     */
-    Void sra_c(int[] ops) {
-        this.C = this.sra(this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB2A - Shifts the contents of D to the right.
-     * @param ops unused.
-     */
-    Void sra_d(int[] ops) {
-        this.D = this.sra(this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB2B - Shifts the contents of E to the right.
-     * @param ops unused.
-     */
-    Void sra_e(int[] ops) {
-        this.E = this.sra(this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB2C - Shifts the contents of H to the right.
-     * @param ops unused.
-     */
-    Void sra_h(int[] ops) {
-        this.H = this.sra(this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB2D - Shifts the contents of L to the right.
-     * @param ops unused.
-     */
-    Void sra_l(int[] ops) {
-        this.L = this.sra(this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB2E - Shifts the contents of the value in memory pointed to by HL to the right.
-     * @param ops unused.
-     */
-    Void sra_hlp(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.sra(this.memory.getByteAt(this.getHL())));
-        return null;
-    }
-
-    /**
-     * OP code 0xCB2F - Shifts the contents of A to the right.
-     * @param ops unused.
-     */
-    Void sra_a(int[] ops) {
-        this.A = this.sra(this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB30 - Swaps the nibbles of B.
-     * @param ops unused.
-     */
-    Void swap_b(int[] ops) {
-        this.B = this.swap(this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB31 - Swaps the nibbles of C.
-     * @param ops unused.
-     */
-    Void swap_c(int[] ops) {
-        this.C = this.swap(this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB32 - Swaps the nibbles of D.
-     * @param ops unused.
-     */
-    Void swap_d(int[] ops) {
-        this.D = this.swap(this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB33 - Swaps the nibbles of E.
-     * @param ops unused.
-     */
-    Void swap_e(int[] ops) {
-        this.E = this.swap(this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB34 - Swaps the nibbles of H.
-     * @param ops unused.
-     */
-    Void swap_h(int[] ops) {
-        this.H = this.swap(this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB35 - Swaps the nibbles of L.
-     * @param ops unused.
-     */
-    Void swap_l(int[] ops) {
-        this.L = this.swap(this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB36 - Swaps the nibbles of the value in memory pointed to by HL.
-     * @param ops unused.
-     */
-    Void swap_hlp(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.swap(this.memory.getByteAt(this.getHL())));
-        return null;
-    }
-
-    /**
-     * OP code 0xCB37 - Swaps the nibbles of A.
-     * @param ops unused.
-     */
-    Void swap_a(int[] ops) {
-        this.A = this.swap(this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB38 - Shifts the contents of B to the right.
-     * @param ops unused.
-     */
-    Void srl_b(int[] ops) {
-        this.B = this.srl(this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB39 - Shifts the contents of C to the right.
-     * @param ops unused.
-     */
-    Void srl_c(int[] ops) {
-        this.C = this.srl(this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB3A - Shifts the contents of D to the right.
-     * @param ops unused.
-     */
-    Void srl_d(int[] ops) {
-        this.D = this.srl(this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB3B - Shifts the contents of E to the right.
-     * @param ops unused.
-     */
-    Void srl_e(int[] ops) {
-        this.E = this.srl(this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB3C - Shifts the contents of H to the right.
-     * @param ops unused.
-     */
-    Void srl_h(int[] ops) {
-        this.H = this.srl(this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB3D - Shifts the contents of L to the right.
-     * @param ops unused.
-     */
-    Void srl_l(int[] ops) {
-        this.L = this.srl(this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB3E - Shifts the contents of the value in memory pointed to by HL to the right.
-     * @param ops unused.
-     */
-    Void srl_hlp(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.srl(this.memory.getByteAt(this.getHL())));
-        return null;
-    }
-
-    /**
-     * OP code 0xCB3F - Shifts the contents of A to the right.
-     * @param ops unused.
-     */
-    Void srl_a(int[] ops) {
-        this.A = this.srl(this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB40 - Sets the zero flag to the compliment of the 0th bit of B.
-     * @param ops unused.
-     */
-    Void bit_0_b(int[] ops) {
-        this.bit(0, this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB41 - Sets the zero flag to the compliment of the 0th bit of C.
-     * @param ops unused.
-     */
-    Void bit_0_c(int[] ops) {
-        this.bit(0, this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB42 - Sets the zero flag to the compliment of the 0th bit of D.
-     * @param ops unused.
-     */
-    Void bit_0_d(int[] ops) {
-        this.bit(0, this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB43 - Sets the zero flag to the compliment of the 0th bit of E.
-     * @param ops unused.
-     */
-    Void bit_0_e(int[] ops) {
-        this.bit(0, this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB44 - Sets the zero flag to the compliment of the 0th bit of H.
-     * @param ops unused.
-     */
-    Void bit_0_h(int[] ops) {
-        this.bit(0, this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB45 - Sets the zero flag to the compliment of the 0th bit of L.
-     * @param ops unused.
-     */
-    Void bit_0_l(int[] ops) {
-        this.bit(0, this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB46 - Sets the zero flag to the compliment of the 0th bit of the value in memory pointed to by HL.
-     * @param ops unused.
-     */
-    Void bit_0_hlp(int[] ops) {
-        this.bit(0, this.memory.getByteAt(this.getHL()));
-        return null;
-    }
-
-    /**
-     * OP code 0xCB47 - Sets the zero flag to the compliment of the 0th bit of A.
-     * @param ops unused.
-     */
-    Void bit_0_a(int[] ops) {
-        this.bit(0, this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB48 - Sets the zero flag to the compliment of the 1st bit of B.
-     * @param ops unused.
-     */
-    Void bit_1_b(int[] ops) {
-        this.bit(1, this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB49 - Sets the zero flag to the compliment of the 1st bit of C.
-     * @param ops unused.
-     */
-    Void bit_1_c(int[] ops) {
-        this.bit(1, this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB4A - Sets the zero flag to the compliment of the 1st bit of D.
-     * @param ops unused.
-     */
-    Void bit_1_d(int[] ops) {
-        this.bit(1, this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB4B - Sets the zero flag to the compliment of the 1st bit of E.
-     * @param ops unused.
-     */
-    Void bit_1_e(int[] ops) {
-        this.bit(1, this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB4C - Sets the zero flag to the compliment of the 1st bit of H.
-     * @param ops unused.
-     */
-    Void bit_1_h(int[] ops) {
-        this.bit(1, this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB4D - Sets the zero flag to the compliment of the 1st bit of L.
-     * @param ops unused.
-     */
-    Void bit_1_l(int[] ops) {
-        this.bit(1, this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB4E - Sets the zero flag to the compliment of the 1st bit of the value in memory pointed to by HL.
-     * @param ops unused.
-     */
-    Void bit_1_hlp(int[] ops) {
-        this.bit(1, this.memory.getByteAt(this.getHL()));
-        return null;
-    }
-
-    /**
-     * OP code 0xCB4F - Sets the zero flag to the compliment of the 1st bit of A.
-     * @param ops unused.
-     */
-    Void bit_1_a(int[] ops) {
-        this.bit(1, this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB50 - Sets the zero flag to the compliment of the 2nd bit of B.
-     * @param ops unused.
-     */
-    Void bit_2_b(int[] ops) {
-        this.bit(2, this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB51 - Sets the zero flag to the compliment of the 2nd bit of C.
-     * @param ops unused.
-     */
-    Void bit_2_c(int[] ops) {
-        this.bit(2, this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB52 - Sets the zero flag to the compliment of the 2nd bit of D.
-     * @param ops unused.
-     */
-    Void bit_2_d(int[] ops) {
-        this.bit(2, this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB53 - Sets the zero flag to the compliment of the 2nd bit of E.
-     * @param ops unused.
-     */
-    Void bit_2_e(int[] ops) {
-        this.bit(2, this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB54 - Sets the zero flag to the compliment of the 2nd bit of H.
-     * @param ops unused.
-     */
-    Void bit_2_h(int[] ops) {
-        this.bit(2, this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB55 - Sets the zero flag to the compliment of the 2nd bit of L.
-     * @param ops unused.
-     */
-    Void bit_2_l(int[] ops) {
-        this.bit(2, this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB56 - Sets the zero flag to the compliment of the 2nd bit of the value in memory pointed to by HL.
-     * @param ops unused.
-     */
-    Void bit_2_hlp(int[] ops) {
-        this.bit(2, this.memory.getByteAt(this.getHL()));
-        return null;
-    }
-
-    /**
-     * OP code 0xCB57 - Sets the zero flag to the compliment of the 2nd bit of A.
-     * @param ops unused.
-     */
-    Void bit_2_a(int[] ops) {
-        this.bit(2, this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB58 - Sets the zero flag to the compliment of the 3rd bit of B.
-     * @param ops unused.
-     */
-    Void bit_3_b(int[] ops) {
-        this.bit(3, this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB59 - Sets the zero flag to the compliment of the 3rd bit of C.
-     * @param ops unused.
-     */
-    Void bit_3_c(int[] ops) {
-        this.bit(3, this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB5A - Sets the zero flag to the compliment of the 3rd bit of D.
-     * @param ops unused.
-     */
-    Void bit_3_d(int[] ops) {
-        this.bit(3, this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB5B - Sets the zero flag to the compliment of the 3rd bit of E.
-     * @param ops unused.
-     */
-    Void bit_3_e(int[] ops) {
-        this.bit(3, this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB5C - Sets the zero flag to the compliment of the 3rd bit of H.
-     * @param ops unused.
-     */
-    Void bit_3_h(int[] ops) {
-        this.bit(3, this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB5D - Sets the zero flag to the compliment of the 3rd bit of L.
-     * @param ops unused.
-     */
-    Void bit_3_l(int[] ops) {
-        this.bit(3, this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB5E - Sets the zero flag to the compliment of the 3rd bit of the value in memory pointed to by HL.
-     * @param ops unused.
-     */
-    Void bit_3_hlp(int[] ops) {
-        this.bit(3, this.memory.getByteAt(this.getHL()));
-        return null;
-    }
-
-    /**
-     * OP code 0xCB5F - Sets the zero flag to the compliment of the 3rd bit of A.
-     * @param ops unused.
-     */
-    Void bit_3_a(int[] ops) {
-        this.bit(3, this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB60 - Sets the zero flag to the compliment of the 4th bit of B.
-     * @param ops unused.
-     */
-    Void bit_4_b(int[] ops) {
-        this.bit(4, this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB61 - Sets the zero flag to the compliment of the 4th bit of C.
-     * @param ops unused.
-     */
-    Void bit_4_c(int[] ops) {
-        this.bit(4, this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB62 - Sets the zero flag to the compliment of the 4th bit of D.
-     * @param ops unused.
-     */
-    Void bit_4_d(int[] ops) {
-        this.bit(4, this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB63 - Sets the zero flag to the compliment of the 4th bit of E.
-     * @param ops unused.
-     */
-    Void bit_4_e(int[] ops) {
-        this.bit(4, this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB64 - Sets the zero flag to the compliment of the 4th bit of H.
-     * @param ops unused.
-     */
-    Void bit_4_h(int[] ops) {
-        this.bit(4, this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB65 - Sets the zero flag to the compliment of the 4th bit of L.
-     * @param ops unused.
-     */
-    Void bit_4_l(int[] ops) {
-        this.bit(4, this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB66 - Sets the zero flag to the compliment of the 4th bit of the value in memory pointed to by HL.
-     * @param ops unused.
-     */
-    Void bit_4_hlp(int[] ops) {
-        this.bit(4, this.memory.getByteAt(this.getHL()));
-        return null;
-    }
-
-    /**
-     * OP code 0xCB67 - Sets the zero flag to the compliment of the 4th bit of A.
-     * @param ops unused.
-     */
-    Void bit_4_a(int[] ops) {
-        this.bit(4, this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB68 - Sets the zero flag to the compliment of the 5th bit of B.
-     * @param ops unused.
-     */
-    Void bit_5_b(int[] ops) {
-        this.bit(5, this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB69 - Sets the zero flag to the compliment of the 5th bit of C.
-     * @param ops unused.
-     */
-    Void bit_5_c(int[] ops) {
-        this.bit(5, this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB6A - Sets the zero flag to the compliment of the 5th bit of D.
-     * @param ops unused.
-     */
-    Void bit_5_d(int[] ops) {
-        this.bit(5, this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB6B - Sets the zero flag to the compliment of the 5th bit of E.
-     * @param ops unused.
-     */
-    Void bit_5_e(int[] ops) {
-        this.bit(5, this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB6C - Sets the zero flag to the compliment of the 5th bit of H.
-     * @param ops unused.
-     */
-    Void bit_5_h(int[] ops) {
-        this.bit(5, this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB6D - Sets the zero flag to the compliment of the 5th bit of L.
-     * @param ops unused.
-     */
-    Void bit_5_l(int[] ops) {
-        this.bit(5, this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB6E - Sets the zero flag to the compliment of the 5th bit of the value in memory pointed to by HL.
-     * @param ops unused.
-     */
-    Void bit_5_hlp(int[] ops) {
-        this.bit(5, this.memory.getByteAt(this.getHL()));
-        return null;
-    }
-
-    /**
-     * OP code 0xCB6F - Sets the zero flag to the compliment of the 5th bit of A.
-     * @param ops unused.
-     */
-    Void bit_5_a(int[] ops) {
-        this.bit(5, this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB70 - Sets the zero flag to the compliment of the 6th bit of B.
-     * @param ops unused.
-     */
-    Void bit_6_b(int[] ops) {
-        this.bit(6, this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB71 - Sets the zero flag to the compliment of the 6th bit of C.
-     * @param ops unused.
-     */
-    Void bit_6_c(int[] ops) {
-        this.bit(6, this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB72 - Sets the zero flag to the compliment of the 6th bit of D.
-     * @param ops unused.
-     */
-    Void bit_6_d(int[] ops) {
-        this.bit(6, this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB73 - Sets the zero flag to the compliment of the 6th bit of E.
-     * @param ops unused.
-     */
-    Void bit_6_e(int[] ops) {
-        this.bit(6, this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB74 - Sets the zero flag to the compliment of the 6th bit of H.
-     * @param ops unused.
-     */
-    Void bit_6_h(int[] ops) {
-        this.bit(6, this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB75 - Sets the zero flag to the compliment of the 6th bit of L.
-     * @param ops unused.
-     */
-    Void bit_6_l(int[] ops) {
-        this.bit(6, this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB76 - Sets the zero flag to the compliment of the 6th bit of the value in memory pointed to by HL.
-     * @param ops unused.
-     */
-    Void bit_6_hlp(int[] ops) {
-        this.bit(6, this.memory.getByteAt(this.getHL()));
-        return null;
-    }
-
-    /**
-     * OP code 0xCB77 - Sets the zero flag to the compliment of the 6th bit of A.
-     * @param ops unused.
-     */
-    Void bit_6_a(int[] ops) {
-        this.bit(6, this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB78 - Sets the zero flag to the compliment of the 7th bit of B.
-     * @param ops unused.
-     */
-    Void bit_7_b(int[] ops) {
-        this.bit(7, this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB79 - Sets the zero flag to the compliment of the 7th bit of C.
-     * @param ops unused.
-     */
-    Void bit_7_c(int[] ops) {
-        this.bit(7, this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB7A - Sets the zero flag to the compliment of the 7th bit of D.
-     * @param ops unused.
-     */
-    Void bit_7_d(int[] ops) {
-        this.bit(7, this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB7B - Sets the zero flag to the compliment of the 7th bit of E.
-     * @param ops unused.
-     */
-    Void bit_7_e(int[] ops) {
-        this.bit(7, this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB7C - Sets the zero flag to the compliment of the 7th bit of H.
-     * @param ops unused.
-     */
-    Void bit_7_h(int[] ops) {
-        this.bit(7, this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB7D - Sets the zero flag to the compliment of the 7th bit of L.
-     * @param ops unused.
-     */
-    Void bit_7_l(int[] ops) {
-        this.bit(7, this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB7E - Sets the zero flag to the compliment of the 7th bit of the value in memory pointed to by HL.
-     * @param ops unused.
-     */
-    Void bit_7_hlp(int[] ops) {
-        this.bit(7, this.memory.getByteAt(this.getHL()));
-        return null;
-    }
-
-    /**
-     * OP code 0xCB7F - Sets the zero flag to the compliment of the 7th bit of A.
-     * @param ops unused.
-     */
-    Void bit_7_a(int[] ops) {
-        this.bit(7, this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB80 - Resets the 0th bit of B.
-     * @param ops unused.
-     */
-    Void res_0_b(int[] ops) {
-        this.B = this.res(0, this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB81 - Resets the 0th bit of C.
-     * @param ops unused.
-     */
-    Void res_0_c(int[] ops) {
-        this.C = this.res(0, this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB82 - Resets the 0th bit of D.
-     * @param ops unused.
-     */
-    Void res_0_d(int[] ops) {
-        this.D = this.res(0, this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB83 - Resets the 0th bit of E.
-     * @param ops unused.
-     */
-    Void res_0_e(int[] ops) {
-        this.E = this.res(0, this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB84 - Resets the 0th bit of H.
-     * @param ops unused.
-     */
-    Void res_0_h(int[] ops) {
-        this.H = this.res(0, this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB85 - Resets the 0th bit of L.
-     * @param ops unused.
-     */
-    Void res_0_l(int[] ops) {
-        this.L = this.res(0, this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB86 - Resets the 0th bit of the value in memory pointed to by HL.
-     * @param ops unused.
-     */
-    Void res_0_hlp(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.res(0, this.memory.getByteAt(this.getHL())));
-        return null;
-    }
-
-    /**
-     * OP code 0xCB87 - Resets the 0th bit of A.
-     * @param ops unused.
-     */
-    Void res_0_a(int[] ops) {
-        this.A = this.res(0, this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB88 - Resets the 1st bit of B.
-     * @param ops unused.
-     */
-    Void res_1_b(int[] ops) {
-        this.B = this.res(1, this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB89 - Resets the 1st bit of C.
-     * @param ops unused.
-     */
-    Void res_1_c(int[] ops) {
-        this.C = this.res(1, this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB8A - Resets the 1st bit of D.
-     * @param ops unused.
-     */
-    Void res_1_d(int[] ops) {
-        this.D = this.res(1, this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB8B - Resets the 1st bit of E.
-     * @param ops unused.
-     */
-    Void res_1_e(int[] ops) {
-        this.E = this.res(1, this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB8C - Resets the 1st bit of H.
-     * @param ops unused.
-     */
-    Void res_1_h(int[] ops) {
-        this.H = this.res(1, this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB8D - Resets the 1st bit of L.
-     * @param ops unused.
-     */
-    Void res_1_l(int[] ops) {
-        this.L = this.res(1, this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB8E - Resets the 1st bit of the value in memory pointed to by HL.
-     * @param ops unused.
-     */
-    Void res_1_hlp(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.res(1, this.memory.getByteAt(this.getHL())));
-        return null;
-    }
-
-    /**
-     * OP code 0xCB8F - Resets the 1st bit of A.
-     * @param ops unused.
-     */
-    Void res_1_a(int[] ops) {
-        this.A = this.res(1, this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB90 - Resets the 2nd bit of B.
-     * @param ops unused.
-     */
-    Void res_2_b(int[] ops) {
-        this.B = this.res(2, this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB91 - Resets the 2nd bit of C.
-     * @param ops unused.
-     */
-    Void res_2_c(int[] ops) {
-        this.C = this.res(2, this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB92 - Resets the 2nd bit of D.
-     * @param ops unused.
-     */
-    Void res_2_d(int[] ops) {
-        this.D = this.res(2, this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB93 - Resets the 2nd bit of E.
-     * @param ops unused.
-     */
-    Void res_2_e(int[] ops) {
-        this.E = this.res(2, this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB94 - Resets the 2nd bit of H.
-     * @param ops unused.
-     */
-    Void res_2_h(int[] ops) {
-        this.H = this.res(2, this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB95 - Resets the 2nd bit of L.
-     * @param ops unused.
-     */
-    Void res_2_l(int[] ops) {
-        this.L = this.res(2, this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB96 - Resets the 2nd bit of the value in memory pointed to by HL.
-     * @param ops unused.
-     */
-    Void res_2_hlp(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.res(2, this.memory.getByteAt(this.getHL())));
-        return null;
-    }
-
-    /**
-     * OP code 0xCB97 - Resets the 2nd bit of A.
-     * @param ops unused.
-     */
-    Void res_2_a(int[] ops) {
-        this.A = this.res(2, this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB98 - Resets the 3rd bit of B.
-     * @param ops unused.
-     */
-    Void res_3_b(int[] ops) {
-        this.B = this.res(3, this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB99 - Resets the 3rd bit of C.
-     * @param ops unused.
-     */
-    Void res_3_c(int[] ops) {
-        this.C = this.res(3, this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB9A - Resets the 3rd bit of D.
-     * @param ops unused.
-     */
-    Void res_3_d(int[] ops) {
-        this.D = this.res(3, this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB9B - Resets the 3rd bit of E.
-     * @param ops unused.
-     */
-    Void res_3_e(int[] ops) {
-        this.E = this.res(3, this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB9C - Resets the 3rd bit of H.
-     * @param ops unused.
-     */
-    Void res_3_h(int[] ops) {
-        this.H = this.res(3, this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB9D - Resets the 3rd bit of L.
-     * @param ops unused.
-     */
-    Void res_3_l(int[] ops) {
-        this.L = this.res(3, this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCB9E - Resets the 3rd bit of the value in memory pointed to by HL.
-     * @param ops unused.
-     */
-    Void res_3_hlp(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.res(3, this.memory.getByteAt(this.getHL())));
-        return null;
-    }
-
-    /**
-     * OP code 0xCB9F - Resets the 3rd bit of A.
-     * @param ops unused.
-     */
-    Void res_3_a(int[] ops) {
-        this.A = this.res(3, this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBA0 - Resets the 4th bit of B.
-     * @param ops unused.
-     */
-    Void res_4_b(int[] ops) {
-        this.B = this.res(4, this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBA1 - Resets the 4th bit of C.
-     * @param ops unused.
-     */
-    Void res_4_c(int[] ops) {
-        this.C = this.res(4, this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBA2 - Resets the 4th bit of D.
-     * @param ops unused.
-     */
-    Void res_4_d(int[] ops) {
-        this.D = this.res(4, this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBA3 - Resets the 4th bit of E.
-     * @param ops unused.
-     */
-    Void res_4_e(int[] ops) {
-        this.E = this.res(4, this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBA4 - Resets the 4th bit of H.
-     * @param ops unused.
-     */
-    Void res_4_h(int[] ops) {
-        this.H = this.res(4, this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBA5 - Resets the 4th bit of L.
-     * @param ops unused.
-     */
-    Void res_4_l(int[] ops) {
-        this.L = this.res(4, this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBA6 - Resets the 4th bit of the value in memory pointed to by HL.
-     * @param ops unused.
-     */
-    Void res_4_hlp(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.res(4, this.memory.getByteAt(this.getHL())));
-        return null;
-    }
-
-    /**
-     * OP code 0xCBA7 - Resets the 4th bit of A.
-     * @param ops unused.
-     */
-    Void res_4_a(int[] ops) {
-        this.A = this.res(4, this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBA8 - Resets the 5th bit of B.
-     * @param ops unused.
-     */
-    Void res_5_b(int[] ops) {
-        this.B = this.res(5, this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBA9 - Resets the 5th bit of C.
-     * @param ops unused.
-     */
-    Void res_5_c(int[] ops) {
-        this.C = this.res(5, this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBAA - Resets the 5th bit of D.
-     * @param ops unused.
-     */
-    Void res_5_d(int[] ops) {
-        this.D = this.res(5, this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBAB - Resets the 5th bit of E.
-     * @param ops unused.
-     */
-    Void res_5_e(int[] ops) {
-        this.E = this.res(5, this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBAC - Resets the 5th bit of H.
-     * @param ops unused.
-     */
-    Void res_5_h(int[] ops) {
-        this.H = this.res(5, this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBAD - Resets the 5th bit of L.
-     * @param ops unused.
-     */
-    Void res_5_l(int[] ops) {
-        this.L = this.res(5, this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBAE - Resets the 5th bit of the value in memory pointed to by HL.
-     * @param ops unused.
-     */
-    Void res_5_hlp(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.res(5, this.memory.getByteAt(this.getHL())));
-        return null;
-    }
-
-    /**
-     * OP code 0xCBAF - Resets the 5th bit of A.
-     * @param ops unused.
-     */
-    Void res_5_a(int[] ops) {
-        this.A = this.res(5, this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBB0 - Resets the 6th bit of B.
-     * @param ops unused.
-     */
-    Void res_6_b(int[] ops) {
-        this.B = this.res(6, this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBB1 - Resets the 6th bit of C.
-     * @param ops unused.
-     */
-    Void res_6_c(int[] ops) {
-        this.C = this.res(6, this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBB2 - Resets the 6th bit of D.
-     * @param ops unused.
-     */
-    Void res_6_d(int[] ops) {
-        this.D = this.res(6, this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBB3 - Resets the 6th bit of E.
-     * @param ops unused.
-     */
-    Void res_6_e(int[] ops) {
-        this.E = this.res(6, this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBB4 - Resets the 6th bit of H.
-     * @param ops unused.
-     */
-    Void res_6_h(int[] ops) {
-        this.H = this.res(6, this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBB5 - Resets the 6th bit of L.
-     * @param ops unused.
-     */
-    Void res_6_l(int[] ops) {
-        this.L = this.res(6, this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBB6 - Resets the 6th bit of the value in memory pointed to by HL.
-     * @param ops unused.
-     */
-    Void res_6_hlp(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.res(6, this.memory.getByteAt(this.getHL())));
-        return null;
-    }
-
-    /**
-     * OP code 0xCBB7 - Resets the 6th bit of A.
-     * @param ops unused.
-     */
-    Void res_6_a(int[] ops) {
-        this.A = this.res(6, this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBB8 - Resets the 7th bit of B.
-     * @param ops unused.
-     */
-    Void res_7_b(int[] ops) {
-        this.B = this.res(7, this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBB9 - Resets the 7th bit of C.
-     * @param ops unused.
-     */
-    Void res_7_c(int[] ops) {
-        this.C = this.res(7, this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBBA - Resets the 7th bit of D.
-     * @param ops unused.
-     */
-    Void res_7_d(int[] ops) {
-        this.D = this.res(7, this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBBB - Resets the 7th bit of E.
-     * @param ops unused.
-     */
-    Void res_7_e(int[] ops) {
-        this.E = this.res(7, this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBBC - Resets the 7th bit of H.
-     * @param ops unused.
-     */
-    Void res_7_h(int[] ops) {
-        this.H = this.res(7, this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBBD - Resets the 7th bit of L.
-     * @param ops unused.
-     */
-    Void res_7_l(int[] ops) {
-        this.L = this.res(7, this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBBE - Resets the 7th bit of the value in memory pointed to by HL.
-     * @param ops unused.
-     */
-    Void res_7_hlp(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.res(7, this.memory.getByteAt(this.getHL())));
-        return null;
-    }
-
-    /**
-     * OP code 0xCBBF - Resets the 7th bit of A.
-     * @param ops unused.
-     */
-    Void res_7_a(int[] ops) {
-        this.A = this.res(7, this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBC0 - Sets the 0th bit of B.
-     * @param ops unused.
-     */
-    Void set_0_b(int[] ops) {
-        this.B = this.set(0, this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBC1 - Sets the 0th bit of C.
-     * @param ops unused.
-     */
-    Void set_0_c(int[] ops) {
-        this.C = this.set(0, this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBC2 - Sets the 0th bit of D.
-     * @param ops unused.
-     */
-    Void set_0_d(int[] ops) {
-        this.D = this.set(0, this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBC3 - Sets the 0th bit of E.
-     * @param ops unused.
-     */
-    Void set_0_e(int[] ops) {
-        this.E = this.set(0, this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBC4 - Sets the 0th bit of H.
-     * @param ops unused.
-     */
-    Void set_0_h(int[] ops) {
-        this.H = this.set(0, this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBC5 - Sets the 0th bit of L.
-     * @param ops unused.
-     */
-    Void set_0_l(int[] ops) {
-        this.L = this.set(0, this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBC6 - Sets the 0th bit of the value in memory pointed to by HL.
-     * @param ops unused.
-     */
-    Void set_0_hlp(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.set(0, this.memory.getByteAt(this.getHL())));
-        return null;
-    }
-
-    /**
-     * OP code 0xCBC7 - Sets the 0th bit of A.
-     * @param ops unused.
-     */
-    Void set_0_a(int[] ops) {
-        this.A = this.set(0, this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBC8 - Sets the 1st bit of B.
-     * @param ops unused.
-     */
-    Void set_1_b(int[] ops) {
-        this.B = this.set(1, this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBC9 - Sets the 1st bit of C.
-     * @param ops unused.
-     */
-    Void set_1_c(int[] ops) {
-        this.C = this.set(1, this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBCA - Sets the 1st bit of D.
-     * @param ops unused.
-     */
-    Void set_1_d(int[] ops) {
-        this.D = this.set(1, this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBCB - Sets the 1st bit of E.
-     * @param ops unused.
-     */
-    Void set_1_e(int[] ops) {
-        this.E = this.set(1, this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBCC - Sets the 1st bit of H.
-     * @param ops unused.
-     */
-    Void set_1_h(int[] ops) {
-        this.H = this.set(1, this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBCD - Sets the 1st bit of L.
-     * @param ops unused.
-     */
-    Void set_1_l(int[] ops) {
-        this.L = this.set(1, this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBCE - Sets the 1st bit of the value in memory pointed to by HL.
-     * @param ops unused.
-     */
-    Void set_1_hlp(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.set(1, this.memory.getByteAt(this.getHL())));
-        return null;
-    }
-
-    /**
-     * OP code 0xCBCF - Sets the 1st bit of A.
-     * @param ops unused.
-     */
-    Void set_1_a(int[] ops) {
-        this.A = this.set(1, this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBD0 - Sets the 2nd bit of B.
-     * @param ops unused.
-     */
-    Void set_2_b(int[] ops) {
-        this.B = this.set(2, this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBD1 - Sets the 2nd bit of C.
-     * @param ops unused.
-     */
-    Void set_2_c(int[] ops) {
-        this.C = this.set(2, this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBD2 - Sets the 2nd bit of D.
-     * @param ops unused.
-     */
-    Void set_2_d(int[] ops) {
-        this.D = this.set(2, this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBD3 - Sets the 2nd bit of E.
-     * @param ops unused.
-     */
-    Void set_2_e(int[] ops) {
-        this.E = this.set(2, this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBD4 - Sets the 2nd bit of H.
-     * @param ops unused.
-     */
-    Void set_2_h(int[] ops) {
-        this.H = this.set(2, this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBD5 - Sets the 2nd bit of L.
-     * @param ops unused.
-     */
-    Void set_2_l(int[] ops) {
-        this.L = this.set(2, this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBD6 - Sets the 2nd bit of the value in memory pointed to by HL.
-     * @param ops unused.
-     */
-    Void set_2_hlp(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.set(2, this.memory.getByteAt(this.getHL())));
-        return null;
-    }
-
-    /**
-     * OP code 0xCBD7 - Sets the 2nd bit of A.
-     * @param ops unused.
-     */
-    Void set_2_a(int[] ops) {
-        this.A = this.set(2, this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBD8 - Sets the 3rd bit of B.
-     * @param ops unused.
-     */
-    Void set_3_b(int[] ops) {
-        this.B = this.set(3, this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBD9 - Sets the 3rd bit of C.
-     * @param ops unused.
-     */
-    Void set_3_c(int[] ops) {
-        this.C = this.set(3, this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBDA - Sets the 3rd bit of D.
-     * @param ops unused.
-     */
-    Void set_3_d(int[] ops) {
-        this.D = this.set(3, this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBDB - Sets the 3rd bit of E.
-     * @param ops unused.
-     */
-    Void set_3_e(int[] ops) {
-        this.E = this.set(3, this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBDC - Sets the 3rd bit of H.
-     * @param ops unused.
-     */
-    Void set_3_h(int[] ops) {
-        this.H = this.set(3, this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBDD - Sets the 3rd bit of L.
-     * @param ops unused.
-     */
-    Void set_3_l(int[] ops) {
-        this.L = this.set(3, this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBDE - Sets the 3rd bit of the value in memory pointed to by HL.
-     * @param ops unused.
-     */
-    Void set_3_hlp(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.set(3, this.memory.getByteAt(this.getHL())));
-        return null;
-    }
-
-    /**
-     * OP code 0xCBDF - Sets the 3rd bit of A.
-     * @param ops unused.
-     */
-    Void set_3_a(int[] ops) {
-        this.A = this.set(3, this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBE0 - Sets the 4th bit of B.
-     * @param ops unused.
-     */
-    Void set_4_b(int[] ops) {
-        this.B = this.set(4, this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBE1 - Sets the 4th bit of C.
-     * @param ops unused.
-     */
-    Void set_4_c(int[] ops) {
-        this.C = this.set(4, this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBE2 - Sets the 4th bit of D.
-     * @param ops unused.
-     */
-    Void set_4_d(int[] ops) {
-        this.D = this.set(4, this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBE3 - Sets the 4th bit of E.
-     * @param ops unused.
-     */
-    Void set_4_e(int[] ops) {
-        this.E = this.set(4, this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBE4 - Sets the 4th bit of H.
-     * @param ops unused.
-     */
-    Void set_4_h(int[] ops) {
-        this.H = this.set(4, this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBE5 - Sets the 4th bit of L.
-     * @param ops unused.
-     */
-    Void set_4_l(int[] ops) {
-        this.L = this.set(4, this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBE6 - Sets the 4th bit of the value in memory pointed to by HL.
-     * @param ops unused.
-     */
-    Void set_4_hlp(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.set(4, this.memory.getByteAt(this.getHL())));
-        return null;
-    }
-
-    /**
-     * OP code 0xCBE7 - Sets the 4th bit of A.
-     * @param ops unused.
-     */
-    Void set_4_a(int[] ops) {
-        this.A = this.set(4, this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBE8 - Sets the 5th bit of B.
-     * @param ops unused.
-     */
-    Void set_5_b(int[] ops) {
-        this.B = this.set(5, this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBE9 - Sets the 5th bit of C.
-     * @param ops unused.
-     */
-    Void set_5_c(int[] ops) {
-        this.C = this.set(5, this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBEA - Sets the 5th bit of D.
-     * @param ops unused.
-     */
-    Void set_5_d(int[] ops) {
-        this.D = this.set(5, this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBEB - Sets the 5th bit of E.
-     * @param ops unused.
-     */
-    Void set_5_e(int[] ops) {
-        this.E = this.set(5, this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBEC - Sets the 5th bit of H.
-     * @param ops unused.
-     */
-    Void set_5_h(int[] ops) {
-        this.H = this.set(5, this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBED - Sets the 5th bit of L.
-     * @param ops unused.
-     */
-    Void set_5_l(int[] ops) {
-        this.L = this.set(5, this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBEE - Sets the 5th bit of the value in memory pointed to by HL.
-     * @param ops unused.
-     */
-    Void set_5_hlp(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.set(5, this.memory.getByteAt(this.getHL())));
-        return null;
-    }
-
-    /**
-     * OP code 0xCBEF - Sets the 5th bit of A.
-     * @param ops unused.
-     */
-    Void set_5_a(int[] ops) {
-        this.A = this.set(5, this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBF0 - Sets the 6th bit of B.
-     * @param ops unused.
-     */
-    Void set_6_b(int[] ops) {
-        this.B = this.set(6, this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBF1 - Sets the 6th bit of C.
-     * @param ops unused.
-     */
-    Void set_6_c(int[] ops) {
-        this.C = this.set(6, this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBF2 - Sets the 6th bit of D.
-     * @param ops unused.
-     */
-    Void set_6_d(int[] ops) {
-        this.D = this.set(6, this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBF3 - Sets the 6th bit of E.
-     * @param ops unused.
-     */
-    Void set_6_e(int[] ops) {
-        this.E = this.set(6, this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBF4 - Sets the 6th bit of H.
-     * @param ops unused.
-     */
-    Void set_6_h(int[] ops) {
-        this.H = this.set(6, this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBF5 - Sets the 6th bit of L.
-     * @param ops unused.
-     */
-    Void set_6_l(int[] ops) {
-        this.L = this.set(6, this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBF6 - Sets the 6th bit of the value in memory pointed to by HL.
-     * @param ops unused.
-     */
-    Void set_6_hlp(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.set(6, this.memory.getByteAt(this.getHL())));
-        return null;
-    }
-
-    /**
-     * OP code 0xCBF7 - Sets the 6th bit of A.
-     * @param ops unused.
-     */
-    Void set_6_a(int[] ops) {
-        this.A = this.set(6, this.A);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBF8 - Sets the 7th bit of B.
-     * @param ops unused.
-     */
-    Void set_7_b(int[] ops) {
-        this.B = this.set(7, this.B);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBF9 - Sets the 7th bit of C.
-     * @param ops unused.
-     */
-    Void set_7_c(int[] ops) {
-        this.C = this.set(7, this.C);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBFA - Sets the 7th bit of D.
-     * @param ops unused.
-     */
-    Void set_7_d(int[] ops) {
-        this.D = this.set(7, this.D);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBFB - Sets the 7th bit of E.
-     * @param ops unused.
-     */
-    Void set_7_e(int[] ops) {
-        this.E = this.set(7, this.E);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBFC - Sets the 7th bit of H.
-     * @param ops unused.
-     */
-    Void set_7_h(int[] ops) {
-        this.H = this.set(7, this.H);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBFD - Sets the 7th bit of L.
-     * @param ops unused.
-     */
-    Void set_7_l(int[] ops) {
-        this.L = this.set(7, this.L);
-        return null;
-    }
-
-    /**
-     * OP code 0xCBFE - Sets the 7th bit of the value in memory pointed to by HL.
-     * @param ops unused.
-     */
-    Void set_7_hlp(int[] ops) {
-        this.memory.setByteAt(this.getHL(), this.set(7, this.memory.getByteAt(this.getHL())));
-        return null;
-    }
-
-    /**
-     * OP code 0xCBFF - Sets the 7th bit of A.
-     * @param ops unused.
-     */
-    Void set_7_a(int[] ops) {
-        this.A = this.set(7, this.A);
-        return null;
-    }
-    // endregion
 }

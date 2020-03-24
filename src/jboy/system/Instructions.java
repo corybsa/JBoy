@@ -4,7 +4,7 @@ import java.util.HashMap;
 
 class Instructions extends HashMap<Integer, Instruction> {
     Instructions(CPU cpu) {
-        this.put(0x00, new Instruction(0x00, 0, 4, cpu::nop));
+        /*this.put(0x00, new Instruction(0x00, 0, 4, cpu::nop));
         this.put(0x01, new Instruction(0x01, 2, 12, cpu::ld_bc_xx));
         this.put(0x02, new Instruction(0x02, 0, 8, cpu::ld_bcp_a));
         this.put(0x03, new Instruction(0x03, 0, 8, cpu::inc_bc));
@@ -545,6 +545,6 @@ class Instructions extends HashMap<Integer, Instruction> {
         this.put(0xCBFC, new Instruction(0xCBFC, 1, 8, cpu::set_7_h));
         this.put(0xCBFD, new Instruction(0xCBFD, 1, 8, cpu::set_7_l));
         this.put(0xCBFE, new Instruction(0xCBFE, 1, 16, cpu::set_7_hlp));
-        this.put(0xCBFF, new Instruction(0xCBFF, 1, 8, cpu::set_7_a));
+        this.put(0xCBFF, new Instruction(0xCBFF, 1, 8, cpu::set_7_a));*/
     }
 }

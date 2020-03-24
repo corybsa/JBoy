@@ -1,6 +1,6 @@
 package test.jboy.system;
 
-import jboy.system.Memory;
+import jboy.system.*;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -12,6 +12,12 @@ public class MemoryTest {
     @BeforeAll
     static void testBeforeAll() {
         memory = new Memory();
+        Display display = new Display(memory);
+        GPU gpu = new GPU(memory, display);
+        Timers timers = new Timers(memory);
+
+        display.setDrawFunction((tiles) -> null);
+        memory.setGpuRef(gpu);
     }
 
     @Test
@@ -76,8 +82,9 @@ public class MemoryTest {
         memory.setByteAt(0xFEA0, 0xBE);
         memory.setByteAt(0xFEFF, 0xEF);
 
-        assertEquals(0xBE, memory.getByteAt(0xFEA0), "The value at 0xFEA0 should equal 0xBE.");
-        assertEquals(0xEF, memory.getByteAt(0xFEFF), "The value at 0xFEFF should equal 0xEF.");
+        // Reading from this area on DMG always returns 0.
+        assertEquals(0x00, memory.getByteAt(0xFEA0), "The value at 0xFEA0 should equal 0x00.");
+        assertEquals(0x00, memory.getByteAt(0xFEFF), "The value at 0xFEFF should equal 0x00.");
     }
 
     @Test
@@ -85,7 +92,7 @@ public class MemoryTest {
         memory.setByteAt(0xFF00, 0xBE);
         memory.setByteAt(0xFF4B, 0xEF);
 
-        assertEquals(0xBE, memory.getByteAt(0xFF00), "The value at 0xFF00 should equal 0xBE.");
+        assertEquals(0xFE, memory.getByteAt(0xFF00), "The value at 0xFF00 should equal 0xBE.");
         assertEquals(0xEF, memory.getByteAt(0xFF4B), "The value at 0xFF4B should equal 0xEF.");
     }
 

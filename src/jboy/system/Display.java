@@ -28,7 +28,7 @@ public class Display {
         byte BLACK = 3;
     }
 
-    Display(Memory memory) {
+    public Display(Memory memory) {
         this.memory = memory;
     }
 

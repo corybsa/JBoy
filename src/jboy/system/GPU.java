@@ -31,7 +31,7 @@ public class GPU  {
         int VRAM = 172;
     }
 
-    GPU(Memory memory, Display display) {
+    public GPU(Memory memory, Display display) {
         this.memory = memory;
         this.display = display;
         this.mode = Mode.HBLANK;

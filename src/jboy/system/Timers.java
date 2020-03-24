@@ -42,7 +42,7 @@ public class Timers {
 
     private Memory memory;
 
-    Timers(Memory memory) {
+    public Timers(Memory memory) {
         this.memory = memory;
     }
 

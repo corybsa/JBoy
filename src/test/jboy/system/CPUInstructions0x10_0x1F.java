@@ -1,7 +1,6 @@
 package test.jboy.system;
 
-import jboy.system.CPU;
-import jboy.system.Memory;
+import jboy.system.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,13 +16,20 @@ class CPUInstructions0x10_0x1F {
     @BeforeAll
     static void testBeforeAll() {
         memory = new Memory();
-        cpu = new CPU(memory, null, null);
+        Display display = new Display(memory);
+        GPU gpu = new GPU(memory, display);
+        Timers timers = new Timers(memory);
+
+        display.setDrawFunction((tiles) -> null);
+        memory.setGpuRef(gpu);
+
+        cpu = new CPU(memory, gpu, timers);
     }
 
     @BeforeEach
     void setUp() {
-        cpu.setPC(0x100);
-        cpu.setSP(0xFFFE);
+        cpu.registers.PC = 0x100;
+        cpu.registers.SP = 0xFFFE;
         rom = new int[0x7FFF];
         cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
     }
@@ -47,8 +53,8 @@ class CPUInstructions0x10_0x1F {
         memory.loadROM(rom);
 
         cpu.tick();
-        assertEquals(0x895F, cpu.getDE(), "The DE register should equal 0x895F.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x895F, cpu.registers.getDE(), "The DE register should equal 0x895F.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
     }
 
     // op code 0x12
@@ -68,8 +74,8 @@ class CPUInstructions0x10_0x1F {
         cpu.tick();
         cpu.tick();
         cpu.tick();
-        assertEquals(0xFF, memory.getByteAt(cpu.getDE()), "The value pointed to by DE should be 0xFF.");
-        assertEquals(0x106, cpu.getPC(), "PC should equal 0x106.");
+        assertEquals(0xFF, memory.getByteAt(cpu.registers.getDE()), "The value pointed to by DE should be 0xFF.");
+        assertEquals(0x106, cpu.registers.PC, "PC should equal 0x106.");
     }
 
     // op code 0x13
@@ -84,8 +90,8 @@ class CPUInstructions0x10_0x1F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x7001, cpu.getDE(), "The DE register should equal 0x7001.");
-        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+        assertEquals(0x7001, cpu.registers.getDE(), "The DE register should equal 0x7001.");
+        assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
     }
 
     // op code 0x14
@@ -99,11 +105,11 @@ class CPUInstructions0x10_0x1F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x01, cpu.getD(), "The D register should equal 0x01.");
-        assertEquals(0x00, cpu.getF(), "No flags should be set.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x01, cpu.registers.D, "The D register should equal 0x01.");
+        assertEquals(0x00, cpu.registers.F, "No flags should be set.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
 
-        cpu.setPC(0x100);
+        cpu.registers.PC = 0x100;
         cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
 
         rom[0x100] = 0x16; // ld d,0x0F
@@ -112,11 +118,11 @@ class CPUInstructions0x10_0x1F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x10, cpu.getD(), "The D register should equal 0x10.");
-        assertEquals(CPU.FLAG_HALF, cpu.getF(), "The HALF_CARRY flag should be set.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x10, cpu.registers.D, "The D register should equal 0x10.");
+        assertEquals(CPU.FLAG_HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
 
-        cpu.setPC(0x100);
+        cpu.registers.PC = 0x100;
         cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
 
         rom[0x100] = 0x16; // ld d,0xFF
@@ -125,9 +131,9 @@ class CPUInstructions0x10_0x1F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x00, cpu.getD(), "The D register should equal 0x00.");
-        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.getF(), "The ZERO and HALF_CARRY flags should be set.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x00, cpu.registers.D, "The D register should equal 0x00.");
+        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.registers.F, "The ZERO and HALF_CARRY flags should be set.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
     }
 
     // op code 0x15
@@ -141,12 +147,12 @@ class CPUInstructions0x10_0x1F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0xFE, cpu.getD(), "The D register should equal 0xFE.");
-        assertEquals(CPU.FLAG_SUB, cpu.getF(), "The SUB flag should be set.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0xFE, cpu.registers.D, "The D register should equal 0xFE.");
+        assertEquals(CPU.FLAG_SUB, cpu.registers.F, "The SUB flag should be set.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
 
         // Test a decrement that results in zero.
-        cpu.setPC(0x100);
+        cpu.registers.PC = 0x100;
         cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
         rom[0x100] = 0x16; // ld d,0x01
         rom[0x101] = 0x01;
@@ -156,12 +162,12 @@ class CPUInstructions0x10_0x1F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x00, cpu.getD(), "The D register should equal 0x00.");
-        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_SUB, cpu.getF(), "ZERO and SUB flags should be set.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x00, cpu.registers.D, "The D register should equal 0x00.");
+        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_SUB, cpu.registers.F, "ZERO and SUB flags should be set.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
 
         // Test a half carry.
-        cpu.setPC(0x100);
+        cpu.registers.PC = 0x100;
         cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
         rom[0x100] = 0x16; // ld d,0x10
         rom[0x101] = 0x10;
@@ -171,12 +177,12 @@ class CPUInstructions0x10_0x1F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x0F, cpu.getD(), "The D register should equal 0x0F.");
-        assertEquals(CPU.FLAG_SUB | CPU.FLAG_HALF, cpu.getF(), "The SUB and HALF_CARRY flags should be set.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x0F, cpu.registers.D, "The D register should equal 0x0F.");
+        assertEquals(CPU.FLAG_SUB | CPU.FLAG_HALF, cpu.registers.F, "The SUB and HALF_CARRY flags should be set.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
 
         // Test decrementing zero.
-        cpu.setPC(0x100);
+        cpu.registers.PC = 0x100;
         cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
         rom[0x100] = 0x16; // ld d,0x00
         rom[0x101] = 0x00;
@@ -186,9 +192,9 @@ class CPUInstructions0x10_0x1F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0xFF, cpu.getD(), "The D register should equal 0xFF.");
-        assertEquals(CPU.FLAG_SUB | CPU.FLAG_HALF, cpu.getF(), "The SUB and HALF_CARRY flags should be set.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0xFF, cpu.registers.D, "The D register should equal 0xFF.");
+        assertEquals(CPU.FLAG_SUB | CPU.FLAG_HALF, cpu.registers.F, "The SUB and HALF_CARRY flags should be set.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
     }
 
     // op code 0x16
@@ -200,8 +206,8 @@ class CPUInstructions0x10_0x1F {
         memory.loadROM(rom);
 
         cpu.tick();
-        assertEquals(0xCD, cpu.getD(), "The D register should equal 0xCD.");
-        assertEquals(0x102, cpu.getPC(), "PC should equal 0x102.");
+        assertEquals(0xCD, cpu.registers.D, "The D register should equal 0xCD.");
+        assertEquals(0x102, cpu.registers.PC, "PC should equal 0x102.");
     }
 
     // op code 0x17
@@ -215,8 +221,8 @@ class CPUInstructions0x10_0x1F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x2A, cpu.getA(), "The A register should equal 0x2B.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x2A, cpu.registers.A, "The A register should equal 0x2B.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
     }
 
     // op code 0x18
@@ -228,7 +234,7 @@ class CPUInstructions0x10_0x1F {
         memory.loadROM(rom);
 
         cpu.tick();
-        assertEquals(0x107, cpu.getPC(), "PC should equal 0x106.");
+        assertEquals(0x106, cpu.registers.PC, "PC should equal 0x106.");
     }
 
     // op code 0x19
@@ -247,9 +253,9 @@ class CPUInstructions0x10_0x1F {
         cpu.tick();
         cpu.tick();
         cpu.tick();
-        assertEquals(0x9028, cpu.getHL(), "The HL register should equal 0x0605.");
-        assertEquals(CPU.FLAG_HALF, cpu.getF(), "The HALF_CARRY flag should be set.");
-        assertEquals(0x107, cpu.getPC(), "PC should equal 0x107.");
+        assertEquals(0x9028, cpu.registers.getHL(), "The HL register should equal 0x0605.");
+        assertEquals(CPU.FLAG_HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
+        assertEquals(0x107, cpu.registers.PC, "PC should equal 0x107.");
     }
 
     // op code 0x1A
@@ -266,8 +272,8 @@ class CPUInstructions0x10_0x1F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0xFF, cpu.getA(), "The A register should equal 0xFF.");
-        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+        assertEquals(0xFF, cpu.registers.A, "The A register should equal 0xFF.");
+        assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
     }
 
     // op code 0x1B
@@ -282,8 +288,8 @@ class CPUInstructions0x10_0x1F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x0604, cpu.getDE(), "The DE register should equal 0x0604.");
-        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+        assertEquals(0x0604, cpu.registers.getDE(), "The DE register should equal 0x0604.");
+        assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
     }
 
     // op code 0x1C
@@ -297,11 +303,11 @@ class CPUInstructions0x10_0x1F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x01, cpu.getE(), "The E register should equal 0x01.");
-        assertEquals(0x00, cpu.getF(), "No flags should be set.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x01, cpu.registers.E, "The E register should equal 0x01.");
+        assertEquals(0x00, cpu.registers.F, "No flags should be set.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
 
-        cpu.setPC(0x100);
+        cpu.registers.PC = 0x100;
         cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
 
         rom[0x100] = 0x1E; // ld e,0x0F
@@ -310,11 +316,11 @@ class CPUInstructions0x10_0x1F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x10, cpu.getE(), "The E register should equal 0x10.");
-        assertEquals(CPU.FLAG_HALF, cpu.getF(), "The HALF_CARRY flag should be set.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x10, cpu.registers.E, "The E register should equal 0x10.");
+        assertEquals(CPU.FLAG_HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
 
-        cpu.setPC(0x100);
+        cpu.registers.PC = 0x100;
         cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
 
         rom[0x100] = 0x1E; // ld e,0xFF
@@ -323,9 +329,9 @@ class CPUInstructions0x10_0x1F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x00, cpu.getE(), "The E register should equal 0x00.");
-        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.getF(), "The ZERO and HALF_CARRY flags should be set.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x00, cpu.registers.E, "The E register should equal 0x00.");
+        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.registers.F, "The ZERO and HALF_CARRY flags should be set.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
     }
 
     // op code 0x1D
@@ -339,12 +345,12 @@ class CPUInstructions0x10_0x1F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0xFE, cpu.getE(), "The E register should equal 0xFE.");
-        assertEquals(CPU.FLAG_SUB, cpu.getF(), "The SUB flag should be set.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0xFE, cpu.registers.E, "The E register should equal 0xFE.");
+        assertEquals(CPU.FLAG_SUB, cpu.registers.F, "The SUB flag should be set.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
 
         // Test a decrement that results in zero.
-        cpu.setPC(0x100);
+        cpu.registers.PC = 0x100;
         cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
         rom[0x100] = 0x1E; // ld e,0x01
         rom[0x101] = 0x01;
@@ -354,12 +360,12 @@ class CPUInstructions0x10_0x1F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x00, cpu.getE(), "The E register should equal 0x00.");
-        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_SUB, cpu.getF(), "ZERO and SUB flags should be set.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x00, cpu.registers.E, "The E register should equal 0x00.");
+        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_SUB, cpu.registers.F, "ZERO and SUB flags should be set.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
 
         // Test a half carry.
-        cpu.setPC(0x100);
+        cpu.registers.PC = 0x100;
         cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
         rom[0x100] = 0x1E; // ld e,0x10
         rom[0x101] = 0x10;
@@ -369,12 +375,12 @@ class CPUInstructions0x10_0x1F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x0F, cpu.getE(), "The E register should equal 0x0F.");
-        assertEquals(CPU.FLAG_SUB | CPU.FLAG_HALF, cpu.getF(), "The SUB and HALF_CARRY flags should be set.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x0F, cpu.registers.E, "The E register should equal 0x0F.");
+        assertEquals(CPU.FLAG_SUB | CPU.FLAG_HALF, cpu.registers.F, "The SUB and HALF_CARRY flags should be set.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
 
         // Test decrementing zero.
-        cpu.setPC(0x100);
+        cpu.registers.PC = 0x100;
         cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
         rom[0x100] = 0x1E; // ld e,0x00
         rom[0x101] = 0x00;
@@ -384,9 +390,9 @@ class CPUInstructions0x10_0x1F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0xFF, cpu.getE(), "The E register should equal 0xFF.");
-        assertEquals(CPU.FLAG_SUB | CPU.FLAG_HALF, cpu.getF(), "The SUB and HALF_CARRY flags should be set.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0xFF, cpu.registers.E, "The E register should equal 0xFF.");
+        assertEquals(CPU.FLAG_SUB | CPU.FLAG_HALF, cpu.registers.F, "The SUB and HALF_CARRY flags should be set.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
     }
 
     // op code 0x1E
@@ -398,8 +404,8 @@ class CPUInstructions0x10_0x1F {
         memory.loadROM(rom);
 
         cpu.tick();
-        assertEquals(0xCD, cpu.getE(), "The E register should equal 0xCD.");
-        assertEquals(0x102, cpu.getPC(), "PC should equal 0x102.");
+        assertEquals(0xCD, cpu.registers.E, "The E register should equal 0xCD.");
+        assertEquals(0x102, cpu.registers.PC, "PC should equal 0x102.");
     }
 
     // op code 0x1F
@@ -413,15 +419,15 @@ class CPUInstructions0x10_0x1F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x40, cpu.getA(), "The A register should equal 0x40.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x40, cpu.registers.A, "The A register should equal 0x40.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
 
         cpu.setFlags(CPU.FLAG_CARRY);
-        cpu.setPC(0x100);
+        cpu.registers.PC = 0x100;
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0xC0, cpu.getA(), "The A register should equal 0xC0.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0xC0, cpu.registers.A, "The A register should equal 0xC0.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
     }
 }

@@ -249,7 +249,7 @@ class DebugWindow {
         MemoryInfo memoryInfo = info.getMemoryInfo();
         TimerInfo timerInfo = info.getTimerInfo();
 
-        int flags = cpuInfo.getCpu().getAF();
+        int flags = cpuInfo.getCpu().registers.getAF();
 
         this.pc.setText(cpuInfo.getPC());
         this.sp.setText(cpuInfo.getSP());
@@ -331,7 +331,7 @@ class DebugWindow {
             return;
         }
 
-        int pc = this.gameBoy.getCpu().getPC();
+        int pc = this.gameBoy.getCpu().registers.PC;
 
         int begin = pc - 4;
         int end = pc + 5;

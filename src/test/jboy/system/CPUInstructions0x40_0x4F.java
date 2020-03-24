@@ -1,7 +1,6 @@
 package test.jboy.system;
 
-import jboy.system.CPU;
-import jboy.system.Memory;
+import jboy.system.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,13 +16,20 @@ class CPUInstructions0x40_0x4F {
     @BeforeAll
     static void testBeforeAll() {
         memory = new Memory();
-        cpu = new CPU(memory, null, null);
+        Display display = new Display(memory);
+        GPU gpu = new GPU(memory, display);
+        Timers timers = new Timers(memory);
+
+        display.setDrawFunction((tiles) -> null);
+        memory.setGpuRef(gpu);
+
+        cpu = new CPU(memory, gpu, timers);
     }
 
     @BeforeEach
     void setUp() {
-        cpu.setPC(0x100);
-        cpu.setSP(0xFFFE);
+        cpu.registers.PC = 0x100;
+        cpu.registers.SP = 0xFFFE;
         rom = new int[0x7FFF];
         cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
     }
@@ -44,8 +50,8 @@ class CPUInstructions0x40_0x4F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x50, cpu.getB(), "The B register should equal 0x50.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x50, cpu.registers.B, "The B register should equal 0x50.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
     }
 
     // op code 0x41
@@ -59,8 +65,8 @@ class CPUInstructions0x40_0x4F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x50, cpu.getB(), "The B register should equal 0x50.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x50, cpu.registers.B, "The B register should equal 0x50.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
     }
 
     // op code 0x42
@@ -74,8 +80,8 @@ class CPUInstructions0x40_0x4F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x50, cpu.getB(), "The B register should equal 0x50.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x50, cpu.registers.B, "The B register should equal 0x50.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
     }
 
     // op code 0x43
@@ -89,8 +95,8 @@ class CPUInstructions0x40_0x4F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x50, cpu.getB(), "The B register should equal 0x50.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x50, cpu.registers.B, "The B register should equal 0x50.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
     }
 
     // op code 0x44
@@ -104,8 +110,8 @@ class CPUInstructions0x40_0x4F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x50, cpu.getB(), "The B register should equal 0x50.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x50, cpu.registers.B, "The B register should equal 0x50.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
     }
 
     // op code 0x45
@@ -119,8 +125,8 @@ class CPUInstructions0x40_0x4F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x50, cpu.getB(), "The B register should equal 0x50.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x50, cpu.registers.B, "The B register should equal 0x50.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
     }
 
     // op code 0x46
@@ -137,8 +143,8 @@ class CPUInstructions0x40_0x4F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x50, cpu.getB(), "The B register should equal 0x50.");
-        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+        assertEquals(0x50, cpu.registers.B, "The B register should equal 0x50.");
+        assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
     }
 
     // op code 0x47
@@ -152,8 +158,8 @@ class CPUInstructions0x40_0x4F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x50, cpu.getB(), "The B register should equal 0x50.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x50, cpu.registers.B, "The B register should equal 0x50.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
     }
 
     // op code 0x48
@@ -167,8 +173,8 @@ class CPUInstructions0x40_0x4F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x50, cpu.getC(), "The C register should equal 0x50.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x50, cpu.registers.C, "The C register should equal 0x50.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
     }
 
     // op code 0x49
@@ -182,8 +188,8 @@ class CPUInstructions0x40_0x4F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x50, cpu.getC(), "The C register should equal 0x50.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x50, cpu.registers.C, "The C register should equal 0x50.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
     }
 
     // op code 0x4A
@@ -197,8 +203,8 @@ class CPUInstructions0x40_0x4F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x50, cpu.getC(), "The C register should equal 0x50.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x50, cpu.registers.C, "The C register should equal 0x50.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
     }
 
     // op code 0x4B
@@ -212,8 +218,8 @@ class CPUInstructions0x40_0x4F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x50, cpu.getC(), "The C register should equal 0x50.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x50, cpu.registers.C, "The C register should equal 0x50.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
     }
 
     // op code 0x4C
@@ -227,8 +233,8 @@ class CPUInstructions0x40_0x4F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x50, cpu.getC(), "The C register should equal 0x50.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x50, cpu.registers.C, "The C register should equal 0x50.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
     }
 
     // op code 0x4D
@@ -242,8 +248,8 @@ class CPUInstructions0x40_0x4F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x50, cpu.getC(), "The C register should equal 0x50.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x50, cpu.registers.C, "The C register should equal 0x50.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
     }
 
     // op code 0x4E
@@ -260,8 +266,8 @@ class CPUInstructions0x40_0x4F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x50, cpu.getC(), "The C register should equal 0x50.");
-        assertEquals(0x104, cpu.getPC(), "PC should equal 0x104.");
+        assertEquals(0x50, cpu.registers.C, "The C register should equal 0x50.");
+        assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
     }
 
     // op code 0x4F
@@ -275,7 +281,7 @@ class CPUInstructions0x40_0x4F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(0x50, cpu.getC(), "The C register should equal 0x50.");
-        assertEquals(0x103, cpu.getPC(), "PC should equal 0x103.");
+        assertEquals(0x50, cpu.registers.C, "The C register should equal 0x50.");
+        assertEquals(0x103, cpu.registers.PC, "PC should equal 0x103.");
     }
 }
