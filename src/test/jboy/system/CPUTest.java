@@ -27,21 +27,21 @@ class CPUTest {
     void setUp() {
         cpu.registers.PC = 0x100;
         cpu.registers.SP = 0xFFFE;
-        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
+        cpu.resetFlags(CPU.Flags.ZERO | CPU.Flags.SUB | CPU.Flags.HALF | CPU.Flags.CARRY);
     }
 
     @Test
     void setFlagsTest() {
-        cpu.setFlags(CPU.FLAG_ZERO);
+        cpu.setFlags(CPU.Flags.ZERO);
         assertEquals(0b10000000, cpu.registers.F, "Only ZERO flag should be set.");
 
-        cpu.setFlags(CPU.FLAG_SUB);
+        cpu.setFlags(CPU.Flags.SUB);
         assertEquals(0b11000000, cpu.registers.F, "ZERO and SUB flag should be set");
 
-        cpu.setFlags(CPU.FLAG_HALF);
+        cpu.setFlags(CPU.Flags.HALF);
         assertEquals(0b11100000, cpu.registers.F, "ZERO, SUB and HALF_CARRY flags should be set.");
 
-        cpu.setFlags(CPU.FLAG_CARRY);
+        cpu.setFlags(CPU.Flags.CARRY);
         assertEquals(0b11110000, cpu.registers.F, "All flags should be set.");
     }
 
@@ -50,31 +50,31 @@ class CPUTest {
         cpu.setFlags(0b11110000);
         assertEquals(0b11110000, cpu.registers.F, "All flags should be set.");
 
-        cpu.resetFlags(CPU.FLAG_ZERO);
+        cpu.resetFlags(CPU.Flags.ZERO);
         assertEquals(0b01110000, cpu.registers.F, "SUB, HALF_CARRY and CARRY flags should be set.");
 
-        cpu.resetFlags(CPU.FLAG_SUB);
+        cpu.resetFlags(CPU.Flags.SUB);
         assertEquals(0b00110000, cpu.registers.F, "HALF_CARRY and CARRY flags should be set.");
 
-        cpu.resetFlags(CPU.FLAG_HALF);
+        cpu.resetFlags(CPU.Flags.HALF);
         assertEquals(0b00010000, cpu.registers.F, "Only HALF_CARRY flag should be set.");
 
-        cpu.resetFlags(CPU.FLAG_CARRY);
+        cpu.resetFlags(CPU.Flags.CARRY);
         assertEquals(0b00000000, cpu.registers.F, "No flags should be set.");
     }
 
     @Test
     void complexFlagLogicTest() {
-        cpu.setFlags(CPU.FLAG_ZERO | CPU.FLAG_CARRY);
+        cpu.setFlags(CPU.Flags.ZERO | CPU.Flags.CARRY);
         assertEquals(0b10010000, cpu.registers.F, "ZERO and CARRY flags should be set.");
 
-        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_CARRY);
+        cpu.resetFlags(CPU.Flags.ZERO | CPU.Flags.CARRY);
         assertEquals(0b00000000, cpu.registers.F, "No flags should be set.");
 
-        cpu.setFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_CARRY);
+        cpu.setFlags(CPU.Flags.ZERO | CPU.Flags.SUB | CPU.Flags.CARRY);
         assertEquals(0b11010000, cpu.registers.F, "ZERO, SUB and CARRY flags should be set.");
 
-        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_CARRY);
+        cpu.resetFlags(CPU.Flags.ZERO | CPU.Flags.CARRY);
         assertEquals(0b01000000, cpu.registers.F, "Only SUB should be set.");
     }
 

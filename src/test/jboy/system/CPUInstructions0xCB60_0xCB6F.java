@@ -31,7 +31,7 @@ class CPUInstructions0xCB60_0xCB6F {
         cpu.registers.PC = 0x100;
         cpu.registers.SP = 0xFFFE;
         rom = new int[0x7FFF];
-        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
+        cpu.resetFlags(CPU.Flags.ZERO | CPU.Flags.SUB | CPU.Flags.HALF | CPU.Flags.CARRY);
     }
 
     @AfterEach
@@ -51,11 +51,11 @@ class CPUInstructions0xCB60_0xCB6F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
         assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
 
         cpu.registers.PC = 0x100;
-        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
+        cpu.resetFlags(CPU.Flags.ZERO | CPU.Flags.SUB | CPU.Flags.HALF | CPU.Flags.CARRY);
 
         rom[0x100] = 0x06; // ld b,0x00
         rom[0x101] = 0x00;
@@ -64,7 +64,7 @@ class CPUInstructions0xCB60_0xCB6F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.ZERO | CPU.Flags.HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
         assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
     }
 
@@ -80,11 +80,11 @@ class CPUInstructions0xCB60_0xCB6F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
         assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
 
         cpu.registers.PC = 0x100;
-        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
+        cpu.resetFlags(CPU.Flags.ZERO | CPU.Flags.SUB | CPU.Flags.HALF | CPU.Flags.CARRY);
 
         rom[0x100] = 0x0E; // ld c,0x00
         rom[0x101] = 0x00;
@@ -93,7 +93,7 @@ class CPUInstructions0xCB60_0xCB6F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.ZERO | CPU.Flags.HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
         assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
     }
 
@@ -109,11 +109,11 @@ class CPUInstructions0xCB60_0xCB6F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
         assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
 
         cpu.registers.PC = 0x100;
-        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
+        cpu.resetFlags(CPU.Flags.ZERO | CPU.Flags.SUB | CPU.Flags.HALF | CPU.Flags.CARRY);
 
         rom[0x100] = 0x16; // ld d,0x00
         rom[0x101] = 0x00;
@@ -122,7 +122,7 @@ class CPUInstructions0xCB60_0xCB6F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.ZERO | CPU.Flags.HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
         assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
     }
 
@@ -138,11 +138,11 @@ class CPUInstructions0xCB60_0xCB6F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
         assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
 
         cpu.registers.PC = 0x100;
-        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
+        cpu.resetFlags(CPU.Flags.ZERO | CPU.Flags.SUB | CPU.Flags.HALF | CPU.Flags.CARRY);
 
         rom[0x100] = 0x1E; // ld e,0x00
         rom[0x101] = 0x00;
@@ -151,7 +151,7 @@ class CPUInstructions0xCB60_0xCB6F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.ZERO | CPU.Flags.HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
         assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
     }
 
@@ -167,11 +167,11 @@ class CPUInstructions0xCB60_0xCB6F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
         assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
 
         cpu.registers.PC = 0x100;
-        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
+        cpu.resetFlags(CPU.Flags.ZERO | CPU.Flags.SUB | CPU.Flags.HALF | CPU.Flags.CARRY);
 
         rom[0x100] = 0x26; // ld h,0x00
         rom[0x101] = 0x00;
@@ -180,7 +180,7 @@ class CPUInstructions0xCB60_0xCB6F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.ZERO | CPU.Flags.HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
         assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
     }
 
@@ -196,11 +196,11 @@ class CPUInstructions0xCB60_0xCB6F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
         assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
 
         cpu.registers.PC = 0x100;
-        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
+        cpu.resetFlags(CPU.Flags.ZERO | CPU.Flags.SUB | CPU.Flags.HALF | CPU.Flags.CARRY);
 
         rom[0x100] = 0x2E; // ld l,0x00
         rom[0x101] = 0x00;
@@ -209,7 +209,7 @@ class CPUInstructions0xCB60_0xCB6F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.ZERO | CPU.Flags.HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
         assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
     }
 
@@ -228,17 +228,17 @@ class CPUInstructions0xCB60_0xCB6F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
         assertEquals(0x105, cpu.registers.PC, "PC should equal 0x105.");
 
         cpu.registers.PC = 0x100;
-        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
+        cpu.resetFlags(CPU.Flags.ZERO | CPU.Flags.SUB | CPU.Flags.HALF | CPU.Flags.CARRY);
 
         memory.setByteAt(0xC000, 0x00); // This is the value that HL will point to.
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.ZERO | CPU.Flags.HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
         assertEquals(0x105, cpu.registers.PC, "PC should equal 0x105.");
     }
 
@@ -254,11 +254,11 @@ class CPUInstructions0xCB60_0xCB6F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
         assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
 
         cpu.registers.PC = 0x100;
-        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
+        cpu.resetFlags(CPU.Flags.ZERO | CPU.Flags.SUB | CPU.Flags.HALF | CPU.Flags.CARRY);
 
         rom[0x100] = 0x3E; // ld a,0x00
         rom[0x101] = 0x00;
@@ -267,7 +267,7 @@ class CPUInstructions0xCB60_0xCB6F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.ZERO | CPU.Flags.HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
         assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
     }
 
@@ -283,11 +283,11 @@ class CPUInstructions0xCB60_0xCB6F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
         assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
 
         cpu.registers.PC = 0x100;
-        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
+        cpu.resetFlags(CPU.Flags.ZERO | CPU.Flags.SUB | CPU.Flags.HALF | CPU.Flags.CARRY);
 
         rom[0x100] = 0x06; // ld b,0x00
         rom[0x101] = 0x00;
@@ -296,7 +296,7 @@ class CPUInstructions0xCB60_0xCB6F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.ZERO | CPU.Flags.HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
         assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
     }
 
@@ -312,11 +312,11 @@ class CPUInstructions0xCB60_0xCB6F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
         assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
 
         cpu.registers.PC = 0x100;
-        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
+        cpu.resetFlags(CPU.Flags.ZERO | CPU.Flags.SUB | CPU.Flags.HALF | CPU.Flags.CARRY);
 
         rom[0x100] = 0x0E; // ld c,0x00
         rom[0x101] = 0x00;
@@ -325,7 +325,7 @@ class CPUInstructions0xCB60_0xCB6F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.ZERO | CPU.Flags.HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
         assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
     }
 
@@ -341,11 +341,11 @@ class CPUInstructions0xCB60_0xCB6F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
         assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
 
         cpu.registers.PC = 0x100;
-        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
+        cpu.resetFlags(CPU.Flags.ZERO | CPU.Flags.SUB | CPU.Flags.HALF | CPU.Flags.CARRY);
 
         rom[0x100] = 0x16; // ld d,0x00
         rom[0x101] = 0x00;
@@ -354,7 +354,7 @@ class CPUInstructions0xCB60_0xCB6F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.ZERO | CPU.Flags.HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
         assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
     }
 
@@ -370,11 +370,11 @@ class CPUInstructions0xCB60_0xCB6F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
         assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
 
         cpu.registers.PC = 0x100;
-        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
+        cpu.resetFlags(CPU.Flags.ZERO | CPU.Flags.SUB | CPU.Flags.HALF | CPU.Flags.CARRY);
 
         rom[0x100] = 0x1E; // ld e,0x00
         rom[0x101] = 0x00;
@@ -383,7 +383,7 @@ class CPUInstructions0xCB60_0xCB6F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.ZERO | CPU.Flags.HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
         assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
     }
 
@@ -399,11 +399,11 @@ class CPUInstructions0xCB60_0xCB6F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
         assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
 
         cpu.registers.PC = 0x100;
-        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
+        cpu.resetFlags(CPU.Flags.ZERO | CPU.Flags.SUB | CPU.Flags.HALF | CPU.Flags.CARRY);
 
         rom[0x100] = 0x26; // ld h,0x00
         rom[0x101] = 0x00;
@@ -412,7 +412,7 @@ class CPUInstructions0xCB60_0xCB6F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.ZERO | CPU.Flags.HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
         assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
     }
 
@@ -428,11 +428,11 @@ class CPUInstructions0xCB60_0xCB6F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
         assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
 
         cpu.registers.PC = 0x100;
-        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
+        cpu.resetFlags(CPU.Flags.ZERO | CPU.Flags.SUB | CPU.Flags.HALF | CPU.Flags.CARRY);
 
         rom[0x100] = 0x2E; // ld l,0x00
         rom[0x101] = 0x00;
@@ -441,7 +441,7 @@ class CPUInstructions0xCB60_0xCB6F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.ZERO | CPU.Flags.HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
         assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
     }
 
@@ -460,17 +460,17 @@ class CPUInstructions0xCB60_0xCB6F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
         assertEquals(0x105, cpu.registers.PC, "PC should equal 0x105.");
 
         cpu.registers.PC = 0x100;
-        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
+        cpu.resetFlags(CPU.Flags.ZERO | CPU.Flags.SUB | CPU.Flags.HALF | CPU.Flags.CARRY);
 
         memory.setByteAt(0xC000, 0x00); // This is the value that HL will point to.
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.ZERO | CPU.Flags.HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
         assertEquals(0x105, cpu.registers.PC, "PC should equal 0x105.");
     }
 
@@ -486,11 +486,11 @@ class CPUInstructions0xCB60_0xCB6F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.HALF, cpu.registers.F, "The HALF_CARRY flag should be set.");
         assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
 
         cpu.registers.PC = 0x100;
-        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
+        cpu.resetFlags(CPU.Flags.ZERO | CPU.Flags.SUB | CPU.Flags.HALF | CPU.Flags.CARRY);
 
         rom[0x100] = 0x3E; // ld a,0x00
         rom[0x101] = 0x00;
@@ -499,7 +499,7 @@ class CPUInstructions0xCB60_0xCB6F {
 
         cpu.tick();
         cpu.tick();
-        assertEquals(CPU.FLAG_ZERO | CPU.FLAG_HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
+        assertEquals(CPU.Flags.ZERO | CPU.Flags.HALF, cpu.registers.F, "The ZERO and HALF_CARRY flag should be set.");
         assertEquals(0x104, cpu.registers.PC, "PC should equal 0x104.");
     }
 }

@@ -30,7 +30,7 @@ class CPUInstructions0x70_0x7F {
     void setUp() {
         rom = new int[0x7FFF];
         cpu.reset();
-        cpu.resetFlags(CPU.FLAG_ZERO | CPU.FLAG_SUB | CPU.FLAG_HALF | CPU.FLAG_CARRY);
+        cpu.resetFlags(CPU.Flags.ZERO | CPU.Flags.SUB | CPU.Flags.HALF | CPU.Flags.CARRY);
     }
 
     @AfterEach

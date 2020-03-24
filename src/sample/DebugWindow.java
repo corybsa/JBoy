@@ -264,10 +264,10 @@ class DebugWindow {
         this.ly.setText(info.getMemoryInfo().getLY());
         this.lcdStat.setText(info.getMemoryInfo().getLCDStatus());
 
-        this.z.setSelected((flags & CPU.FLAG_ZERO) == CPU.FLAG_ZERO);
-        this.n.setSelected((flags & CPU.FLAG_SUB) == CPU.FLAG_SUB);
-        this.h.setSelected((flags & CPU.FLAG_HALF) == CPU.FLAG_HALF);
-        this.c.setSelected((flags & CPU.FLAG_CARRY) == CPU.FLAG_CARRY);
+        this.z.setSelected((flags & CPU.Flags.ZERO) == CPU.Flags.ZERO);
+        this.n.setSelected((flags & CPU.Flags.SUB) == CPU.Flags.SUB);
+        this.h.setSelected((flags & CPU.Flags.HALF) == CPU.Flags.HALF);
+        this.c.setSelected((flags & CPU.Flags.CARRY) == CPU.Flags.CARRY);
 
         this.timerState.setText(timerInfo.getTimerState());
         this.timer.setText(timerInfo.getTimer());

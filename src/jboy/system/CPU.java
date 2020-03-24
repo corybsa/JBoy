@@ -76,17 +76,12 @@ public class CPU {
     // The frequency of the clock in MHz.
     public static final int FREQUENCY = 4194304;
 
-    // Value of the Zero flag is 0b10000000
-    public static final int FLAG_ZERO = 0x80;
-
-    // Value of the Subtract flag is 0b01000000
-    public static final int FLAG_SUB = 0x40;
-
-    // Value of the Half Carry flag is 0b00100000
-    public static final int FLAG_HALF = 0x20;
-
-    // Value of the Carry flag is 0b00010000
-    public static final int FLAG_CARRY = 0x10;
+    public static class Flags {
+        public static int ZERO =  0b10000000;
+        public static int SUB =   0b01000000;
+        public static int HALF =  0b00100000;
+        public static int CARRY = 0b00010000;
+    }
 
     public Registers registers;
 
@@ -100,6 +95,7 @@ public class CPU {
     public boolean isHalted = false;
     public boolean haltBug = false;
     public boolean haltSkip = false;
+    public boolean justHalted = false;
 
     public long cycles = 0;
     private long cyclesSinceLastSync = 0;
@@ -109,12 +105,10 @@ public class CPU {
     private final GPU gpu;
     private final Timers timers;
 
-    private final HashMap<Integer, Instruction> instructions;
     private final CpuInfo info;
-    private ArrayList<Integer> breakpoints;
+    private final ArrayList<Integer> breakpoints;
 
     public CPU(Memory memory, GPU gpu, Timers timers) {
-        this.instructions = new Instructions(this);
         this.registers = new Registers();
         this.memory = memory;
         this.gpu = gpu;
@@ -252,7 +246,27 @@ public class CPU {
         // Check if there are any interrupts that need to be serviced.
         boolean shouldServiceInterrupts = (this.getIF() & this.getIE()) != 0;
 
-        if(this.isHalted && this.ime && shouldServiceInterrupts) {
+        if(this.isHalted && !this.justHalted) {
+            this.incrementCycles(2);
+        }
+
+        if(this.isHalted) {
+            this.incrementCycles(this.justHalted ? 4 : 2);
+        }
+
+        this.justHalted = false;
+
+        if(this.isHalted && !this.ime && shouldServiceInterrupts) {
+            this.isHalted = false;
+        } else if(this.ime && shouldServiceInterrupts) {
+            this.isHalted = false;
+            this.checkInterrupts();
+        } else {
+            this.decode(this.memory.getByteAt(this.registers.PC++));
+            this.gpu.tick(this.cycles);
+        }
+
+        /*if(this.isHalted && this.ime && shouldServiceInterrupts) {
             this.isHalted = false;
 
             if(!this.haltSkip) {
@@ -265,7 +279,7 @@ public class CPU {
                 this.decode(this.memory.getByteAt(this.registers.PC++));
                 this.gpu.tick(this.cycles);
             }
-        }
+        }*/
     }
 
     /**
@@ -598,7 +612,7 @@ public class CPU {
                         this.incrementCycles(12);
                         break;
                     case 0b100: // jr nz x
-                        if ((this.registers.F & FLAG_ZERO) != FLAG_ZERO) {
+                        if ((this.registers.F & Flags.ZERO) != Flags.ZERO) {
                             this.jumpRelative(this.getByte());
                             this.incrementCycles(12);
                         } else {
@@ -608,7 +622,7 @@ public class CPU {
 
                         break;
                     case 0b101: // jr z x
-                        if ((this.registers.F & FLAG_ZERO) == FLAG_ZERO) {
+                        if ((this.registers.F & Flags.ZERO) == Flags.ZERO) {
                             this.jumpRelative(this.getByte());
                             this.incrementCycles(12);
                         } else {
@@ -618,7 +632,7 @@ public class CPU {
 
                         break;
                     case 0b110: // jr nc x
-                        if ((this.registers.F & FLAG_CARRY) != FLAG_CARRY) {
+                        if ((this.registers.F & Flags.CARRY) != Flags.CARRY) {
                             this.jumpRelative(this.getByte());
                             this.incrementCycles(12);
                         } else {
@@ -628,7 +642,7 @@ public class CPU {
 
                         break;
                     case 0b111: // jr c x
-                        if ((this.registers.F & FLAG_CARRY) == FLAG_CARRY) {
+                        if ((this.registers.F & Flags.CARRY) == Flags.CARRY) {
                             this.jumpRelative(this.getByte());
                             this.incrementCycles(12);
                         } else {
@@ -868,7 +882,7 @@ public class CPU {
             case 0b000: // conditional return
                 switch(y) {
                     case 0b000: // ret nz
-                        if((this.registers.F & FLAG_ZERO) != FLAG_ZERO) {
+                        if((this.registers.F & Flags.ZERO) != Flags.ZERO) {
                             this.registers.PC = this.combineBytes(high, low);
                             this.registers.SP += 2;
                             this.incrementCycles(20);
@@ -878,7 +892,7 @@ public class CPU {
 
                         break;
                     case 0b001: // ret z
-                        if((this.registers.F & FLAG_ZERO) == FLAG_ZERO) {
+                        if((this.registers.F & Flags.ZERO) == Flags.ZERO) {
                             this.registers.PC = this.combineBytes(high, low);
                             this.registers.SP += 2;
                             this.incrementCycles(20);
@@ -888,7 +902,7 @@ public class CPU {
 
                         break;
                     case 0b010: // ret nc
-                        if((this.registers.F & FLAG_CARRY) != FLAG_CARRY) {
+                        if((this.registers.F & Flags.CARRY) != Flags.CARRY) {
                             this.registers.PC = this.combineBytes(high, low);
                             this.registers.SP += 2;
                             this.incrementCycles(20);
@@ -898,7 +912,7 @@ public class CPU {
 
                         break;
                     case 0b011: // ret c
-                        if((this.registers.F & FLAG_CARRY) == FLAG_CARRY) {
+                        if((this.registers.F & Flags.CARRY) == Flags.CARRY) {
                             this.registers.PC = this.combineBytes(high, low);
                             this.registers.SP += 2;
                             this.incrementCycles(20);
@@ -915,7 +929,7 @@ public class CPU {
                         break;
                     case 0b101: // add sp, x
                         this.registers.SP = this.add16Bit(this.registers.SP, this.getByte());
-                        this.setFlags(FLAG_ZERO);
+                        this.setFlags(Flags.ZERO);
                         this.incrementCycles(16);
                         this.incrementPC(1);
 
@@ -931,18 +945,18 @@ public class CPU {
                         int result = this.registers.SP + op;
 
                         if((result & 0xFFFF0000) != 0) {
-                            this.setFlags(FLAG_CARRY);
+                            this.setFlags(Flags.CARRY);
                         } else {
-                            this.resetFlags(FLAG_CARRY);
+                            this.resetFlags(Flags.CARRY);
                         }
 
                         if(((this.registers.SP & 0x0F) + (op & 0x0F)) > 0x0F) {
-                            this.setFlags(FLAG_HALF);
+                            this.setFlags(Flags.HALF);
                         } else {
-                            this.resetFlags(FLAG_HALF);
+                            this.resetFlags(Flags.HALF);
                         }
 
-                        this.resetFlags(FLAG_ZERO | FLAG_SUB);
+                        this.resetFlags(Flags.ZERO | Flags.SUB);
                         this.registers.setHL(result & 0xFFFF);
                         this.incrementCycles(12);
                         this.incrementPC(1);
@@ -989,7 +1003,7 @@ public class CPU {
                 if((p >> 1) == 0) {
                     switch(y) {
                         case 0b000: // jp nz xx
-                            if((this.registers.F & FLAG_ZERO) != FLAG_ZERO) {
+                            if((this.registers.F & Flags.ZERO) != Flags.ZERO) {
                                 this.registers.PC = this.getWord() - 2;
                                 this.incrementCycles(16);
                             } else {
@@ -998,7 +1012,7 @@ public class CPU {
 
                             break;
                         case 0b001: // jp z xx
-                            if((this.registers.F & FLAG_ZERO) == FLAG_ZERO) {
+                            if((this.registers.F & Flags.ZERO) == Flags.ZERO) {
                                 this.registers.PC = this.getWord() - 2;
                                 this.incrementCycles(16);
                             } else {
@@ -1007,7 +1021,7 @@ public class CPU {
 
                             break;
                         case 0b010: // jp nc xx
-                            if((this.registers.F & FLAG_CARRY) != FLAG_CARRY) {
+                            if((this.registers.F & Flags.CARRY) != Flags.CARRY) {
                                 this.registers.PC = this.getWord() - 2;
                                 this.incrementCycles(16);
                             } else {
@@ -1016,7 +1030,7 @@ public class CPU {
 
                             break;
                         case 0b011: // jp c xx
-                            if((this.registers.F & FLAG_CARRY) == FLAG_CARRY) {
+                            if((this.registers.F & Flags.CARRY) == Flags.CARRY) {
                                 this.registers.PC = this.getWord() - 2;
                                 this.incrementCycles(16);
                             } else {
@@ -1091,7 +1105,7 @@ public class CPU {
             case 0b100: // conditional calls
                 switch(y) {
                     case 0b000: // call nz xx
-                        if((this.registers.F & FLAG_ZERO) != FLAG_ZERO) {
+                        if((this.registers.F & Flags.ZERO) != Flags.ZERO) {
                             this.call();
                         } else {
                             this.incrementCycles(12);
@@ -1100,7 +1114,7 @@ public class CPU {
 
                         break;
                     case 0b001: // call z xx
-                        if((this.registers.F & FLAG_ZERO) == FLAG_ZERO) {
+                        if((this.registers.F & Flags.ZERO) == Flags.ZERO) {
                             this.call();
                         } else {
                             this.incrementCycles(12);
@@ -1109,7 +1123,7 @@ public class CPU {
 
                         break;
                     case 0b010: // call nc xx
-                        if((this.registers.F & FLAG_CARRY) != FLAG_CARRY) {
+                        if((this.registers.F & Flags.CARRY) != Flags.CARRY) {
                             this.call();
                         } else {
                             this.incrementCycles(12);
@@ -1118,7 +1132,7 @@ public class CPU {
 
                         break;
                     case 0b011: // call c xx
-                        if((this.registers.F & FLAG_CARRY) == FLAG_CARRY) {
+                        if((this.registers.F & Flags.CARRY) == Flags.CARRY) {
                             this.call();
                         } else {
                             this.incrementCycles(12);
@@ -1326,24 +1340,24 @@ public class CPU {
      * @return The incremented value.
      */
     private int increment(int value) {
-        // FLAG_HALF - set if there was a carry from the 3rd bit to the 4th bit, otherwise reset.
+        // Flags.HALF - set if there was a carry from the 3rd bit to the 4th bit, otherwise reset.
         if((value & 0x0F) == 0x0F) {
-            this.setFlags(FLAG_HALF);
+            this.setFlags(Flags.HALF);
         } else {
-            this.resetFlags(FLAG_HALF);
+            this.resetFlags(Flags.HALF);
         }
 
         // increment value by 1 and get the first 8 bits
         value = (value + 1) & 0xFF;
 
-        // FLAG_SUB - reset
-        this.resetFlags(FLAG_SUB);
+        // Flags.SUB - reset
+        this.resetFlags(Flags.SUB);
 
-        // FLAG_ZERO - set if result is 0, otherwise reset
+        // Flags.ZERO - set if result is 0, otherwise reset
         if(value == 0) {
-            this.setFlags(FLAG_ZERO);
+            this.setFlags(Flags.ZERO);
         } else {
-            this.resetFlags(FLAG_ZERO);
+            this.resetFlags(Flags.ZERO);
         }
 
         return value;
@@ -1358,25 +1372,25 @@ public class CPU {
         // decrement value by 1 and get the first 8 bits
         int result = (value - 1) & 0xFF;
 
-        // FLAG_HALF - set if there was a carry (borrow) from the 4th bit to the 3rd bit, otherwise reset.
+        // Flags.HALF - set if there was a carry (borrow) from the 4th bit to the 3rd bit, otherwise reset.
         // invert value's bits, xor with (value - 1) then find out what the 4th bit is with (& 0x10).
         // If it equals zero, then there was a carry.
         if((((~value) ^ (result)) & 0x10) == 0) {
-            this.setFlags(FLAG_HALF);
+            this.setFlags(Flags.HALF);
         } else {
-            this.resetFlags(FLAG_HALF);
+            this.resetFlags(Flags.HALF);
         }
 
         value = result;
 
-        // FLAG_SUB - set
-        this.setFlags(FLAG_SUB);
+        // Flags.SUB - set
+        this.setFlags(Flags.SUB);
 
-        // FLAG_ZERO - set if result is 0, otherwise reset
+        // Flags.ZERO - set if result is 0, otherwise reset
         if(value == 0) {
-            this.setFlags(FLAG_ZERO);
+            this.setFlags(Flags.ZERO);
         } else {
-            this.resetFlags(FLAG_ZERO);
+            this.resetFlags(Flags.ZERO);
         }
 
         return value;
@@ -1392,18 +1406,18 @@ public class CPU {
         int result = num1 + num2;
 
         if((result & 0xFFFF0000) != 0) {
-            this.setFlags(FLAG_CARRY);
+            this.setFlags(Flags.CARRY);
         } else {
-            this.resetFlags(FLAG_CARRY);
+            this.resetFlags(Flags.CARRY);
         }
 
         if(((num1 & 0x0F00) + (num2 & 0x0F00)) > 0x0F00) {
-            this.setFlags(FLAG_HALF);
+            this.setFlags(Flags.HALF);
         } else {
-            this.resetFlags(FLAG_HALF);
+            this.resetFlags(Flags.HALF);
         }
 
-        this.resetFlags(FLAG_SUB);
+        this.resetFlags(Flags.SUB);
         return result & 0xFFFF;
     }
 
@@ -1417,24 +1431,24 @@ public class CPU {
         int result = num1 + num2;
 
         if((result & 0xFF00) != 0) {
-            this.setFlags(FLAG_CARRY);
+            this.setFlags(Flags.CARRY);
         } else {
-            this.resetFlags(FLAG_CARRY);
+            this.resetFlags(Flags.CARRY);
         }
 
         if((result & 0xFF) != 0) {
-            this.resetFlags(FLAG_ZERO);
+            this.resetFlags(Flags.ZERO);
         } else {
-            this.setFlags(FLAG_ZERO);
+            this.setFlags(Flags.ZERO);
         }
 
         if(((num1 & 0x0F) + (num2 & 0x0F)) > 0x0F) {
-            this.setFlags(FLAG_HALF);
+            this.setFlags(Flags.HALF);
         } else {
-            this.resetFlags(FLAG_HALF);
+            this.resetFlags(Flags.HALF);
         }
 
-        this.resetFlags(FLAG_SUB);
+        this.resetFlags(Flags.SUB);
         return result & 0xFF;
     }
 
@@ -1445,28 +1459,28 @@ public class CPU {
      * @return The 8-bit result of the addition.
      */
     private int adc(int num1, int num2) {
-        int carry = (this.registers.F & FLAG_CARRY) >> 4;
+        int carry = (this.registers.F & Flags.CARRY) >> 4;
         int result = num1 + num2 + carry;
 
         if((result & 0xFF00) != 0) {
-            this.setFlags(FLAG_CARRY);
+            this.setFlags(Flags.CARRY);
         } else {
-            this.resetFlags(FLAG_CARRY);
+            this.resetFlags(Flags.CARRY);
         }
 
         if((result & 0xFF) != 0) {
-            this.resetFlags(FLAG_ZERO);
+            this.resetFlags(Flags.ZERO);
         } else {
-            this.setFlags(FLAG_ZERO);
+            this.setFlags(Flags.ZERO);
         }
 
         if(((num1 & 0x0F) + (num2 & 0x0F) + carry) > 0x0F) {
-            this.setFlags(FLAG_HALF);
+            this.setFlags(Flags.HALF);
         } else {
-            this.resetFlags(FLAG_HALF);
+            this.resetFlags(Flags.HALF);
         }
 
-        this.resetFlags(FLAG_SUB);
+        this.resetFlags(Flags.SUB);
         return result & 0xFF;
     }
 
@@ -1478,26 +1492,26 @@ public class CPU {
      */
     private int sub(int num1, int num2) {
         if(num2 > num1) {
-            this.setFlags(FLAG_CARRY);
+            this.setFlags(Flags.CARRY);
         } else {
-            this.resetFlags(FLAG_CARRY);
+            this.resetFlags(Flags.CARRY);
         }
 
         if((num2 & 0x0F) > (num1 & 0x0F)) {
-            this.setFlags(FLAG_HALF);
+            this.setFlags(Flags.HALF);
         } else {
-            this.resetFlags(FLAG_HALF);
+            this.resetFlags(Flags.HALF);
         }
 
         int result = (num1 - num2) & 0xFF;
 
         if(result == 0) {
-            this.setFlags(FLAG_ZERO);
+            this.setFlags(Flags.ZERO);
         } else {
-            this.resetFlags(FLAG_ZERO);
+            this.resetFlags(Flags.ZERO);
         }
 
-        this.setFlags(FLAG_SUB);
+        this.setFlags(Flags.SUB);
 
         return result;
     }
@@ -1510,29 +1524,29 @@ public class CPU {
      */
     private int sbc(int num1, int num2) {
         int result = num1 - num2;
-        result = result - ((this.registers.F & FLAG_CARRY) >> 4);
+        result = result - ((this.registers.F & Flags.CARRY) >> 4);
 
         if(result < 0) {
-            this.setFlags(FLAG_CARRY);
+            this.setFlags(Flags.CARRY);
         } else {
-            this.resetFlags(FLAG_CARRY);
+            this.resetFlags(Flags.CARRY);
         }
 
         result &= 0xFF;
 
         if(result == 0) {
-            this.setFlags(FLAG_ZERO);
+            this.setFlags(Flags.ZERO);
         } else {
-            this.resetFlags(FLAG_ZERO);
+            this.resetFlags(Flags.ZERO);
         }
 
         if(((result ^ num2 ^ num1) & 0x10) == 0x10) {
-            this.setFlags(FLAG_HALF);
+            this.setFlags(Flags.HALF);
         } else {
-            this.resetFlags(FLAG_HALF);
+            this.resetFlags(Flags.HALF);
         }
 
-        this.setFlags(FLAG_SUB);
+        this.setFlags(Flags.SUB);
 
         return result;
     }
@@ -1545,21 +1559,21 @@ public class CPU {
     private int rlc(int value) {
         // check the 7th bit of the value.
         if((value & 0x80) == 0x80) {
-            this.setFlags(FLAG_CARRY);
+            this.setFlags(Flags.CARRY);
         } else {
-            this.resetFlags(FLAG_CARRY);
+            this.resetFlags(Flags.CARRY);
         }
 
         // subtraction and half carry flags are reset.
-        this.resetFlags(FLAG_SUB | FLAG_HALF);
+        this.resetFlags(Flags.SUB | Flags.HALF);
 
         // shift A left by 1 bit, change the 0th bit to whatever the carry flag was.
         int result = (((value << 1) & (~0x01)) | ((value & 0x80) >> 7)) & 0xFF;
 
         if(result == 0) {
-            this.setFlags(FLAG_ZERO);
+            this.setFlags(Flags.ZERO);
         } else {
-            this.resetFlags(FLAG_ZERO);
+            this.resetFlags(Flags.ZERO);
         }
 
         return result;
@@ -1572,7 +1586,7 @@ public class CPU {
         int carry = (this.registers.A & 0x80) >> 7;
 
         if(carry == 1) {
-            this.setFlags(FLAG_CARRY);
+            this.setFlags(Flags.CARRY);
         }
 
         // shift bit left by 1 and get the first 8 bits
@@ -1581,7 +1595,7 @@ public class CPU {
         // set the 0th bit to whatever was at the 7th bit.
         this.registers.A = this.registers.A | carry;
 
-        this.resetFlags(FLAG_ZERO | FLAG_SUB | FLAG_HALF);
+        this.resetFlags(Flags.ZERO | Flags.SUB | Flags.HALF);
     }
 
     /**
@@ -1592,22 +1606,22 @@ public class CPU {
     private int rrc(int value) {
         // check the 0th bit of the value.
         if((value & 0x01) == 0x01) {
-            this.setFlags(FLAG_CARRY);
+            this.setFlags(Flags.CARRY);
         } else {
-            this.resetFlags(FLAG_CARRY);
+            this.resetFlags(Flags.CARRY);
         }
 
         // subtraction and half carry flags are reset.
-        this.resetFlags(FLAG_SUB | FLAG_HALF);
+        this.resetFlags(Flags.SUB | Flags.HALF);
 
         // shift A left by 1 bit, change the 0th bit to whatever the carry flag was.
         // (((0x01 >> 1) & (~0x01)) | ((0x01 & 0x01) << 7)) & 0xFF
         int result = (((value >> 1) & (~0x01)) | ((value & 0x01) << 7)) & 0xFF;
 
         if(result == 0) {
-            this.setFlags(FLAG_ZERO);
+            this.setFlags(Flags.ZERO);
         } else {
-            this.resetFlags(FLAG_ZERO);
+            this.resetFlags(Flags.ZERO);
         }
 
         return result;
@@ -1620,15 +1634,15 @@ public class CPU {
         int carry = this.registers.A & 0x01;
 
         if(carry == 0x01) {
-            this.setFlags(FLAG_CARRY);
+            this.setFlags(Flags.CARRY);
         } else {
-            this.resetFlags(FLAG_CARRY);
+            this.resetFlags(Flags.CARRY);
         }
 
         // set the 7th bit to whatever was at the 0th bit.
         this.registers.A = (((this.registers.A >> 1) & (~0x80)) | (carry << 7)) & 0xFF;
 
-        this.resetFlags(FLAG_ZERO | FLAG_SUB | FLAG_HALF);
+        this.resetFlags(Flags.ZERO | Flags.SUB | Flags.HALF);
     }
 
     /**
@@ -1637,20 +1651,20 @@ public class CPU {
      * @return The shifted value.
      */
     private int rl(int value) {
-        int carry = this.registers.F & FLAG_CARRY;
+        int carry = this.registers.F & Flags.CARRY;
 
         if((value & 0x80) == 0x80) {
-            this.setFlags(FLAG_CARRY);
+            this.setFlags(Flags.CARRY);
         } else {
-            this.resetFlags(FLAG_CARRY);
+            this.resetFlags(Flags.CARRY);
         }
 
         int result = ((value << 1) | carry) & 0xFF;
 
         if(result == 0) {
-            this.setFlags(FLAG_ZERO);
+            this.setFlags(Flags.ZERO);
         } else {
-            this.resetFlags(FLAG_ZERO);
+            this.resetFlags(Flags.ZERO);
         }
 
         return result;
@@ -1661,20 +1675,20 @@ public class CPU {
      */
     private void rla() {
         // get current state of carry flag.
-        int carry = (this.registers.F & FLAG_CARRY) >> 4;
+        int carry = (this.registers.F & Flags.CARRY) >> 4;
 
         // check the 7th bit of A.
         if((this.registers.A & 0x80) == 0x80) {
-            this.setFlags(FLAG_CARRY);
+            this.setFlags(Flags.CARRY);
         } else {
-            this.resetFlags(FLAG_CARRY);
+            this.resetFlags(Flags.CARRY);
         }
 
         // shift A left by 1 bit, change the 0th bit to whatever the carry flag was.
         this.registers.A = (((this.registers.A << 1) & (~0x01)) | carry) & 0xFF;
 
         // all other flags are reset.
-        this.resetFlags(FLAG_ZERO | FLAG_SUB | FLAG_HALF);
+        this.resetFlags(Flags.ZERO | Flags.SUB | Flags.HALF);
     }
 
     /**
@@ -1683,20 +1697,20 @@ public class CPU {
      * @return The shifted value.
      */
     private int rr(int value) {
-        int carry = this.registers.F & FLAG_CARRY;
+        int carry = this.registers.F & Flags.CARRY;
 
         if((value & 0x01) == 0x01) {
-            this.setFlags(FLAG_CARRY);
+            this.setFlags(Flags.CARRY);
         } else {
-            this.resetFlags(FLAG_CARRY);
+            this.resetFlags(Flags.CARRY);
         }
 
         int result = ((value >> 1) | (carry << 7)) & 0xFF;
 
         if(result == 0) {
-            this.setFlags(FLAG_ZERO);
+            this.setFlags(Flags.ZERO);
         } else {
-            this.resetFlags(FLAG_ZERO);
+            this.resetFlags(Flags.ZERO);
         }
 
         return result;
@@ -1707,20 +1721,20 @@ public class CPU {
      */
     private void rra() {
         // get current state of carry flag.
-        int carry = (this.registers.F & FLAG_CARRY) >> 4;
+        int carry = (this.registers.F & Flags.CARRY) >> 4;
 
         // check the 0th bit of A.
         if((this.registers.A & 0x01) == 0x01) {
-            this.setFlags(FLAG_CARRY);
+            this.setFlags(Flags.CARRY);
         } else {
-            this.resetFlags(FLAG_CARRY);
+            this.resetFlags(Flags.CARRY);
         }
 
         // shift A right by 1 bit, change the 7th bit to whatever the carry flag was.
         this.registers.A = (((this.registers.A >> 1) & (~0x80)) | (carry << 7)) & 0xFF;
 
         // all other flags are reset.
-        this.resetFlags(FLAG_ZERO | FLAG_SUB | FLAG_HALF);
+        this.resetFlags(Flags.ZERO | Flags.SUB | Flags.HALF);
     }
 
     /**
@@ -1730,20 +1744,20 @@ public class CPU {
      */
     private int sla(int value) {
         if((value & 0x80) == 0x80) {
-            this.setFlags(FLAG_CARRY);
+            this.setFlags(Flags.CARRY);
         } else {
-            this.resetFlags(FLAG_CARRY);
+            this.resetFlags(Flags.CARRY);
         }
 
         int result = (value << 1) & 0xFF;
 
         if(result == 0) {
-            this.setFlags(FLAG_ZERO);
+            this.setFlags(Flags.ZERO);
         } else {
-            this.resetFlags(FLAG_ZERO);
+            this.resetFlags(Flags.ZERO);
         }
 
-        this.resetFlags(FLAG_SUB | FLAG_HALF);
+        this.resetFlags(Flags.SUB | Flags.HALF);
 
         return result;
     }
@@ -1755,20 +1769,20 @@ public class CPU {
      */
     private int sra(int value) {
         if((value & 0x01) == 0x01) {
-            this.setFlags(FLAG_CARRY);
+            this.setFlags(Flags.CARRY);
         } else {
-            this.resetFlags(FLAG_CARRY);
+            this.resetFlags(Flags.CARRY);
         }
 
         int result = ((value >> 1) | (value & 0x80)) & 0xFF;
 
         if(result == 0) {
-            this.setFlags(FLAG_ZERO);
+            this.setFlags(Flags.ZERO);
         } else {
-            this.resetFlags(FLAG_ZERO);
+            this.resetFlags(Flags.ZERO);
         }
 
-        this.resetFlags(FLAG_SUB | FLAG_HALF);
+        this.resetFlags(Flags.SUB | Flags.HALF);
 
         return result;
     }
@@ -1782,12 +1796,12 @@ public class CPU {
         int result = ((value & 0x0F) << 4) + (value >> 4);
 
         if(result == 0) {
-            this.setFlags(FLAG_ZERO);
+            this.setFlags(Flags.ZERO);
         } else {
-            this.resetFlags(FLAG_ZERO);
+            this.resetFlags(Flags.ZERO);
         }
 
-        this.resetFlags(FLAG_SUB | FLAG_HALF | FLAG_CARRY);
+        this.resetFlags(Flags.SUB | Flags.HALF | Flags.CARRY);
         return result;
     }
 
@@ -1798,20 +1812,20 @@ public class CPU {
      */
     private int srl(int value) {
         if((value & 0x01) == 0x01) {
-            this.setFlags(FLAG_CARRY);
+            this.setFlags(Flags.CARRY);
         } else {
-            this.resetFlags(FLAG_CARRY);
+            this.resetFlags(Flags.CARRY);
         }
 
         int result = (value >> 1) & 0xFF;
 
         if(result == 0) {
-            this.setFlags(FLAG_ZERO);
+            this.setFlags(Flags.ZERO);
         } else {
-            this.resetFlags(FLAG_ZERO);
+            this.resetFlags(Flags.ZERO);
         }
 
-        this.resetFlags(FLAG_SUB | FLAG_HALF);
+        this.resetFlags(Flags.SUB | Flags.HALF);
 
         return result;
     }
@@ -1821,15 +1835,15 @@ public class CPU {
      * used to set the contents of register A to a BCD number.
      */
     private void daa() {
-        boolean sub = (this.registers.F & FLAG_SUB) == FLAG_SUB;
-        boolean half = (this.registers.F & FLAG_HALF) == FLAG_HALF;
-        boolean carry = (this.registers.F & FLAG_CARRY) == FLAG_CARRY;
+        boolean sub = (this.registers.F & Flags.SUB) == Flags.SUB;
+        boolean half = (this.registers.F & Flags.HALF) == Flags.HALF;
+        boolean carry = (this.registers.F & Flags.CARRY) == Flags.CARRY;
 
         // after an addition, adjust A if a HALF_CARRY or CARRY occurred or if the result is out of bounds.
         if(!sub) {
             if(carry || this.registers.A > 0x99) {
                 this.registers.A = (this.registers.A + 0x60) & 0xFF;
-                this.setFlags(FLAG_CARRY);
+                this.setFlags(Flags.CARRY);
             }
 
             if(half || (this.registers.A & 0x0F) > 0x09) {
@@ -1848,13 +1862,13 @@ public class CPU {
 
         // set zero flag if A register is zero.
         if(this.registers.A == 0) {
-            this.setFlags(FLAG_ZERO);
+            this.setFlags(Flags.ZERO);
         } else {
-            this.resetFlags(FLAG_ZERO);
+            this.resetFlags(Flags.ZERO);
         }
 
         // half carry always reset.
-        this.resetFlags(FLAG_HALF);
+        this.resetFlags(Flags.HALF);
     }
 
     /**
@@ -1862,27 +1876,27 @@ public class CPU {
      */
     private void cpl() {
         this.registers.A = (~this.registers.A) & 0xFF;
-        this.setFlags(FLAG_SUB | FLAG_HALF);
+        this.setFlags(Flags.SUB | Flags.HALF);
     }
 
     /**
      * Sets carry flag, resets half carry and subtraction flags.
      */
     private void scf() {
-        this.setFlags(FLAG_CARRY);
-        this.resetFlags(FLAG_SUB | FLAG_HALF);
+        this.setFlags(Flags.CARRY);
+        this.resetFlags(Flags.SUB | Flags.HALF);
     }
 
     /**
      * Toggle the carry flag.
      */
     private void ccf() {
-        int carry = ((~this.registers.F & 0xFF) & FLAG_CARRY) >> 4;
+        int carry = ((~this.registers.F & 0xFF) & Flags.CARRY) >> 4;
 
         if(carry == 1) {
-            this.setFlags(FLAG_CARRY);
+            this.setFlags(Flags.CARRY);
         } else {
-            this.resetFlags(FLAG_CARRY);
+            this.resetFlags(Flags.CARRY);
         }
     }
 
@@ -1895,13 +1909,13 @@ public class CPU {
         int result = ~(value >> position) & 0x01;
 
         if(result == 1) {
-            this.setFlags(FLAG_ZERO);
+            this.setFlags(Flags.ZERO);
         } else {
-            this.resetFlags(FLAG_ZERO);
+            this.resetFlags(Flags.ZERO);
         }
 
-        this.setFlags(FLAG_HALF);
-        this.resetFlags(FLAG_SUB);
+        this.setFlags(Flags.HALF);
+        this.resetFlags(Flags.SUB);
     }
 
     /**
@@ -1934,13 +1948,13 @@ public class CPU {
         num1 &= num2;
 
         if(num1 == 0) {
-            this.setFlags(FLAG_ZERO);
+            this.setFlags(Flags.ZERO);
         } else {
-            this.resetFlags(FLAG_ZERO);
+            this.resetFlags(Flags.ZERO);
         }
 
-        this.resetFlags(FLAG_SUB | FLAG_CARRY);
-        this.setFlags(FLAG_HALF);
+        this.resetFlags(Flags.SUB | Flags.CARRY);
+        this.setFlags(Flags.HALF);
 
         return num1;
     }
@@ -1955,12 +1969,12 @@ public class CPU {
         num1 ^= num2;
 
         if(num1 == 0) {
-            this.setFlags(FLAG_ZERO);
+            this.setFlags(Flags.ZERO);
         } else {
-            this.resetFlags(FLAG_ZERO);
+            this.resetFlags(Flags.ZERO);
         }
 
-        this.resetFlags(FLAG_SUB | FLAG_HALF | FLAG_CARRY);
+        this.resetFlags(Flags.SUB | Flags.HALF | Flags.CARRY);
 
         return num1;
     }
@@ -1975,12 +1989,12 @@ public class CPU {
         num1 |= num2;
 
         if(num1 == 0) {
-            this.setFlags(FLAG_ZERO);
+            this.setFlags(Flags.ZERO);
         } else {
-            this.resetFlags(FLAG_ZERO);
+            this.resetFlags(Flags.ZERO);
         }
 
-        this.resetFlags(FLAG_SUB | FLAG_HALF | FLAG_CARRY);
+        this.resetFlags(Flags.SUB | Flags.HALF | Flags.CARRY);
 
         return num1;
     }
@@ -1992,24 +2006,24 @@ public class CPU {
      */
     private void cp(int num1, int num2) {
         if(num1 == num2) {
-            this.setFlags(FLAG_ZERO);
+            this.setFlags(Flags.ZERO);
         } else {
-            this.resetFlags(FLAG_ZERO);
+            this.resetFlags(Flags.ZERO);
         }
 
         if((num1 & 0x0F) < (num2 & 0x0F)) {
-            this.setFlags(FLAG_HALF);
+            this.setFlags(Flags.HALF);
         } else {
-            this.resetFlags(FLAG_HALF);
+            this.resetFlags(Flags.HALF);
         }
 
         if(num1 < num2) {
-            this.setFlags(FLAG_CARRY);
+            this.setFlags(Flags.CARRY);
         } else {
-            this.resetFlags(FLAG_CARRY);
+            this.resetFlags(Flags.CARRY);
         }
 
-        this.setFlags(FLAG_SUB);
+        this.setFlags(Flags.SUB);
     }
 
     /**
@@ -2064,5 +2078,7 @@ public class CPU {
                 this.haltBug = true;
             }
         }
+
+        this.justHalted = true;
     }
 }
