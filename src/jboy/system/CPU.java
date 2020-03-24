@@ -218,16 +218,16 @@ public class CPU {
             MY (OLD) CODE FOR STOP MODE.
             NEED JOYPAD SUPPORT
             this.gpu.tick(this.cycles);
+            */
 
-            if((ie & flags & 0x1F) != 0) {
+            /*if((this.getIF() & this.getIE() & 0x1F) != 0) {
                 this.isStopped = false;
             }
 
             // the GameBoy takes another 4 clock cycles to dispatch events when halted.
             this.incrementCycles(4);
-            return;
+            return;*/
 
-            */
         }
 
         // Set cycles to 0 every frame to prevent integer overflow.
@@ -237,10 +237,14 @@ public class CPU {
 
         this.synchronize();
 
+        boolean effectiveIme = this.ime;
+
         // check if the last instruction was ei.
         if(this.pendingEnableIME) {
+            System.out.println("before " + effectiveIme);
             this.ime = true;
             this.pendingEnableIME = false;
+            System.out.println("after " + effectiveIme + "\n");
         }
 
         // Check if there are any interrupts that need to be serviced.
@@ -256,9 +260,9 @@ public class CPU {
 
         this.justHalted = false;
 
-        if(this.isHalted && !this.ime && shouldServiceInterrupts) {
+        if(this.isHalted && !effectiveIme && shouldServiceInterrupts) {
             this.isHalted = false;
-        } else if(this.ime && shouldServiceInterrupts) {
+        } else if(effectiveIme && shouldServiceInterrupts) {
             this.isHalted = false;
             this.checkInterrupts();
         } else {
@@ -443,6 +447,8 @@ public class CPU {
             this.registers.PC--;
             this.haltBug = false;
         }
+
+//        System.out.println("executing 0x" + Integer.toHexString(opCode));
 
         if(opCode != 0xCB) {
             int x = opCode >> 6;

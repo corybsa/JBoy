@@ -233,6 +233,7 @@ public class Main extends Application {
         this.gameBoy.setIsDebugging(true);
 
         this.gbInfo = this.gameBoy.getInfo();
+        this.gbInfo.setDebugUpdateFunction(dbgWindow::updateWindow);
         /*this.debugInfo = this.gbInfo.subscribe(info -> {
             Platform.runLater(() -> {
                 dbgWindow.updateWindow(info);

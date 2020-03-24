@@ -244,7 +244,7 @@ class DebugWindow {
         this.mainLayout.getChildren().add(this.disassembly);
     }
 
-    void updateWindow(GameBoyInfo info) {
+    Void updateWindow(GameBoyInfo info) {
         CpuInfo cpuInfo = info.getCpuInfo();
         MemoryInfo memoryInfo = info.getMemoryInfo();
         TimerInfo timerInfo = info.getTimerInfo();
@@ -283,6 +283,8 @@ class DebugWindow {
 
         this.updateWatchAddresses(memoryInfo.getMemory());
         this.updateDisassembly();
+
+        return null;
     }
 
     void tick() {

@@ -11,6 +11,7 @@ public class GameBoy implements Runnable {
     private final GPU gpu;
     private final Display display;
     private final Memory memory;
+    private final GameBoyInfo info;
     private int[] rom;
     private Disassembler disassembler;
     private boolean isCartLoaded = false;
@@ -24,6 +25,8 @@ public class GameBoy implements Runnable {
         this.cpu = new CPU(this.memory, this.gpu, this.timers);
 
         this.memory.setGpuRef(this.gpu);
+
+        this.info = new GameBoyInfo(this);
     }
 
     public void loadROM(int[] rom) {
@@ -68,7 +71,7 @@ public class GameBoy implements Runnable {
     }
 
     public GameBoyInfo getInfo() {
-        return new GameBoyInfo(this);
+        return this.info;
     }
 
     public CPU getCpu() {
@@ -106,6 +109,10 @@ public class GameBoy implements Runnable {
     public void tick() {
         if(!this.isCartLoaded) {
             return;
+        }
+
+        if(this.isDebugging) {
+            this.info.updateDebugInfo();
         }
 
         this.cpu.tick();

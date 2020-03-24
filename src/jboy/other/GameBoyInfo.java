@@ -2,17 +2,18 @@ package jboy.other;
 
 import jboy.system.GameBoy;
 
+import java.util.function.Function;
+
 public class GameBoyInfo {
-    private GameBoy gameBoy;
     private CpuInfo cpuInfo;
     private MemoryInfo memoryInfo;
     private TimerInfo timerInfo;
+    private Function<GameBoyInfo, Void> debugUpdateFunction;
 
     public GameBoyInfo(GameBoy gb) {
-        this.gameBoy = gb;
-        this.cpuInfo = new CpuInfo(this.gameBoy.getCpu());
-        this.memoryInfo = new MemoryInfo(this.gameBoy.getMemory());
-        this.timerInfo = new TimerInfo(this.gameBoy.getMemory(), this.gameBoy.getTimers());
+        this.cpuInfo = new CpuInfo(gb.getCpu());
+        this.memoryInfo = new MemoryInfo(gb.getMemory());
+        this.timerInfo = new TimerInfo(gb.getMemory(), gb.getTimers());
     }
 
     public CpuInfo getCpuInfo() {
@@ -25,5 +26,13 @@ public class GameBoyInfo {
 
     public TimerInfo getTimerInfo() {
         return this.timerInfo;
+    }
+
+    public void setDebugUpdateFunction(Function<GameBoyInfo, Void> function) {
+        this.debugUpdateFunction = function;
+    }
+
+    public void updateDebugInfo() {
+        this.debugUpdateFunction.apply(this);
     }
 }
