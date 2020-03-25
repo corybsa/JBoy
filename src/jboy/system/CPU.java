@@ -4,7 +4,6 @@ import jboy.other.CpuInfo;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 /**
  * <h3>Description</h3>
@@ -231,7 +230,7 @@ public class CPU {
         }
 
         // Set cycles to 0 every frame to prevent integer overflow.
-        if(this.cycles >= (CPU.FREQUENCY / Display.FREQUENCY)) {
+        if(this.cycles >= (CPU.FREQUENCY / LCD.FREQUENCY)) {
             this.cycles = 0;
         }
 
@@ -241,10 +240,8 @@ public class CPU {
 
         // check if the last instruction was ei.
         if(this.pendingEnableIME) {
-            System.out.println("before " + effectiveIme);
             this.ime = true;
             this.pendingEnableIME = false;
-            System.out.println("after " + effectiveIme + "\n");
         }
 
         // Check if there are any interrupts that need to be serviced.
@@ -343,7 +340,7 @@ public class CPU {
         }
 
         // Check if sleepDuration is between zero and the time it takes to complete a whole frame.
-        if(sleepDuration > 0 && sleepDuration < ((Display.LCDC_PERIOD * 75000L) / CPU.FREQUENCY)) {
+        if(sleepDuration > 0 && sleepDuration < ((LCD.LCDC_PERIOD * 75000L) / CPU.FREQUENCY)) {
             this.sleep(sleepDuration);
 
             // Need to keep track of how long it's been since we last synced.
@@ -618,7 +615,7 @@ public class CPU {
                         this.incrementCycles(12);
                         break;
                     case 0b100: // jr nz x
-                        if ((this.registers.F & Flags.ZERO) != Flags.ZERO) {
+                        if((this.registers.F & Flags.ZERO) != Flags.ZERO) {
                             this.jumpRelative(this.getByte());
                             this.incrementCycles(12);
                         } else {
@@ -628,7 +625,7 @@ public class CPU {
 
                         break;
                     case 0b101: // jr z x
-                        if ((this.registers.F & Flags.ZERO) == Flags.ZERO) {
+                        if((this.registers.F & Flags.ZERO) == Flags.ZERO) {
                             this.jumpRelative(this.getByte());
                             this.incrementCycles(12);
                         } else {
@@ -638,7 +635,7 @@ public class CPU {
 
                         break;
                     case 0b110: // jr nc x
-                        if ((this.registers.F & Flags.CARRY) != Flags.CARRY) {
+                        if((this.registers.F & Flags.CARRY) != Flags.CARRY) {
                             this.jumpRelative(this.getByte());
                             this.incrementCycles(12);
                         } else {
@@ -648,7 +645,7 @@ public class CPU {
 
                         break;
                     case 0b111: // jr c x
-                        if ((this.registers.F & Flags.CARRY) == Flags.CARRY) {
+                        if((this.registers.F & Flags.CARRY) == Flags.CARRY) {
                             this.jumpRelative(this.getByte());
                             this.incrementCycles(12);
                         } else {
@@ -1261,6 +1258,8 @@ public class CPU {
         } else {
             this.incrementPC((256 - op) * -1);
         }
+
+        this.incrementPC(1);
     }
 
     /**

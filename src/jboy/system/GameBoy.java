@@ -9,7 +9,7 @@ public class GameBoy implements Runnable {
     private final Timers timers;
     private final CPU cpu;
     private final GPU gpu;
-    private final Display display;
+    private final LCD lcd;
     private final Memory memory;
     private final GameBoyInfo info;
     private int[] rom;
@@ -20,8 +20,8 @@ public class GameBoy implements Runnable {
     public GameBoy() {
         this.memory = new Memory();
         this.timers = new Timers(this.memory);
-        this.display = new Display(this.memory);
-        this.gpu = new GPU(this.memory, this.display);
+        this.lcd = new LCD(this.memory);
+        this.gpu = new GPU(this.memory, this.lcd);
         this.cpu = new CPU(this.memory, this.gpu, this.timers);
 
         this.memory.setGpuRef(this.gpu);
@@ -86,8 +86,8 @@ public class GameBoy implements Runnable {
         return this.timers;
     }
 
-    public Display getDisplay() {
-        return this.display;
+    public LCD getLCD() {
+        return this.lcd;
     }
 
     public GPU getGpu() {

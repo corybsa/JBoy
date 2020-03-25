@@ -16,11 +16,11 @@ class CPUInstructions0xCBF0_0xCBFF {
     @BeforeAll
     static void testBeforeAll() {
         memory = new Memory();
-        Display display = new Display(memory);
-        GPU gpu = new GPU(memory, display);
+        LCD lcd = new LCD(memory);
+        GPU gpu = new GPU(memory, lcd);
         Timers timers = new Timers(memory);
 
-        display.setDrawFunction((tiles) -> null);
+        lcd.setDrawFunction((tiles) -> null);
         memory.setGpuRef(gpu);
 
         cpu = new CPU(memory, gpu, timers);

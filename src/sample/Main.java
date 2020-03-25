@@ -15,7 +15,7 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import jboy.disassembler.Disassembler;
 import jboy.other.GameBoyInfo;
-import jboy.system.Display;
+import jboy.system.LCD;
 import jboy.system.GameBoy;
 
 import java.io.File;
@@ -46,12 +46,12 @@ public class Main extends Application {
 
         VBox vbox = new VBox();
         MenuBar menuBar = createMenuBar();
-        WritableImage image = new WritableImage(Display.WIDTH, Display.HEIGHT);
+        WritableImage image = new WritableImage(LCD.WIDTH, LCD.HEIGHT);
         ImageView imageView = new ImageView(image);
 
         // TODO: get rid of this ghetto scaling
-        imageView.setFitWidth((double)Display.WIDTH * 2);
-        imageView.setFitHeight((double)Display.HEIGHT * 2);
+        imageView.setFitWidth((double) LCD.WIDTH * 2);
+        imageView.setFitHeight((double) LCD.HEIGHT * 2);
         imageView.snapshot(null, null);
 
         this.pixelWriter = image.getPixelWriter();
@@ -61,12 +61,12 @@ public class Main extends Application {
         vbox.getChildren().add(imageView);
 
         // TODO: gotta figure out how to size the scene
-        Scene scene = new Scene(vbox, (Display.WIDTH * 2), (Display.HEIGHT * 2) + 29);
+        Scene scene = new Scene(vbox, (LCD.WIDTH * 2), (LCD.HEIGHT * 2) + 29);
 
         primaryStage.setScene(scene);
         primaryStage.show();
         this.gameBoy = new GameBoy();
-        this.gameBoy.getDisplay().setDrawFunction(this::drawImage);
+        this.gameBoy.getLCD().setDrawFunction(this::drawImage);
 
         // close the debug window if it's open.
         this.stage.setOnCloseRequest(x -> {
@@ -169,12 +169,12 @@ public class Main extends Application {
         Platform.runLater(() -> this.pixelWriter.setPixels(
                 0,
                 0,
-                Display.WIDTH,
-                Display.HEIGHT,
+                LCD.WIDTH,
+                LCD.HEIGHT,
                 this.pixelFormat,
                 data,
                 0,
-                Display.WIDTH * 4
+                LCD.WIDTH * 4
         ));
 
         return null;
@@ -234,11 +234,6 @@ public class Main extends Application {
 
         this.gbInfo = this.gameBoy.getInfo();
         this.gbInfo.setDebugUpdateFunction(dbgWindow::updateWindow);
-        /*this.debugInfo = this.gbInfo.subscribe(info -> {
-            Platform.runLater(() -> {
-                dbgWindow.updateWindow(info);
-            });
-        });*/
 
         this.gameBoy.resetCpu();
         this.debugWindow.show();

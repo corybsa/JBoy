@@ -16,11 +16,11 @@ class CPUInstructions0x30_0x3F {
     @BeforeAll
     static void testBeforeAll() {
         memory = new Memory();
-        Display display = new Display(memory);
-        GPU gpu = new GPU(memory, display);
+        LCD lcd = new LCD(memory);
+        GPU gpu = new GPU(memory, lcd);
         Timers timers = new Timers(memory);
 
-        display.setDrawFunction((tiles) -> null);
+        lcd.setDrawFunction((tiles) -> null);
         memory.setGpuRef(gpu);
 
         cpu = new CPU(memory, gpu, timers);
@@ -49,7 +49,7 @@ class CPUInstructions0x30_0x3F {
 
         cpu.resetFlags(CPU.Flags.CARRY);
         cpu.tick();
-        assertEquals(0x106, cpu.registers.PC, "PC should equal 0x106.");
+        assertEquals(0x107, cpu.registers.PC, "PC should equal 0x107.");
 
         cpu.registers.PC = 0x100;
         cpu.setFlags(CPU.Flags.CARRY);
@@ -190,7 +190,7 @@ class CPUInstructions0x30_0x3F {
         cpu.setFlags(CPU.Flags.CARRY);
 
         cpu.tick();
-        assertEquals(0x106, cpu.registers.PC, "PC should equal 0x106.");
+        assertEquals(0x107, cpu.registers.PC, "PC should equal 0x107.");
     }
 
     // op code 0x39

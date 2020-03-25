@@ -2,12 +2,12 @@ package jboy.system;
 
 import java.util.function.Function;
 
-public class Display {
+public class LCD {
     // The refresh rate of the display in frames per second. 59.7 / 4 = 14.925
     static final float FREQUENCY = 59.7f;
 
     // The amount of machine cycles per frame.
-    static final int LCDC_PERIOD = (int)(CPU.FREQUENCY / Display.FREQUENCY);
+    static final int LCDC_PERIOD = (int)(CPU.FREQUENCY / LCD.FREQUENCY);
 
     public static final int HEIGHT = 144;
     public static final int WIDTH = 160;
@@ -28,11 +28,11 @@ public class Display {
         byte BLACK = 3;
     }
 
-    public Display(Memory memory) {
+    public LCD(Memory memory) {
         this.memory = memory;
     }
 
-    void render(byte[][][] backgroundMap) {
+    public void render(byte[][][] backgroundMap) {
         int lcdc = this.memory.getByteAt(IORegisters.LCDC);
 
         // LCD is disabled, skip render.
@@ -109,7 +109,7 @@ public class Display {
         byte green = (byte)0xFF;
         byte blue = (byte)0xFF;
 
-        int palette = this.memory.getByteAt(0xFF47);
+        int palette = this.memory.getByteAt(IORegisters.BG_PALETTE_DATA);
         int high = 0;
         int low = 0;
 

@@ -7,7 +7,7 @@ public class GPU  {
     public static final int BG_WIDTH = 256;
 
     private final Memory memory;
-    private final Display display;
+    private final LCD lcd;
     private Mode mode;
     private int scanline = 0;
     private int ticks = 0;
@@ -31,9 +31,9 @@ public class GPU  {
         int VRAM = 172;
     }
 
-    public GPU(Memory memory, Display display) {
+    public GPU(Memory memory, LCD LCD) {
         this.memory = memory;
-        this.display = display;
+        this.lcd = LCD;
         this.mode = Mode.HBLANK;
     }
 
@@ -51,10 +51,10 @@ public class GPU  {
         switch(this.mode) {
             case HBLANK:
                 if(this.ticks >= Timings.HBLANK) {
-                    this.display.render(this.backgroundMap);
+                    this.lcd.render(this.backgroundMap);
                     this.scanline++;
 
-                    if(this.scanline == Display.VBlankArea.START) {
+                    if(this.scanline == LCD.VBlankArea.START) {
                         this.changeMode(Mode.VBLANK);
                     } else {
                         this.changeMode(Mode.OAM);
@@ -68,16 +68,7 @@ public class GPU  {
                 if(this.ticks >= Timings.VBLANK) {
                     this.scanline++;
 
-                    if(this.scanline > Display.VBlankArea.END) {
-                        /*double now = Instant.now().getEpochSecond();
-                        double delta = now - this.lastFrame;
-
-                        if(delta > 0 && this.observer != null) {
-                            this.observer.onNext((1.0 / delta) * 60.0d);
-                        }
-
-                        this.lastFrame = now;*/
-
+                    if(this.scanline > LCD.VBlankArea.END) {
                         this.scanline = 0;
                         this.changeMode(Mode.OAM);
                     }
@@ -184,11 +175,11 @@ public class GPU  {
         return this.mode;
     }
 
-    void updateTiles(int address) {
+    public void updateTiles(int address) {
         int vramAddress = (0x1FFF - (0x9FFF - address)) & 0xFFFF;
 
         if(vramAddress >= 0x1800) {
-            this.createBackgroundMap();
+            this.updateBackgroundMap();
             return;
         }
 
@@ -206,20 +197,20 @@ public class GPU  {
             int lsb = (byte2 & mask) >> (7 - pixelIndex);
 
             if(lsb == 1 && msb == 1) {
-                pixelValue = Display.PixelColor.BLACK;
+                pixelValue = LCD.PixelColor.BLACK;
             } else if(lsb == 1 && msb == 0) {
-                pixelValue = Display.PixelColor.DARK_GRAY;
+                pixelValue = LCD.PixelColor.DARK_GRAY;
             } else if(lsb == 0 && msb == 1) {
-                pixelValue = Display.PixelColor.LIGHT_GRAY;
+                pixelValue = LCD.PixelColor.LIGHT_GRAY;
             } else {
-                pixelValue = Display.PixelColor.WHITE;
+                pixelValue = LCD.PixelColor.WHITE;
             }
 
             this.tiles[tileIndex][rowIndex][pixelIndex] = pixelValue;
         }
     }
 
-    private void createBackgroundMap() {
+    private void updateBackgroundMap() {
         boolean isWindowEnabled = false;
         int scanlineY = this.memory.getByteAt(IORegisters.LCDC_Y_COORDINATE);
         int lcdc = this.memory.getByteAt(IORegisters.LCDC);
@@ -273,5 +264,9 @@ public class GPU  {
                 this.backgroundMap[row][col][col % 8] = color;
             }
         }
+    }
+
+    public byte[][][] getBackgroundMap() {
+        return this.backgroundMap;
     }
 }
