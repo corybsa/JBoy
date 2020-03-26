@@ -257,7 +257,7 @@ public class CPU {
 
         this.justHalted = false;
 
-        if(this.isHalted && !effectiveIme && shouldServiceInterrupts) {
+        if(this.isHalted && !effectiveIme && !shouldServiceInterrupts) {
             this.isHalted = false;
         } else if(effectiveIme && shouldServiceInterrupts) {
             this.isHalted = false;

@@ -1,9 +1,11 @@
 package jboy.system;
 
+import javafx.application.Platform;
 import jboy.disassembler.Disassembler;
 import jboy.other.GameBoyInfo;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class GameBoy implements Runnable {
     private final Timers timers;
@@ -36,10 +38,10 @@ public class GameBoy implements Runnable {
         this.isCartLoaded = true;
 
         if(this.isDebugging) {
-            byte[] cart = new byte[rom.length];
+            int[] cart = new int[rom.length];
 
             for(int i = 0; i < rom.length; i++) {
-                cart[i] = (byte)rom[i];
+                cart[i] = rom[i];
             }
 
             this.disassembler = new Disassembler(cart);
@@ -54,6 +56,7 @@ public class GameBoy implements Runnable {
             this.cpu.run();
         } else {
             this.cpu.reset();
+            Platform.runLater(this::tick);
         }
     }
 
@@ -94,7 +97,11 @@ public class GameBoy implements Runnable {
         return this.gpu;
     }
 
-    public ArrayList<String> getDisassembly() {
+    public Disassembler getDisassembler() {
+        return this.disassembler;
+    }
+
+    public HashMap<Integer, String> getDisassembly() {
         if(this.disassembler != null) {
             return this.disassembler.getDisassemblyList();
         }

@@ -1,5 +1,7 @@
 package sample;
 
+import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
@@ -12,6 +14,7 @@ import jboy.system.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 
 class DebugWindow {
     private GameBoy gameBoy;
@@ -326,27 +329,21 @@ class DebugWindow {
     }
 
     private void updateDisassembly() {
-        this.disassembly.getItems().clear();
-        ArrayList<String> disassembly = this.gameBoy.getDisassembly();
-
-        if(disassembly == null) {
-            return;
-        }
-
         int pc = this.gameBoy.getCpu().registers.PC;
+        int position = this.gameBoy.getDisassembler().positions.get(pc);
 
-        int begin = pc - 4;
-        int end = pc + 5;
+        if(this.disassembly.getItems().size() == 0) {
+            Platform.runLater(() -> {
+                HashMap<Integer, String> map = gameBoy.getDisassembly();
 
-        if(begin < 0) {
-            begin = 0;
+                map.forEach((index, text) -> disassembly.getItems().add(text));
+
+                disassembly.getSelectionModel().select(position);
+                disassembly.scrollTo(position - 7);
+            });
+        } else {
+            disassembly.getSelectionModel().select(position);
+            disassembly.scrollTo(position - 7);
         }
-
-        if(end > this.gameBoy.getCartridgeSize()) {
-            end = this.gameBoy.getCartridgeSize();
-        }
-
-        this.disassembly.getItems().addAll(disassembly.subList(begin, end));
-        this.disassembly.getSelectionModel().select(4);
     }
 }

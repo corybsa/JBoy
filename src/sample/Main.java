@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class Main extends Application {
     private Stage stage;
@@ -183,17 +184,27 @@ public class Main extends Application {
     private void disassemble(File file) {
         try {
             byte[] bytes = Files.readAllBytes(Paths.get(file.getPath()));
-            Disassembler disassembler = new Disassembler(bytes);
+            int[] rom = new int[bytes.length];
+
+            for(int i = 0; i < bytes.length; i++) {
+                rom[i] = bytes[i] & 0xFF;
+            }
+
+            Disassembler disassembler = new Disassembler(rom);
             disassembler.disassemble();
 
             Task<Void> task = new Task<>() {
                 @Override
                 protected Void call() {
-                    ArrayList<String> list = disassembler.getDisassemblyList();
+                    HashMap<Integer, String> list = disassembler.getDisassemblyList();
 
-                    for(var item : list) {
+                    /*for(var item : list) {
                         listView.getItems().add(item);
-                    }
+                    }*/
+
+                    list.forEach((index, code) -> {
+                        listView.getItems().add(code);
+                    });
 
                     return null;
                 }
