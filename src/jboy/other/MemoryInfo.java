@@ -20,7 +20,7 @@ public class MemoryInfo {
     }
 
     public String getLY() {
-        int ly = this.memory.getByteAt(IORegisters.LCDC_Y_COORDINATE);
+        int ly = this.memory.getByteAt(IORegisters.LY_COORDINATE);
         return "LY: " + String.format("0x%2s", Integer.toHexString(ly).toUpperCase()).replace(" ", "0");
     }
 

@@ -34,7 +34,7 @@ public interface IORegisters {
     int LCD_STATUS = 0xFF41;
     int SCROLL_Y = 0xFF42;
     int SCROLL_X = 0xFF43;
-    int LCDC_Y_COORDINATE = 0xFF44;
+    int LY_COORDINATE = 0xFF44;
     int LY_COMPARE = 0xFF45;
     int DIRECT_MEMORY_ACCESS = 0xFF46;
     int BG_PALETTE_DATA = 0xFF47;
@@ -42,5 +42,8 @@ public interface IORegisters {
     int OBJECT_PALETTE1_DATA = 0xFF49;
     int WINDOW_Y = 0xFF4A;
     int WINDOW_X = 0xFF4B;
+    int SPEED_SWITCH = 0xFF4D;
+    int VRAM_BANK = 0xFF4F;
+    int WRAM_BANK = 0xFF70;
     int INTERRUPT_ENABLE = 0xFFFF;
 }

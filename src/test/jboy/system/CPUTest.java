@@ -8,11 +8,12 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class CPUTest {
+    static private Memory memory;
     static private CPU cpu;
 
     @BeforeAll
     static void testBeforeAll() {
-        Memory memory = new Memory();
+        memory = new Memory();
         LCD lcd = new LCD(memory);
         GPU gpu = new GPU(memory, lcd);
         Timers timers = new Timers(memory);
@@ -117,5 +118,95 @@ class CPUTest {
         assertEquals(0x0000, cpu.registers.getBC(), "THE BC register should equal 0x0000");
         assertEquals(0x0000, cpu.registers.getDE(), "THE DE register should equal 0x0000");
         assertEquals(0x0000, cpu.registers.getHL(), "THE HL register should equal 0x0000");
+    }
+
+    @Test
+    void nestedInterruptTest() {
+        int[] rom = new int[0x800000];
+
+        // vblank interrupt
+        rom[0x40] = 0x3E; // ld a, 0x42
+        rom[0x41] = 0x42;
+        rom[0x42] = 0xFB; // ei
+        rom[0x43] = 0x00; // nop
+        rom[0x44] = 0xC9; // ret
+
+        // joypad interrupt
+        rom[0x60] = 0x0E; // ld c, 0x42
+        rom[0x61] = 0x42;
+        rom[0x62] = 0xC9; // ret
+
+        // main
+        rom[0x100] = 0x06; // ld b, 0x42
+        rom[0x101] = 0x42;
+        rom[0x102] = 0xFB; // ei
+        rom[0x103] = 0x00; // nop
+        rom[0x104] = 0x76; // halt
+
+        memory.loadROM(rom);
+
+        int flags = memory.getByteAt(IORegisters.INTERRUPT_FLAGS);
+        int ie = memory.getByteAt(IORegisters.INTERRUPT_ENABLE);
+
+        // enable vblank
+        memory.setByteAt(IORegisters.INTERRUPT_FLAGS, flags | Interrupts.VBLANK);
+        memory.setByteAt(IORegisters.INTERRUPT_ENABLE, ie | Interrupts.VBLANK);
+
+        cpu.tick(); // ld b, 0x42
+        assertEquals(0x42, cpu.registers.B, "B should be 0x42");
+        assertEquals(0x102, cpu.registers.PC, "PC should be 0x102");
+
+        cpu.tick(); // ei
+        assertEquals(0x103, cpu.registers.PC, "PC should be 0x103");
+
+        cpu.tick(); // nop
+        assertTrue(cpu.getIME(), "IME should be enabled on the cycle after ei");
+        assertEquals(0x104, cpu.registers.PC, "PC should be 0x104");
+
+        cpu.tick(); // jump to interrupt vector
+        assertEquals(0x40, cpu.registers.PC, "PC should be 0x40");
+        assertFalse(cpu.getIME(), "IME should be disabled after calling an interrupt");
+        assertEquals(0x01, memory.getByteAt(0xFFFD), "0x0104 should be pushed to the stack");
+        assertEquals(0x04, memory.getByteAt(0xFFFC), "0x0104 should be pushed to the stack");
+
+
+        // should be in vblank interrupt vector
+        cpu.tick(); // ld a, 0x42
+        assertEquals(0x42, cpu.registers.A, "A should be 0x42");
+        assertEquals(0x42, cpu.registers.PC, "PC should be 0x42");
+
+        // simulating a joypad interrupt enable
+        memory.setByteAt(IORegisters.INTERRUPT_FLAGS, flags | Interrupts.JOYPAD);
+        memory.setByteAt(IORegisters.INTERRUPT_ENABLE, ie | Interrupts.JOYPAD);
+
+        cpu.tick(); // ei
+        assertEquals(0x43, cpu.registers.PC, "PC should be 0x103");
+
+        cpu.tick(); // nop
+        assertTrue(cpu.getIME(), "IME should be enabled on the cycle after ei");
+        assertEquals(0x44, cpu.registers.PC, "PC should be 0x44");
+
+        cpu.tick(); // jump to interrupt vector
+        assertEquals(0x60, cpu.registers.PC, "PC should be 0x60");
+        assertFalse(cpu.getIME(), "IME should be disabled after calling an interrupt");
+        assertEquals(0x00, memory.getByteAt(0xFFFB), "0x0044 should be pushed to the stack");
+        assertEquals(0x44, memory.getByteAt(0xFFFA), "0x0044 should be pushed to the stack");
+
+
+        // should be in joypad interrupt vector
+        cpu.tick(); // ld c, 0x42
+        assertEquals(0x42, cpu.registers.C, "C should be 0x42");
+        assertEquals(0x62, cpu.registers.PC, "PC should be 0x62");
+
+        cpu.tick(); // ret
+        assertEquals(0x44, cpu.registers.PC, "should return to vblank interrupt vector and PC should be 0x44");
+
+
+        // back in vblank
+        cpu.tick(); // ret
+        assertEquals(0x104, cpu.registers.PC, "should return to main and PC should be 0x104");
+
+        cpu.tick(); // halt
+        assertTrue(cpu.isHalted, "should halt cpu");
     }
 }

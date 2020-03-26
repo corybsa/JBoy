@@ -139,39 +139,39 @@ public class CPU {
         this.haltBug = false;
         this.haltSkip = false;
 
-        this.memory.setByteAt(IORegisters.TIMA, 0x00);
-        this.memory.setByteAt(IORegisters.TMA, 0x00);
-        this.memory.setByteAt(IORegisters.TAC, 0x00);
-        this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, 0xE1);
-        this.memory.setByteAt(IORegisters.SOUND1_SWEEP, 0x80);
-        this.memory.setByteAt(IORegisters.SOUND1_LENGTH_WAVE, 0xBF);
-        this.memory.setByteAt(IORegisters.SOUND1_ENVELOPE, 0xF3);
-        this.memory.setByteAt(IORegisters.SOUND1_HIGH_FREQUENCY, 0xBF);
-        this.memory.setByteAt(IORegisters.SOUND2_LENGTH_WAVE, 0x3F);
-        this.memory.setByteAt(IORegisters.SOUND2_ENVELOPE, 0x00);
-        this.memory.setByteAt(IORegisters.SOUND2_HIGH_FREQUENCY, 0xBF);
-        this.memory.setByteAt(IORegisters.SOUND3_ENABLE, 0x7F);
-        this.memory.setByteAt(IORegisters.SOUND3_LENGTH, 0xFF);
-        this.memory.setByteAt(IORegisters.SOUND3_OUTPUT_LEVEL, 0x9F);
-        this.memory.setByteAt(IORegisters.SOUND3_FREQUENCY_HIGH_DATA, 0xBF);
-        this.memory.setByteAt(IORegisters.SOUND4_LENGTH, 0xFF);
-        this.memory.setByteAt(IORegisters.SOUND4_ENVELOPE, 0x00);
-        this.memory.setByteAt(IORegisters.SOUND4_COUNTER, 0x00);
-        this.memory.setByteAt(IORegisters.SOUND4_INITIAL, 0xBF);
-        this.memory.setByteAt(IORegisters.SOUND_CHANNEL_CONTROL, 0x77);
-        this.memory.setByteAt(IORegisters.SOUND_OUTPUT_CONTROL, 0xF3);
-        this.memory.setByteAt(IORegisters.SOUND_ENABLE, 0xF1);
-        this.memory.setByteAt(IORegisters.LCDC, 0x91);
-        this.memory.setByteAt(IORegisters.LCD_STATUS, 0x80);
-        this.memory.setByteAt(IORegisters.SCROLL_Y, 0x00);
-        this.memory.setByteAt(IORegisters.SCROLL_X, 0x00);
-        this.memory.setByteAt(IORegisters.LY_COMPARE, 0x00);
-        this.memory.setByteAt(IORegisters.BG_PALETTE_DATA, 0xFC);
-        this.memory.setByteAt(IORegisters.OBJECT_PALETTE0_DATA, 0xFF);
-        this.memory.setByteAt(IORegisters.OBJECT_PALETTE1_DATA, 0xFF);
-        this.memory.setByteAt(IORegisters.WINDOW_Y, 0x00);
-        this.memory.setByteAt(IORegisters.WINDOW_X, 0x00);
-        this.memory.setByteAt(IORegisters.INTERRUPT_ENABLE, 0x00);
+        this.writeByte(IORegisters.TIMA, 0x00);
+        this.writeByte(IORegisters.TMA, 0x00);
+        this.writeByte(IORegisters.TAC, 0x00);
+        this.writeByte(IORegisters.INTERRUPT_FLAGS, 0xE1);
+        this.writeByte(IORegisters.SOUND1_SWEEP, 0x80);
+        this.writeByte(IORegisters.SOUND1_LENGTH_WAVE, 0xBF);
+        this.writeByte(IORegisters.SOUND1_ENVELOPE, 0xF3);
+        this.writeByte(IORegisters.SOUND1_HIGH_FREQUENCY, 0xBF);
+        this.writeByte(IORegisters.SOUND2_LENGTH_WAVE, 0x3F);
+        this.writeByte(IORegisters.SOUND2_ENVELOPE, 0x00);
+        this.writeByte(IORegisters.SOUND2_HIGH_FREQUENCY, 0xBF);
+        this.writeByte(IORegisters.SOUND3_ENABLE, 0x7F);
+        this.writeByte(IORegisters.SOUND3_LENGTH, 0xFF);
+        this.writeByte(IORegisters.SOUND3_OUTPUT_LEVEL, 0x9F);
+        this.writeByte(IORegisters.SOUND3_FREQUENCY_HIGH_DATA, 0xBF);
+        this.writeByte(IORegisters.SOUND4_LENGTH, 0xFF);
+        this.writeByte(IORegisters.SOUND4_ENVELOPE, 0x00);
+        this.writeByte(IORegisters.SOUND4_COUNTER, 0x00);
+        this.writeByte(IORegisters.SOUND4_INITIAL, 0xBF);
+        this.writeByte(IORegisters.SOUND_CHANNEL_CONTROL, 0x77);
+        this.writeByte(IORegisters.SOUND_OUTPUT_CONTROL, 0xF3);
+        this.writeByte(IORegisters.SOUND_ENABLE, 0xF1);
+        this.writeByte(IORegisters.LCDC, 0x91);
+        this.writeByte(IORegisters.LCD_STATUS, 0x80);
+        this.writeByte(IORegisters.SCROLL_Y, 0x00);
+        this.writeByte(IORegisters.SCROLL_X, 0x00);
+        this.writeByte(IORegisters.LY_COMPARE, 0x00);
+        this.writeByte(IORegisters.BG_PALETTE_DATA, 0xFC);
+        this.writeByte(IORegisters.OBJECT_PALETTE0_DATA, 0xFF);
+        this.writeByte(IORegisters.OBJECT_PALETTE1_DATA, 0xFF);
+        this.writeByte(IORegisters.WINDOW_Y, 0x00);
+        this.writeByte(IORegisters.WINDOW_X, 0x00);
+        this.writeByte(IORegisters.INTERRUPT_ENABLE, 0x00);
 
         this.gpu.reset();
         this.timers.reset();
@@ -263,7 +263,7 @@ public class CPU {
             this.isHalted = false;
             this.checkInterrupts();
         } else {
-            this.decode(this.memory.getByteAt(this.registers.PC++));
+            this.decode(this.readByte(this.registers.PC++));
             this.gpu.tick(this.cycles);
         }
 
@@ -277,7 +277,7 @@ public class CPU {
             if(shouldServiceInterrupts) {
                 this.checkInterrupts();
             } else {
-                this.decode(this.memory.getByteAt(this.registers.PC++));
+                this.decode(this.readByte(this.registers.PC++));
                 this.gpu.tick(this.cycles);
             }
         }*/
@@ -314,6 +314,22 @@ public class CPU {
      */
     public void resetFlags(int flags) {
         this.registers.F = (this.registers.F & ~flags) & 0xF0;
+    }
+
+    /*
+
+    During mode 0 and mode 1 the CPU can access both VRAM and OAM. During mode 2 the CPU
+    can only access VRAM, not OAM. During mode 3 OAM and VRAM can't be accessed. In GBC
+    mode the CPU can't access Palette RAM (FF69h and FF6Bh) during mode 3.
+
+    */
+
+    private int readByte(int address) {
+        return this.memory.getByteAt(address);
+    }
+
+    private void writeByte(int address, int value) {
+        this.memory.setByteAt(address, value);
     }
 
     /**
@@ -422,7 +438,7 @@ public class CPU {
      * @param vector The address to reset to.
      */
     private void serviceInterrupt(int interrupt, int vector) {
-        this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, this.getIF() & ~interrupt);
+        this.writeByte(IORegisters.INTERRUPT_FLAGS, this.getIF() & ~interrupt);
 
         // The IME is really a flag saying "enable/disable jumps to interrupt vectors."
         if(this.ime) {
@@ -469,7 +485,7 @@ public class CPU {
                     break;
             }
         } else {
-            this.decodeCB(this.memory.getByteAt(this.registers.PC++));
+            this.decodeCB(this.readByte(this.registers.PC++));
         }
     }
 
@@ -489,7 +505,7 @@ public class CPU {
                         if(z != 0b110) { // rlc [b, c, d, e, h, l,, a]
                             this.registers.set8BitRegister(z, this.rlc(this.registers.get8BitRegister(z)));
                         } else { // rlc (hl)
-                            this.memory.setByteAt(this.registers.getHL(), this.rlc(this.memory.getByteAt(this.registers.getHL())));
+                            this.writeByte(this.registers.getHL(), this.rlc(this.readByte(this.registers.getHL())));
                         }
 
                         break;
@@ -497,7 +513,7 @@ public class CPU {
                         if(z != 0b110) { // rrc [b, c, d, e, h, l,, a]
                             this.registers.set8BitRegister(z, this.rrc(this.registers.get8BitRegister(z)));
                         } else { // rrc (hl)
-                            this.memory.setByteAt(this.registers.getHL(), this.rrc(this.memory.getByteAt(this.registers.getHL())));
+                            this.writeByte(this.registers.getHL(), this.rrc(this.readByte(this.registers.getHL())));
                         }
 
                         break;
@@ -505,7 +521,7 @@ public class CPU {
                         if(z != 0b110) { // rl [b, c, d, e, h, l,, a]
                             this.registers.set8BitRegister(z, this.rl(this.registers.get8BitRegister(z)));
                         } else { // rl (hl)
-                            this.memory.setByteAt(this.registers.getHL(), this.rl(this.memory.getByteAt(this.registers.getHL())));
+                            this.writeByte(this.registers.getHL(), this.rl(this.readByte(this.registers.getHL())));
                         }
 
                         break;
@@ -513,7 +529,7 @@ public class CPU {
                         if(z != 0b110) { // rr [b, c, d, e, h, l,, a]
                             this.registers.set8BitRegister(z, this.rr(this.registers.get8BitRegister(z)));
                         } else { // rr (hl)
-                            this.memory.setByteAt(this.registers.getHL(), this.rr(this.memory.getByteAt(this.registers.getHL())));
+                            this.writeByte(this.registers.getHL(), this.rr(this.readByte(this.registers.getHL())));
                         }
 
                         break;
@@ -521,7 +537,7 @@ public class CPU {
                         if(z != 0b110) { // sla [b, c, d, e, h, l,, a]
                             this.registers.set8BitRegister(z, this.sla(this.registers.get8BitRegister(z)));
                         } else { // sla (hl)
-                            this.memory.setByteAt(this.registers.getHL(), this.sla(this.memory.getByteAt(this.registers.getHL())));
+                            this.writeByte(this.registers.getHL(), this.sla(this.readByte(this.registers.getHL())));
                         }
 
                         break;
@@ -529,7 +545,7 @@ public class CPU {
                         if(z != 0b110) { // sra [b, c, d, e, h, l,, a]
                             this.registers.set8BitRegister(z, this.sra(this.registers.get8BitRegister(z)));
                         } else { // sra (hl)
-                            this.memory.setByteAt(this.registers.getHL(), this.sra(this.memory.getByteAt(this.registers.getHL())));
+                            this.writeByte(this.registers.getHL(), this.sra(this.readByte(this.registers.getHL())));
                         }
 
                         break;
@@ -537,7 +553,7 @@ public class CPU {
                         if(z != 0b110) { // swap [b, c, d, e, h, l,, a]
                             this.registers.set8BitRegister(z, this.swap(this.registers.get8BitRegister(z)));
                         } else { // swap (hl)
-                            this.memory.setByteAt(this.registers.getHL(), this.swap(this.memory.getByteAt(this.registers.getHL())));
+                            this.writeByte(this.registers.getHL(), this.swap(this.readByte(this.registers.getHL())));
                         }
 
                         break;
@@ -545,7 +561,7 @@ public class CPU {
                         if(z != 0b110) { // srl [b, c, d, e, h, l,, a]
                             this.registers.set8BitRegister(z, this.srl(this.registers.get8BitRegister(z)));
                         } else { // srl (hl)
-                            this.memory.setByteAt(this.registers.getHL(), this.srl(this.memory.getByteAt(this.registers.getHL())));
+                            this.writeByte(this.registers.getHL(), this.srl(this.readByte(this.registers.getHL())));
                         }
 
                         break;
@@ -556,7 +572,7 @@ public class CPU {
                 if(z != 0b110) { // bit  [0, 1, 2, 3, 4, 5, 6, 7] [b, c, d, e, h, l, a]
                     this.bit(y, this.registers.get8BitRegister(z));
                 } else { // bit  [0, 1, 2, 3, 4, 5, 6, 7] (hl)
-                    this.bit(y, this.memory.getByteAt(this.registers.getHL()));
+                    this.bit(y, this.readByte(this.registers.getHL()));
                 }
 
                 break;
@@ -564,7 +580,7 @@ public class CPU {
                 if(z != 0b110) { // res  [0, 1, 2, 3, 4, 5, 6, 7] [b, c, d, e, h, l, a]
                     this.registers.set8BitRegister(z, this.res(y, this.registers.get8BitRegister(z)));
                 } else { // res  [0, 1, 2, 3, 4, 5, 6, 7] (hl)
-                    this.memory.setByteAt(this.registers.getHL(), this.res(y, this.memory.getByteAt(this.registers.getHL())));
+                    this.writeByte(this.registers.getHL(), this.res(y, this.readByte(this.registers.getHL())));
                 }
 
                 break;
@@ -572,7 +588,7 @@ public class CPU {
                 if(z != 0b110) { // set  [0, 1, 2, 3, 4, 5, 6, 7] [b, c, d, e, h, l, a]
                     this.registers.set8BitRegister(z, this.set(y, this.registers.get8BitRegister(z)));
                 } else { // set  [0, 1, 2, 3, 4, 5, 6, 7] (hl)
-                    this.memory.setByteAt(this.registers.getHL(), this.set(y, this.memory.getByteAt(this.registers.getHL())));
+                    this.writeByte(this.registers.getHL(), this.set(y, this.readByte(this.registers.getHL())));
                 }
 
                 break;
@@ -601,7 +617,7 @@ public class CPU {
                         this.incrementCycles(4);
                         break;
                     case 0b001: // ld (xx), sp
-                        this.memory.setByteAt(this.getWord(), this.registers.SP);
+                        this.writeByte(this.getWord(), this.registers.SP);
                         this.incrementCycles(20);
                         this.incrementPC(2);
                         break;
@@ -673,34 +689,34 @@ public class CPU {
                 if(q == 0) {
                     switch(p) {
                         case 0b00: // ld (bc), a
-                            this.memory.setByteAt(this.registers.getBC(), this.registers.A);
+                            this.writeByte(this.registers.getBC(), this.registers.A);
                             break;
                         case 0b01: // ld (de), a
-                            this.memory.setByteAt(this.registers.getDE(), this.registers.A);
+                            this.writeByte(this.registers.getDE(), this.registers.A);
                             break;
                         case 0b10: // ld (hl+), a
-                            this.memory.setByteAt(this.registers.getHL(), this.registers.A);
+                            this.writeByte(this.registers.getHL(), this.registers.A);
                             this.registers.setHL(this.registers.getHL() + 1);
                             break;
                         case 0b11: // ld (hl-), a
-                            this.memory.setByteAt(this.registers.getHL(), this.registers.A);
+                            this.writeByte(this.registers.getHL(), this.registers.A);
                             this.registers.setHL(this.registers.getHL() - 1);
                             break;
                     }
                 } else if(q == 1) {
                     switch(p) {
                         case 0b00: // ld a, (bc)
-                            this.registers.A = this.memory.getByteAt(this.registers.getBC());
+                            this.registers.A = this.readByte(this.registers.getBC());
                             break;
                         case 0b01: // ld a, (de)
-                            this.registers.A = this.memory.getByteAt(this.registers.getDE());
+                            this.registers.A = this.readByte(this.registers.getDE());
                             break;
                         case 0b10: // ld a, (hl+)
-                            this.registers.A = this.memory.getByteAt(this.registers.getHL());
+                            this.registers.A = this.readByte(this.registers.getHL());
                             this.registers.setHL(this.registers.getHL() + 1);
                             break;
                         case 0b11: // ld a, (hl-)
-                            this.registers.A = this.memory.getByteAt(this.registers.getHL());
+                            this.registers.A = this.readByte(this.registers.getHL());
                             this.registers.setHL(this.registers.getHL() - 1);
                             break;
                     }
@@ -719,8 +735,8 @@ public class CPU {
                 break;
             case 0b100: // 8-bit inc/dec
                 if(y == 0b110) { // inc (hl)
-                    int value = this.increment(this.memory.getByteAt(this.registers.getHL()));
-                    this.memory.setByteAt(this.registers.getHL(), value);
+                    int value = this.increment(this.readByte(this.registers.getHL()));
+                    this.writeByte(this.registers.getHL(), value);
                     this.incrementCycles(8);
                 } else { // inc [b, c, d, e, h, l, a]
                     this.registers.set8BitRegister(y, this.increment(this.registers.get8BitRegister(y)));
@@ -730,8 +746,8 @@ public class CPU {
                 break;
             case 0b101: // 8-bit dec
                 if(y == 0b110) { // dec (hl)
-                    int value = this.decrement(this.memory.getByteAt(this.registers.getHL()));
-                    this.memory.setByteAt(this.registers.getHL(), value);
+                    int value = this.decrement(this.readByte(this.registers.getHL()));
+                    this.writeByte(this.registers.getHL(), value);
                     this.incrementCycles(8);
                 } else { // dec [b, c, d, e, h, l, a]
                     this.registers.set8BitRegister(y, this.decrement(this.registers.get8BitRegister(y)));
@@ -740,7 +756,7 @@ public class CPU {
                 break;
             case 0b110: // ld [b, c, d, e, h, l, (hl), a], x
                 if(y == 0b110) { // ld (hl), x
-                    this.memory.setByteAt(this.registers.getHL(), this.getByte());
+                    this.writeByte(this.registers.getHL(), this.getByte());
                 } else {
                     this.registers.set8BitRegister(y, this.getByte());
                 }
@@ -768,10 +784,10 @@ public class CPU {
             this.incrementCycles(4);
         } else {
             if(z == 0b110) { // ld [b, c, d, e, h, l, a], (hl)
-                this.registers.set8BitRegister(y, this.memory.getByteAt(this.registers.getHL()));
+                this.registers.set8BitRegister(y, this.readByte(this.registers.getHL()));
                 this.incrementCycles(8);
             } else if(y == 0b110) { // ld (hl), [b, c, d, e, h, l, a]
-                this.memory.setByteAt(this.registers.getHL(), this.registers.get8BitRegister(z));
+                this.writeByte(this.registers.getHL(), this.registers.get8BitRegister(z));
                 this.incrementCycles(8);
             } else { // ld [b, c, d, e, h, l, a], [b, c, d, e, h, l, a]
                 this.registers.set8BitRegister(y, this.registers.get8BitRegister(z));
@@ -792,7 +808,7 @@ public class CPU {
                     this.registers.A = this.add8Bit(this.registers.A, this.registers.get8BitRegister(z));
                     this.incrementCycles(4);
                 } else { // add a, (hl)
-                    this.registers.A = this.add8Bit(this.registers.A, this.memory.getByteAt(this.registers.getHL()));
+                    this.registers.A = this.add8Bit(this.registers.A, this.readByte(this.registers.getHL()));
                     this.incrementCycles(8);
                 }
 
@@ -802,7 +818,7 @@ public class CPU {
                     this.registers.A = this.adc(this.registers.A, this.registers.get8BitRegister(z));
                     this.incrementCycles(4);
                 } else { // adc a, (hl)
-                    this.registers.A = this.adc(this.registers.A, this.memory.getByteAt(this.registers.getHL()));
+                    this.registers.A = this.adc(this.registers.A, this.readByte(this.registers.getHL()));
                     this.incrementCycles(8);
                 }
 
@@ -812,7 +828,7 @@ public class CPU {
                     this.registers.A = this.sub(this.registers.A, this.registers.get8BitRegister(z));
                     this.incrementCycles(4);
                 } else { // sub a, (hl)
-                    this.registers.A = this.sub(this.registers.A, this.memory.getByteAt(this.registers.getHL()));
+                    this.registers.A = this.sub(this.registers.A, this.readByte(this.registers.getHL()));
                     this.incrementCycles(8);
                 }
 
@@ -822,7 +838,7 @@ public class CPU {
                     this.registers.A = this.sbc(this.registers.A, this.registers.get8BitRegister(z));
                     this.incrementCycles(4);
                 } else { // sbc a, (hl)
-                    this.registers.A = this.sbc(this.registers.A, this.memory.getByteAt(this.registers.getHL()));
+                    this.registers.A = this.sbc(this.registers.A, this.readByte(this.registers.getHL()));
                     this.incrementCycles(8);
                 }
 
@@ -832,7 +848,7 @@ public class CPU {
                     this.registers.A = this.and(this.registers.A, this.registers.get8BitRegister(z));
                     this.incrementCycles(4);
                 } else { // and a, (hl)
-                    this.registers.A = this.and(this.registers.A, this.memory.getByteAt(this.registers.getHL()));
+                    this.registers.A = this.and(this.registers.A, this.readByte(this.registers.getHL()));
                     this.incrementCycles(8);
                 }
 
@@ -842,7 +858,7 @@ public class CPU {
                     this.registers.A = this.xor(this.registers.A, this.registers.get8BitRegister(z));
                     this.incrementCycles(4);
                 } else { // xor a, (hl)
-                    this.registers.A = this.xor(this.registers.A, this.memory.getByteAt(this.registers.getHL()));
+                    this.registers.A = this.xor(this.registers.A, this.readByte(this.registers.getHL()));
                     this.incrementCycles(8);
                 }
 
@@ -852,7 +868,7 @@ public class CPU {
                     this.registers.A = this.or(this.registers.A, this.registers.get8BitRegister(z));
                     this.incrementCycles(4);
                 } else { // or a, (hl)
-                    this.registers.A = this.or(this.registers.A, this.memory.getByteAt(this.registers.getHL()));
+                    this.registers.A = this.or(this.registers.A, this.readByte(this.registers.getHL()));
                     this.incrementCycles(8);
                 }
 
@@ -862,7 +878,7 @@ public class CPU {
                     this.cp(this.registers.A, this.registers.get8BitRegister(z));
                     this.incrementCycles(4);
                 } else { // cp a, (hl)
-                    this.cp(this.registers.A, this.memory.getByteAt(this.registers.getHL()));
+                    this.cp(this.registers.A, this.readByte(this.registers.getHL()));
                     this.incrementCycles(8);
                 }
 
@@ -878,8 +894,8 @@ public class CPU {
      * @param p Bits 5-4 of the op code
      */
     private void doJumpOperation(int y, int z, int q, int p) {
-        int high = this.memory.getByteAt(this.registers.SP + 1);
-        int low = this.memory.getByteAt(this.registers.SP);
+        int high = this.readByte(this.registers.SP + 1);
+        int low = this.readByte(this.registers.SP);
 
         switch(z) {
             case 0b000: // conditional return
@@ -925,7 +941,7 @@ public class CPU {
 
                         break;
                     case 0b100: // ld (x), a
-                        this.memory.setByteAt(0xFF00 + this.getByte(), this.registers.A);
+                        this.writeByte(0xFF00 + this.getByte(), this.registers.A);
                         this.incrementCycles(12);
                         this.incrementPC(1);
 
@@ -938,7 +954,7 @@ public class CPU {
 
                         break;
                     case 0b110: // ld a, (x)
-                        this.registers.A = this.memory.getByteAt(0xFF00 + this.getByte());
+                        this.registers.A = this.readByte(0xFF00 + this.getByte());
                         this.incrementCycles(12);
                         this.incrementPC(1);
 
@@ -1047,23 +1063,23 @@ public class CPU {
                 } else {
                     switch(y) {
                         case 0b100: // ld (c), a
-                            this.memory.setByteAt(0xFF00 + (this.registers.C & 0xFF), this.registers.A);
+                            this.writeByte(0xFF00 + (this.registers.C & 0xFF), this.registers.A);
                             this.incrementCycles(8);
 
                             break;
                         case 0b101: // ld (xx), a
-                            this.memory.setByteAt(this.getWord(), this.registers.A);
+                            this.writeByte(this.getWord(), this.registers.A);
                             this.incrementCycles(16);
                             this.incrementPC(2);
 
                             break;
                         case 0b110: // ld a, (c)
-                            this.registers.A = this.memory.getByteAt(0xFF00 + (this.registers.C & 0xFF));
+                            this.registers.A = this.readByte(0xFF00 + (this.registers.C & 0xFF));
                             this.incrementCycles(8);
 
                             break;
                         case 0b111: // ld a, (xx)
-                            this.registers.A = this.memory.getByteAt(this.getWord());
+                            this.registers.A = this.readByte(this.getWord());
                             this.incrementCycles(16);
                             this.incrementPC(2);
 
@@ -1155,8 +1171,8 @@ public class CPU {
                 break;
             case 0b101: // push & various ops
                 if(q == 0) { // push [bc, de, hl, af]
-                    this.memory.setByteAt(this.registers.SP - 1, (this.registers.get16BitRegister(p, true) >> 8) & 0xFF);
-                    this.memory.setByteAt(this.registers.SP - 2, (this.registers.get16BitRegister(p, true)) & 0xFF);
+                    this.writeByte(this.registers.SP - 1, (this.registers.get16BitRegister(p, true) >> 8) & 0xFF);
+                    this.writeByte(this.registers.SP - 2, (this.registers.get16BitRegister(p, true)) & 0xFF);
                     this.registers.SP -= 2;
                     this.incrementCycles(16);
                 } else if(q == 1) {
@@ -1266,8 +1282,8 @@ public class CPU {
      * Store current PC on the stack and redirect PC to the called address.
      */
     private void call() {
-        this.memory.setByteAt(this.registers.SP - 1, ((this.registers.PC + 2) >> 8) & 0xFF);
-        this.memory.setByteAt(this.registers.SP - 2, ((this.registers.PC + 2)) & 0xFF);
+        this.writeByte(this.registers.SP - 1, ((this.registers.PC + 2) >> 8) & 0xFF);
+        this.writeByte(this.registers.SP - 2, ((this.registers.PC + 2)) & 0xFF);
         this.registers.PC = this.getWord();
         this.registers.SP -= 2;
         this.incrementCycles(24);
@@ -1278,7 +1294,7 @@ public class CPU {
      * @return The next byte in memory.
      */
     private int getByte() {
-        return this.memory.getByteAt(this.registers.PC);
+        return this.readByte(this.registers.PC);
     }
 
     /**
@@ -1288,8 +1304,8 @@ public class CPU {
      */
     private int getWord() {
         return this.combineBytes(
-                this.memory.getByteAt(this.registers.PC + 1),
-                this.memory.getByteAt(this.registers.PC)
+                this.readByte(this.registers.PC + 1),
+                this.readByte(this.registers.PC)
         );
     }
 
@@ -1308,7 +1324,7 @@ public class CPU {
      * @return The value at memory address 0xFF0F
      */
     public int getIF() {
-        return this.memory.getByteAt(IORegisters.INTERRUPT_FLAGS);
+        return this.readByte(IORegisters.INTERRUPT_FLAGS);
     }
 
     /**
@@ -1316,7 +1332,7 @@ public class CPU {
      * @return The value at memory address 0xFFFF
      */
     public int getIE() {
-        return this.memory.getByteAt(IORegisters.INTERRUPT_ENABLE);
+        return this.readByte(IORegisters.INTERRUPT_ENABLE);
     }
 
     /**
@@ -1930,6 +1946,9 @@ public class CPU {
      * @return The value with the specified bit reset.
      */
     private int res(int position, int value) {
+        // shift 1 left by however many places then invert all the bits.
+        // this will give you a 0 in the place you want to reset.
+        // then just bitwise AND it with the value and that bit is reset!
         return (value & ~(0x01 << position)) & 0xFF;
     }
 
@@ -1940,7 +1959,8 @@ public class CPU {
      * @return The value with the specified bit set.
      */
     private int set(int position, int value) {
-        return ((value & ~(0x01 << position)) | (1 << position)) & 0xFF;
+//        return ((value & ~(0x01 << position)) | (1 << position)) & 0xFF;
+        return value | (0x01 << position);
     }
 
     /**
@@ -2036,8 +2056,8 @@ public class CPU {
      * @param address The address to jump to.
      */
     private void rst(int address) {
-        this.memory.setByteAt(this.registers.SP - 1, (this.registers.PC >> 8) & 0xFF);
-        this.memory.setByteAt(this.registers.SP - 2, this.registers.PC & 0xFF);
+        this.writeByte(this.registers.SP - 1, (this.registers.PC >> 8) & 0xFF);
+        this.writeByte(this.registers.SP - 2, this.registers.PC & 0xFF);
         this.registers.SP -= 2;
         this.registers.PC = address;
     }
@@ -2050,7 +2070,7 @@ public class CPU {
     }
 
     /**
-     * Halt the CPU.
+     * Halts the CPU.
      */
     private void halt() {
         int flags = this.getIF();

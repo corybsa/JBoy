@@ -100,7 +100,7 @@ public class LCDTest {
         memory.setByteAt(IORegisters.WINDOW_Y, 0);
         memory.setByteAt(IORegisters.SCROLL_X, 0);
         memory.setByteAt(IORegisters.SCROLL_Y, 0);
-        memory.setByteAt(IORegisters.LCDC_Y_COORDINATE, 0);
+        memory.setByteAt(IORegisters.LY_COORDINATE, 0);
 
         /*
             bits 7-6 are for color 3

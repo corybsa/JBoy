@@ -131,6 +131,15 @@ public class Memory {
                 }
             }
 
+            if(address == IORegisters.LY_COORDINATE) {
+                boolean isLcdOn = (this.getByteAt(IORegisters.LCDC) & 0x80) == 0x80;
+
+                // this always returns 0 when the LCD is off
+                if(!isLcdOn) {
+                    return 0x00;
+                }
+            }
+
             // the upper 2 bits of the P1 always return 1
             if(address == IORegisters.JOYPAD) {
                 return (0xC0 | this.io[addr]);
@@ -181,6 +190,21 @@ public class Memory {
                 return (0x70 | this.io[addr]);
             }
 
+            // DMG always returns 0xFF for this address
+            if(address == IORegisters.SPEED_SWITCH) {
+                return 0xFF;
+            }
+
+            // DMG always returns 0xFF for this address
+            if(address == IORegisters.VRAM_BANK) {
+                return 0xFF;
+            }
+
+            // DMG always returns 0xFF for this address
+            if(address == IORegisters.WRAM_BANK) {
+                return 0xFF;
+            }
+
             return this.io[addr];
         } else if(address <= 0xFFFE) {
             addr = (0x7E - (0xFFFE - address)) & 0xFFFF;
@@ -192,8 +216,6 @@ public class Memory {
 
     public void setByteAt(int address, int value) {
         int addr;
-
-        // TODO: restrict access to VRAM and OAM when necessary
 
         if(address <= 0x7FFF) {
             this.switchBank(address, value);
@@ -246,7 +268,7 @@ public class Memory {
                 return;
             }
 
-            if(address == IORegisters.TIMA) {
+            else if(address == IORegisters.TIMA) {
                 if(Timers.state == Timers.TimerState.OVERFLOW) {
                     // If a value is written to TIMA during the overflow period, the new value will override the TMA load.
                     Timers.isTimaChanged = true;
@@ -259,7 +281,7 @@ public class Memory {
                 this.io[addr] = value;
             }
 
-            if(address == IORegisters.TAC) {
+            else if(address == IORegisters.TAC) {
                 int tac  = this.getByteAt(IORegisters.TAC);
                 int oldEnable = (tac & 0x04);
                 int newEnable = (value & 0x04);
@@ -281,7 +303,7 @@ public class Memory {
                 }
             }
 
-            if(address == IORegisters.INTERRUPT_FLAGS) {
+            else if(address == IORegisters.INTERRUPT_FLAGS) {
                 // If TIMA has a pending overflow, the written value will overwrite the automatic flag set to 1.
                 // If a 0 is written during this time, the interrupt won't happen.
                 if(Timers.state == Timers.TimerState.OVERFLOW) {
@@ -292,14 +314,16 @@ public class Memory {
                 }
 
                 this.io[addr] = 0xE0 | value;
-            } else {
+            }
+
+            else {
                 this.io[addr] = value;
             }
 
             // TODO: (in bgb) something weird is happening when a value is written to IORegisters.LCDC.
             // TODO: need to checkout IORegisters.LCD_STATUS as well.
 
-            if(address == IORegisters.LCDC_Y_COORDINATE || address == IORegisters.LY_COMPARE) {
+            if(address == IORegisters.LY_COORDINATE || address == IORegisters.LY_COMPARE) {
                 this.compareLY();
             }
         } else if(address <= 0xFFFE) {
@@ -336,18 +360,37 @@ public class Memory {
 
     /**
      * The GameBoy permanently compares the value of the LYC and LY registers. When both values are identical,
-     * the coincidence bit (6th bit) in the STAT register becomes set, and (if enabled) a STAT interrupt is requested.
+     * the LY=LYC Comparison bit (2nd bit) in the STAT register becomes set, and (if enabled) a STAT interrupt is requested.
      */
     private void compareLY() {
+        /*
+
+        It seems as if the compare will always return 0 when the scanline starts a new line.
+        The actual check only occurs after a few cycles. And it looks like it checks what the value was on the PREVIOUS cycle...
+        If the check succeeds, the LY=LYC interrupt will be set in the IF register in the same clock cycle. No delay in setting the interrupt flag.
+
+        Now something weird happens on line 153:
+        The check is delayed like the other lines but, on line 153 it goes something like this:
+        TODO: figure this out
+
+        */
+
         int lyc = this.getByteAt(IORegisters.LY_COMPARE);
-        int ly = this.getByteAt(IORegisters.LCDC_Y_COORDINATE);
+        int ly = this.getByteAt(IORegisters.LY_COORDINATE);
+        int status = this.getByteAt(IORegisters.LCD_STATUS);
+
+        // the enable bit is NOT enabled. skip the check.
+        if(((status >> 6) & 0x01) != 0x01) {
+            return;
+        }
 
         if(lyc == ly) {
-            int status = this.getByteAt(IORegisters.LCD_STATUS);
             int interruptFlags = this.getByteAt(IORegisters.INTERRUPT_FLAGS);
 
-            this.setByteAt(IORegisters.LCD_STATUS, status | (1 << 6));
+            this.setByteAt(IORegisters.LCD_STATUS, status | (1 << 2));
             this.setByteAt(IORegisters.INTERRUPT_FLAGS, interruptFlags | Interrupts.LCD_STAT);
+        } else {
+            this.setByteAt(IORegisters.LCD_STATUS, status & ~(0x01 << 2));
         }
     }
 

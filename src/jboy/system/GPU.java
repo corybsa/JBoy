@@ -8,7 +8,7 @@ public class GPU  {
 
     private final Memory memory;
     private final LCD lcd;
-    private Mode mode;
+    private int mode;
     private int scanline = 0;
     private int ticks = 0;
     private long previousCycles = 0;
@@ -17,11 +17,11 @@ public class GPU  {
 
     private byte[][][] backgroundMap = new byte[BG_HEIGHT][BG_WIDTH][8];
 
-    public enum Mode {
-        HBLANK,
-        VBLANK,
-        OAM,
-        VRAM
+    public interface Mode {
+        int HBLANK = 0;
+        int VBLANK = 1;
+        int OAM = 2;
+        int VRAM = 3;
     }
 
     private interface Timings {
@@ -49,7 +49,7 @@ public class GPU  {
         this.previousCycles = cycles;
 
         switch(this.mode) {
-            case HBLANK:
+            case Mode.HBLANK:
                 if(this.ticks >= Timings.HBLANK) {
                     this.lcd.render(this.backgroundMap);
                     this.scanline++;
@@ -64,7 +64,7 @@ public class GPU  {
                     this.setLY(this.scanline);
                 }
                 break;
-            case VBLANK:
+            case Mode.VBLANK:
                 if(this.ticks >= Timings.VBLANK) {
                     this.scanline++;
 
@@ -77,13 +77,13 @@ public class GPU  {
                     this.setLY(this.scanline);
                 }
                 break;
-            case OAM:
+            case Mode.OAM:
                 if(this.ticks >= Timings.OAM) {
                     this.changeMode(Mode.VRAM);
                     this.ticks -= Timings.OAM;
                 }
                 break;
-            case VRAM:
+            case Mode.VRAM:
                 if(this.ticks >= Timings.VRAM) {
                     this.changeMode(Mode.HBLANK);
                     this.ticks -= Timings.VRAM;
@@ -110,7 +110,7 @@ public class GPU  {
      * @param value The value to set the LY register to.
      */
     private void setLY(int value) {
-        this.memory.setByteAt(IORegisters.LCDC_Y_COORDINATE, value);
+        this.memory.setByteAt(IORegisters.LY_COORDINATE, value);
     }
 
     /**
@@ -123,55 +123,35 @@ public class GPU  {
         this.memory.setByteAt(IORegisters.INTERRUPT_FLAGS, interruptFlag);
     }
 
-    private void changeMode(Mode mode) {
+    private void changeMode(int mode) {
         if(mode != this.mode) {
             int statusFlag = this.memory.getByteAt(IORegisters.LCD_STATUS);
 
+            // set the mode bits in LCD_STATUS
+            statusFlag = (statusFlag & ~(mode)) | mode;
+
+            // set the mode interrupt bit (bits 3 through 5)
+            statusFlag |= (1 << (mode + 3));
+
             switch(mode) {
-                case HBLANK:
-                    // set the mode interrupt bit 3 to 1 (bits 3 through 5)
-                    statusFlag |= (1 << 3);
-
-                    // set the mode bit to 0 (bits 0 and 1)
-                    statusFlag = ((statusFlag >> 2) << 2);
-
-                    this.memory.setByteAt(IORegisters.LCD_STATUS, statusFlag);
-                    this.requestInterrupt(Interrupts.LCD_STAT);
-                    break;
-                case VBLANK:
-                    // set the mode interrupt bit 4 to 1 (bits 3 through 5)
-                    statusFlag |= (1 << 4);
-
-                    // set the mode bit to 1 (bits 0 and 1)
-                    statusFlag = ((statusFlag >> 2) << 2) | 1;
-
-                    this.memory.setByteAt(IORegisters.LCD_STATUS, statusFlag);
+                case Mode.VBLANK:
                     this.requestInterrupt(Interrupts.VBLANK);
+
                     break;
-                case OAM:
-                    // set the mode interrupt bit 5 to 1 (bits 3 through 5)
-                    statusFlag |= (1 << 5);
-
-                    // set the mode bit to 2 (bits 0 and 1)
-                    statusFlag = ((statusFlag >> 2) << 2) | 2;
-
-                    this.memory.setByteAt(IORegisters.LCD_STATUS, statusFlag);
+                case Mode.HBLANK:
+                case Mode.OAM:
+                case Mode.VRAM:
                     this.requestInterrupt(Interrupts.LCD_STAT);
-                    break;
-                case VRAM:
-                    // set the mode bit to 2 (bits 0 and 1)
-                    statusFlag = ((statusFlag >> 2) << 2) | 3;
 
-                    this.memory.setByteAt(IORegisters.LCD_STATUS, statusFlag);
-                    this.requestInterrupt(Interrupts.LCD_STAT);
                     break;
             }
 
+            this.memory.setByteAt(IORegisters.LCD_STATUS, statusFlag);
             this.mode = mode;
         }
     }
 
-    Mode getMode() {
+    int getMode() {
         return this.mode;
     }
 
@@ -212,7 +192,7 @@ public class GPU  {
 
     private void updateBackgroundMap() {
         boolean isWindowEnabled = false;
-        int scanlineY = this.memory.getByteAt(IORegisters.LCDC_Y_COORDINATE);
+        int scanlineY = this.memory.getByteAt(IORegisters.LY_COORDINATE);
         int lcdc = this.memory.getByteAt(IORegisters.LCDC);
         int windowOffset = (lcdc >> 6) & 0x01;
         int tileSet = (lcdc >> 4) & 0x01;
