@@ -77,13 +77,11 @@ public class Instruction {
      * @return Returns the current instance.
      */
     public Instruction parseInstruction(int op1, int op2) {
-        // ignore 0xD3
-        if(op1 != 0xD3) {
+        if(op1 != -1) {
             this.instruction = this.opName.replaceFirst("\\*", this.byteToHex(op1));
         }
 
-        // ignore 0xD3
-        if(op2 != 0xD3) {
+        if(op2 != -1) {
             this.instruction = this.instruction.replaceFirst("\\*", this.byteToHex(op2));
         }
 

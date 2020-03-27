@@ -141,7 +141,8 @@ public class GameBoy implements Runnable {
         this.cpu.removeBreakpoint(breakpoint);
     }
 
-    public void resetCpu() {
+    public void reset() {
         this.cpu.reset();
+        this.gpu.reset();
     }
 }

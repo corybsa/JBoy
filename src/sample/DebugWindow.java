@@ -1,14 +1,12 @@
 package sample;
 
 import javafx.application.Platform;
-import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import jboy.disassembler.Disassembler;
-import jboy.disassembler.Instructions;
 import jboy.other.*;
 import jboy.system.*;
 
@@ -171,7 +169,7 @@ class DebugWindow {
         tick.setOnAction(x -> this.gameBoy.tick());
 
         Button reset = new Button("Reset");
-        reset.setOnAction(x -> this.gameBoy.resetCpu());
+        reset.setOnAction(x -> this.gameBoy.reset());
 
         Button run = new Button("Run to breakpoint");
         run.setOnAction(x -> this.gameBoy.runToBreakpoint());

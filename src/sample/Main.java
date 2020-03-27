@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Main extends Application {
@@ -246,7 +245,7 @@ public class Main extends Application {
         this.gbInfo = this.gameBoy.getInfo();
         this.gbInfo.setDebugUpdateFunction(dbgWindow::updateWindow);
 
-        this.gameBoy.resetCpu();
+        this.gameBoy.reset();
         this.debugWindow.show();
     }
 }
