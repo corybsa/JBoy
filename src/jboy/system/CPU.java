@@ -141,7 +141,7 @@ public class CPU {
 
         this.writeByte(IORegisters.TIMA, 0x00);
         this.writeByte(IORegisters.TMA, 0x00);
-        this.writeByte(IORegisters.TAC, 0x00);
+        this.writeByte(IORegisters.TAC, 0xF8);
         this.writeByte(IORegisters.INTERRUPT_FLAGS, 0xE1);
         this.writeByte(IORegisters.SOUND1_SWEEP, 0x80);
         this.writeByte(IORegisters.SOUND1_LENGTH_WAVE, 0xBF);
@@ -162,9 +162,10 @@ public class CPU {
         this.writeByte(IORegisters.SOUND_OUTPUT_CONTROL, 0xF3);
         this.writeByte(IORegisters.SOUND_ENABLE, 0xF1);
         this.writeByte(IORegisters.LCDC, 0x91);
-        this.writeByte(IORegisters.LCD_STATUS, 0x80);
+        this.writeByte(IORegisters.LCD_STATUS, 0x81);
         this.writeByte(IORegisters.SCROLL_Y, 0x00);
         this.writeByte(IORegisters.SCROLL_X, 0x00);
+        this.writeByte(IORegisters.LY_COORDINATE, 0x90);
         this.writeByte(IORegisters.LY_COMPARE, 0x00);
         this.writeByte(IORegisters.BG_PALETTE_DATA, 0xFC);
         this.writeByte(IORegisters.OBJECT_PALETTE0_DATA, 0xFF);
@@ -317,10 +318,10 @@ public class CPU {
     }
 
     /*
-
-    During mode 0 and mode 1 the CPU can access both VRAM and OAM. During mode 2 the CPU
-    can only access VRAM, not OAM. During mode 3 OAM and VRAM can't be accessed. In GBC
-    mode the CPU can't access Palette RAM (FF69h and FF6Bh) during mode 3.
+    TODO:
+        During mode 0 and mode 1 the CPU can access both VRAM and OAM. During mode 2 the CPU
+        can only access VRAM, not OAM. During mode 3 OAM and VRAM can't be accessed. In GBC
+        mode the CPU can't access Palette RAM (FF69h and FF6Bh) during mode 3.
 
     */
 
@@ -397,6 +398,24 @@ public class CPU {
     }
 
     /**
+     * Increment SP by specified amount and adjust for over/under flow.
+     * @param n The amount to increment SP.
+     */
+    public void incrementSP(int n) {
+        this.registers.SP += n;
+
+        // SP overflowed
+        if(this.registers.SP > 0xFFFF) {
+            this.registers.SP -= 0x10000;
+        }
+
+        // SP underflowed
+        if(this.registers.SP < 0x00) {
+            this.registers.SP += 0x10000;
+        }
+    }
+
+    /**
      * Keep track of how many cycles have elapsed and also keeps track of how many cycles since the components were last synced.
      * @param n The amount of machine cycles to increment by.
      */
@@ -410,39 +429,94 @@ public class CPU {
      * Check for the 5 different hardware interrupts and service them as needed. They are serviced in order of priority.
      * The priority is as follows:
      * VBLANK, LCD Status, Timer overflow, Serial input, JoyPad input
+     *
+     * with interrupts, there's three relevant clock edges when stuff happens. One clock edge is when interrupts are
+     * checked during opcode fetch. Another is when the target address is decided (this is what is being tested).
+     * And the third interesting clock edge is when one bit of IF is cleared
+     *
+     * first important clock edge (interrupt check) happens at midpoint of the machine cycle when opcode fetch is done. So that's when IME && ((IE & IF) != 0) is evaluated
+     *
+     * the second important clock edge (decision of which interrupt to handle) happens at midpoint of the machine cycle when the second SP push is done during interrupt dispatch
+     *
+     * the third important clock edge (clearing of exactly one IF bit) happens at the beginning of the machine cycle after the second SP push
+     *
+     * so, if for example we take a look at round 1 of ie_push test, these are the machine cycles and what happens during them:
+     *
+     * Round 1 source code:
+     * ; Round 1: IE is written during upper byte push
+     * ;
+     * ; The written value is $02, which clears the INTR_TIMER bit and cancels the
+     * ; interrupt dispatch. PC is set to $0000 instead of the normal jump address.
+     * round1:
+     *   ld hl, finish_round1
+     *   xor a
+     *   ldh (<IF), a
+     *
+     *   ld a, INTR_TIMER
+     *   ldh (<IE), a
+     *
+     *   ei
+     *   nop
+     *
+     *   ld sp, $0000
+     *   ldh (<IF), a
+     *
+     *   jp fail_round1_nointr
+     *
+     * finish_round1:
+     *   ldh a, (<IF)
+     *   and %11111
+     *   cp INTR_TIMER
+     *   jp nz, fail_round1_if
+     *
+     * initial state: SP=$0000, IF=$04, IE=$04
+     * M-cycle 1: jp fail_round1_nointr <- fetch of this JP opcode + interrupt check at the midpoint of the machine cycle.
+     *              Interrupt check is positive, so the opcode is thrown away and interrupt dispatch is started
+     *
+     * M-cycle 2: delay cycle (CPU might do something internally here, but it's not observable in tests)
+     * M-cycle 3: SP is decremented
+     * M-cycle 4: first SP push ($02 is written to $FFFF), SP is decremented
+     * M-cycle 5: second SP push (something is written to $FFFE). The interrupt target check is done at midpoint.
+     *              In this case, IF=$04, IE=$02 (because of the write in previous cycle).
+     *              IF & IE = $00 so the interrupt dispatch sets PC to $0000
+     *
+     * M-cycle 6: (clearing of one IF bit would happen here if the target check found a real interrupt target) + opcode fetch from $0000
      */
     private void checkInterrupts() {
-        // TODO: interrupts are not working properly. Run blargg on bgb and compare.
-        int enabledInterrupts = this.getIE() & this.getIF();
-
-        if((enabledInterrupts & Interrupts.VBLANK) == Interrupts.VBLANK) {
-            this.serviceInterrupt(Interrupts.VBLANK, 0x40);
-        } else if((enabledInterrupts & Interrupts.LCD_STAT) == Interrupts.LCD_STAT) {
-            this.serviceInterrupt(Interrupts.LCD_STAT, 0x48);
-        } else if((enabledInterrupts & Interrupts.TIMER) == Interrupts.TIMER) {
-            this.serviceInterrupt(Interrupts.TIMER, 0x50);
-        } else if((enabledInterrupts & Interrupts.SERIAL) == Interrupts.SERIAL) {
-            this.serviceInterrupt(Interrupts.SERIAL, 0x58);
-        } else if((enabledInterrupts & Interrupts.JOYPAD) == Interrupts.JOYPAD) {
-            this.serviceInterrupt(Interrupts.JOYPAD, 0x60);
-        } else {
-            this.timers.tick(4);
-        }
-    }
-
-    /**
-     * Servicing an interrupt disabled interrupts, resumes the CPU if it was stopped,
-     * resets the interrupt bit that was serviced, resets the PC to a certain address
-     * and consumes 5 cycles.
-     * @param interrupt The {@link Interrupts interrupt} to service.
-     * @param vector The address to reset to.
-     */
-    private void serviceInterrupt(int interrupt, int vector) {
-        this.writeByte(IORegisters.INTERRUPT_FLAGS, this.getIF() & ~interrupt);
-
         // The IME is really a flag saying "enable/disable jumps to interrupt vectors."
+        // So if it is disabled, skip checking interrupts.
         if(this.ime) {
-            this.rst(vector);
+            this.incrementSP(-1);
+            this.writeByte(this.registers.SP, (this.registers.PC >> 8) & 0xFF);
+
+            int enabledInterrupts = this.getIE() & this.getIF();
+            int interrupt = this.getIF();
+
+            if(enabledInterrupts == 0) {
+                this.registers.PC = 0x0000;
+            } else if((enabledInterrupts & Interrupts.VBLANK) == Interrupts.VBLANK) {
+                interrupt &= ~Interrupts.VBLANK;
+                this.registers.PC = 0x40;
+            } else if((enabledInterrupts & Interrupts.LCD_STAT) == Interrupts.LCD_STAT) {
+                interrupt &= ~Interrupts.LCD_STAT;
+                this.registers.PC = 0x48;
+            } else if((enabledInterrupts & Interrupts.TIMER) == Interrupts.TIMER) {
+                interrupt &= ~Interrupts.TIMER;
+                this.registers.PC = 0x50;
+            } else if((enabledInterrupts & Interrupts.SERIAL) == Interrupts.SERIAL) {
+                interrupt &= ~Interrupts.SERIAL;
+                this.registers.PC = 0x58;
+            } else if((enabledInterrupts & Interrupts.JOYPAD) == Interrupts.JOYPAD) {
+                interrupt &= ~Interrupts.JOYPAD;
+                this.registers.PC = 0x60;
+            } else {
+                this.timers.tick(4);
+            }
+
+            this.incrementSP(-1);
+            this.writeByte(this.registers.SP, this.registers.PC & 0xFF);
+
+            this.writeByte(IORegisters.INTERRUPT_FLAGS, interrupt);
         }
 
         this.ime = false;
@@ -894,7 +968,8 @@ public class CPU {
      * @param p Bits 5-4 of the op code
      */
     private void doJumpOperation(int y, int z, int q, int p) {
-        int high = this.readByte(this.registers.SP + 1);
+        // check for overflow on SP + 1
+        int high = this.readByte((this.registers.SP + 1) > 0xFFFF ? 0 : (this.registers.SP + 1));
         int low = this.readByte(this.registers.SP);
 
         switch(z) {
@@ -903,7 +978,7 @@ public class CPU {
                     case 0b000: // ret nz
                         if((this.registers.F & Flags.ZERO) != Flags.ZERO) {
                             this.registers.PC = this.combineBytes(high, low);
-                            this.registers.SP += 2;
+                            this.incrementSP(2);
                             this.incrementCycles(20);
                         } else {
                             this.incrementCycles(8);
@@ -913,7 +988,7 @@ public class CPU {
                     case 0b001: // ret z
                         if((this.registers.F & Flags.ZERO) == Flags.ZERO) {
                             this.registers.PC = this.combineBytes(high, low);
-                            this.registers.SP += 2;
+                            this.incrementSP(2);
                             this.incrementCycles(20);
                         } else {
                             this.incrementCycles(8);
@@ -923,7 +998,7 @@ public class CPU {
                     case 0b010: // ret nc
                         if((this.registers.F & Flags.CARRY) != Flags.CARRY) {
                             this.registers.PC = this.combineBytes(high, low);
-                            this.registers.SP += 2;
+                            this.incrementSP(2);
                             this.incrementCycles(20);
                         } else {
                             this.incrementCycles(8);
@@ -933,7 +1008,7 @@ public class CPU {
                     case 0b011: // ret c
                         if((this.registers.F & Flags.CARRY) == Flags.CARRY) {
                             this.registers.PC = this.combineBytes(high, low);
-                            this.registers.SP += 2;
+                            this.incrementSP(2);
                             this.incrementCycles(20);
                         } else {
                             this.incrementCycles(8);
@@ -976,7 +1051,13 @@ public class CPU {
                         }
 
                         this.resetFlags(Flags.ZERO | Flags.SUB);
-                        this.registers.setHL(result & 0xFFFF);
+
+                        // check for overflow
+                        if(result > 0xFFFF) {
+                            result -= 0xFFFF;
+                        }
+
+                        this.registers.setHL(result);
                         this.incrementCycles(12);
                         this.incrementPC(1);
 
@@ -987,19 +1068,19 @@ public class CPU {
             case 0b001: // pop & various ops
                 if(q == 0) { // pop [bc, de, hl, af]
                     this.registers.set16BitRegister(p, this.combineBytes(high, low), true);
-                    this.registers.SP += 2;
+                    this.incrementSP(2);
                     this.incrementCycles(12);
                 } else if(q == 1) {
                     switch(p) {
                         case 0b00: // ret
                             this.registers.PC = this.combineBytes(high, low);
-                            this.registers.SP += 2;
+                            this.incrementSP(2);
                             this.incrementCycles(16);
 
                             break;
                         case 0b01: // reti
                             this.registers.PC = this.combineBytes(high, low);
-                            this.registers.SP += 2;
+                            this.incrementSP(2);
                             this.ime = true;
                             this.incrementCycles(16);
 
@@ -1171,9 +1252,12 @@ public class CPU {
                 break;
             case 0b101: // push & various ops
                 if(q == 0) { // push [bc, de, hl, af]
-                    this.writeByte(this.registers.SP - 1, (this.registers.get16BitRegister(p, true) >> 8) & 0xFF);
-                    this.writeByte(this.registers.SP - 2, (this.registers.get16BitRegister(p, true)) & 0xFF);
-                    this.registers.SP -= 2;
+                    this.incrementSP(-1);
+                    this.writeByte(this.registers.SP, (this.registers.get16BitRegister(p, true) >> 8) & 0xFF);
+
+                    this.incrementSP(-1);
+                    this.writeByte(this.registers.SP, (this.registers.get16BitRegister(p, true)) & 0xFF);
+
                     this.incrementCycles(16);
                 } else if(q == 1) {
                     if(p == 0) { // call xx
@@ -1282,10 +1366,13 @@ public class CPU {
      * Store current PC on the stack and redirect PC to the called address.
      */
     private void call() {
-        this.writeByte(this.registers.SP - 1, ((this.registers.PC + 2) >> 8) & 0xFF);
-        this.writeByte(this.registers.SP - 2, ((this.registers.PC + 2)) & 0xFF);
+        this.incrementSP(-1);
+        this.writeByte(this.registers.SP, ((this.registers.PC + 2) >> 8) & 0xFF);
+
+        this.incrementSP(-1);
+        this.writeByte(this.registers.SP, ((this.registers.PC + 2)) & 0xFF);
+
         this.registers.PC = this.getWord();
-        this.registers.SP -= 2;
         this.incrementCycles(24);
     }
 
@@ -2056,9 +2143,12 @@ public class CPU {
      * @param address The address to jump to.
      */
     private void rst(int address) {
-        this.writeByte(this.registers.SP - 1, (this.registers.PC >> 8) & 0xFF);
-        this.writeByte(this.registers.SP - 2, this.registers.PC & 0xFF);
-        this.registers.SP -= 2;
+        this.incrementSP(-1);
+        this.writeByte(this.registers.SP, (this.registers.PC >> 8) & 0xFF);
+
+        this.incrementSP(-1);
+        this.writeByte(this.registers.SP, this.registers.PC & 0xFF);
+
         this.registers.PC = address;
     }
 

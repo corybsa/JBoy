@@ -1,29 +1,29 @@
 blargg:
-    cpu_instrs: infinite loop on test 3
+    cpu_instrs: nothing???
 
 mooneye:
     daa:
-        - JBoy: test ok
-        - BGB: test ok
+        - JBoy: Test OK
+        - BGB: Test OK
 
     div_timing:
         - JBoy: B: OK   C: OK   D: OK
         - BGB: B: OK   C: OK   D: OK
 
     div_write:
-        - JBoy: test ok
-        - BGB: test ok
+        - JBoy: Test OK
+        - BGB: Test OK
 
     ie_push:
-        - JBoy: R1: not cancelled
+        - JBoy: Test OK
         - BGB: R3: unwanted cancel
 
     mem_oam:
-        - JBoy: test ok
-        - BGB: test ok
+        - JBoy: Test OK
+        - BGB: Test OK
 
     rapid_toggle:
-        - JBoy: B: OK   C: OK
+        - JBoy: FAIL: NO INTR
         - BGB: B: OK   C: OK
 
     reg_f:
@@ -31,49 +31,49 @@ mooneye:
         - BGB: C: OK   E: OK
 
     tim00:
-        - JBoy: D: 04!   E: OK   test failed
+        - JBoy: D: OK   E: 05!   Test failed
         - BGB: D: OK   E: OK
 
     tim00_div_trigger:
-        - JBoy: D: OK   E: 05!   test failed
-        - BGB:
-
-    tim01:
         - JBoy: D: OK   E: OK
         - BGB:
 
+    tim01:
+        - JBoy: D: 08!   E: 09!   Test failed
+        - BGB:
+
     tim01_div_trigger:
-        - JBoy: D: 0A!   E: 0B!   test failed
+        - JBoy: D: 0A!   E: 0B!   Test failed
         - BGB:
 
     tim10:
-        - JBoy: D: 04!   E: OK   test failed
+        - JBoy: D: OK   E: 05!   Test failed
         - BGB:
 
     tim10_div_trigger:
-        - JBoy: D: 05!   E: OK   test failed
+        - JBoy: D: 05!   E: 06!   Test failed
         - BGB:
 
     tim11:
-        - JBoy: D: 04!   E: OK   test failed
+        - JBoy: D: OK   E: 05!   Test failed
         - BGB:
 
     tim11_div_trigger:
-        - JBoy: D: OK   E: 05!   test failed
+        - JBoy: D: OK   E: 05!   Test failed
         - BGB:
 
     tima_reload:
-        - JBoy: B: OK   C: OK   D: FF!   E: 00!   H: FF!   L: 00!   test failed
+        - JBoy: B: OK   C: OK   D: FF!   E: 00!   H: FF!   L: 00!   Test failed
         - BGB:
 
     tima_write_reloading:
-        - JBoy: D: 80!   C: FE!   E: OK   L: 7F!   test failed
+        - JBoy: D: 80!   C: FE!   E: OK   L: OK   Test failed
         - BGB:
 
     tma_write_reloading:
-        - JBoy: D: 7F!   C: FE!   E: 7f!   L: FE!   test failed
+        - JBoy: D: 7F!   C: OK   E: 7F!   L: OK   Test failed
         - BGB:
 
     unused_hwio-GS:
-        - JBoy: freezes
+        - JBoy: nothing???
         - BGB: test ok

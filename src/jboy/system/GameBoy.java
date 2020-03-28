@@ -1,10 +1,8 @@
 package jboy.system;
 
-import javafx.application.Platform;
 import jboy.disassembler.Disassembler;
 import jboy.other.GameBoyInfo;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 
 public class GameBoy implements Runnable {
@@ -32,7 +30,7 @@ public class GameBoy implements Runnable {
     }
 
     public void loadROM(int[] rom) {
-        this.cpu.reset();
+        this.reset();
         this.memory.loadROM(rom);
         this.rom = rom;
         this.isCartLoaded = true;
@@ -55,8 +53,7 @@ public class GameBoy implements Runnable {
             this.cpu.reset();
             this.cpu.run();
         } else {
-            this.cpu.reset();
-            Platform.runLater(this::tick);
+            this.reset();
         }
     }
 
@@ -118,11 +115,11 @@ public class GameBoy implements Runnable {
             return;
         }
 
+        this.cpu.tick();
+
         if(this.isDebugging) {
             this.info.updateDebugInfo();
         }
-
-        this.cpu.tick();
     }
 
     public void runToBreakpoint() {
@@ -131,18 +128,25 @@ public class GameBoy implements Runnable {
         }
 
         this.cpu.run();
+        this.info.updateDebugInfo();
     }
 
     public void addBreakpoint(int breakpoint) {
         this.cpu.addBreakpoint(breakpoint);
+        this.info.updateDebugInfo();
     }
 
     public void removeBreakpoint(int breakpoint) {
         this.cpu.removeBreakpoint(breakpoint);
+        this.info.updateDebugInfo();
     }
 
     public void reset() {
         this.cpu.reset();
         this.gpu.reset();
+
+        if(this.isDebugging) {
+            this.info.updateDebugInfo();
+        }
     }
 }

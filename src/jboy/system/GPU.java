@@ -125,28 +125,61 @@ public class GPU  {
 
     private void changeMode(int mode) {
         if(mode != this.mode) {
-            int statusFlag = this.memory.getByteAt(IORegisters.LCD_STATUS);
+            int status = this.memory.getByteAt(IORegisters.LCD_STATUS);
 
             // set the mode bits in LCD_STATUS
-            statusFlag = (statusFlag & ~(mode)) | mode;
+            status = (status & ~(mode)) | mode;
 
             // set the mode interrupt bit (bits 3 through 5)
-            statusFlag |= (1 << (mode + 3));
+            status |= (1 << (mode + 3));
 
+            /*
+
+            This signal is set to 1 if:
+            ( (LY = LYC) AND (STAT.ENABLE_LYC_COMPARE = 1) ) OR
+            ( (ScreenMode = 0) AND (STAT.ENABLE_HBL = 1) ) OR
+            ( (ScreenMode = 2) AND (STAT.ENABLE_OAM = 1) ) OR
+            ( (ScreenMode = 1) AND (STAT.ENABLE_VBL || STAT.ENABLE_OAM) )
+
+            Bit 6 - LYC=LY Coincidence Interrupt (1=Enable) (Read/Write)
+            Bit 5 - Mode 2 OAM Interrupt         (1=Enable) (Read/Write)
+            Bit 4 - Mode 1 V-Blank Interrupt     (1=Enable) (Read/Write)
+            Bit 3 - Mode 0 H-Blank Interrupt     (1=Enable) (Read/Write)
+            Bit 2 - Coincidence Flag  (0:LYC<>LY, 1:LYC=LY) (Read Only)
+            Bit 1-0 - Mode Flag       (Mode 0-3, see below) (Read Only)
+                0: During H-Blank
+                1: During V-Blank
+                2: During Searching OAM
+                3: During Transferring Data to LCD Driver
+
+            */
             switch(mode) {
-                case Mode.VBLANK:
-                    this.requestInterrupt(Interrupts.VBLANK);
+                case Mode.HBLANK:
+                    if(((status >> 3) & 0x01) == 0x01) {
+                        this.requestInterrupt(Interrupts.LCD_STAT);
+                    }
 
                     break;
-                case Mode.HBLANK:
+                case Mode.VBLANK:
+                    if(((status >> 4) & 0x01) == 0x01) {
+                        this.requestInterrupt(Interrupts.VBLANK);
+                    }
+
+                    // no break because we want to fall through.
+                    // LCD_STAT can be triggered from VBLANK mode by either bit 4 OR bit 5
                 case Mode.OAM:
+                    if(((status >> 5) & 0x01) == 0x01) {
+                        this.requestInterrupt(Interrupts.LCD_STAT);
+                    }
+                    break;
                 case Mode.VRAM:
-                    this.requestInterrupt(Interrupts.LCD_STAT);
+//                    this.requestInterrupt(Interrupts.LCD_STAT);
 
                     break;
             }
 
-            this.memory.setByteAt(IORegisters.LCD_STATUS, statusFlag);
+            this.memory.setByteAt(IORegisters.LCD_STATUS, status);
+
             this.mode = mode;
         }
     }

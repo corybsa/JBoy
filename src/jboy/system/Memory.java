@@ -90,6 +90,14 @@ public class Memory {
     public int getByteAt(int address) {
         int addr;
 
+        if(address > 0xFFFF) {
+            address = address - 0x10000;
+        }
+
+        if(address < 0) {
+            address = address + 0x10000;
+        }
+
         if(address <= 0x3FFF) {
             return this.cartridge[address];
         } else if(address <= 0x7FFF) {
@@ -119,26 +127,6 @@ public class Memory {
             return this.fea0_feff[addr];*/
         } else if(address <= 0xFF7F) {
             addr = (0x4B - (0xFF4B - address)) & 0xFFFF;
-
-            if(address == IORegisters.LCD_STATUS) {
-                int lcdc = this.getByteAt(IORegisters.LCDC);
-
-                // When LCD is off bits 0 through 2 return 0
-                if((lcdc & 0x80) != 0x80) {
-                    return (0x80 | this.io[addr]) & 0xF8;
-                } else {
-                    return (0x80 | this.io[addr]);
-                }
-            }
-
-            if(address == IORegisters.LY_COORDINATE) {
-                boolean isLcdOn = (this.getByteAt(IORegisters.LCDC) & 0x80) == 0x80;
-
-                // this always returns 0 when the LCD is off
-                if(!isLcdOn) {
-                    return 0x00;
-                }
-            }
 
             // the upper 2 bits of the P1 always return 1
             if(address == IORegisters.JOYPAD) {
@@ -190,6 +178,26 @@ public class Memory {
                 return (0x70 | this.io[addr]);
             }
 
+            if(address == IORegisters.LCD_STATUS) {
+                int lcdc = this.getByteAt(IORegisters.LCDC);
+
+                // When LCD is off bits 0 through 2 return 0
+                if((lcdc & 0x80) != 0x80) {
+                    return (0x80 | this.io[addr]) & 0xF8;
+                } else {
+                    return (0x80 | this.io[addr]);
+                }
+            }
+
+            if(address == IORegisters.LY_COORDINATE) {
+                boolean isLcdOn = (this.getByteAt(IORegisters.LCDC) & 0x80) == 0x80;
+
+                // this always returns 0 when the LCD is off
+                if(!isLcdOn) {
+                    return 0x00;
+                }
+            }
+
             // DMG always returns 0xFF for this address
             if(address == IORegisters.SPEED_SWITCH) {
                 return 0xFF;
@@ -216,6 +224,21 @@ public class Memory {
 
     public void setByteAt(int address, int value) {
         int addr;
+
+        if(address > 0xFFFF) {
+            address = address - 0x10000;
+        }
+
+        if(address < 0) {
+            address = address + 0x10000;
+        }
+
+        // check for values greater than 0xFF being written.
+        if(value > 0xFF) {
+            this.setByteAt((address + 1), (value >> 8));
+            this.setByteAt(address, (value & 0xFF));
+            return;
+        }
 
         if(address <= 0x7FFF) {
             this.switchBank(address, value);
@@ -316,6 +339,17 @@ public class Memory {
                 this.io[addr] = 0xE0 | value;
             }
 
+            else if(address == IORegisters.LCD_STATUS) {
+                int lcdc = this.getByteAt(IORegisters.LCDC);
+
+                // When LCD is off bits 0 through 2 return 0 also bit 7 is always 1
+                if((lcdc & 0x80) != 0x80) {
+                    this.io[addr] = (0x80 | value) & 0xF8;
+                } else {
+                    this.io[addr] = (0x80 | value);
+                }
+            }
+
             else {
                 this.io[addr] = value;
             }
@@ -374,6 +408,13 @@ public class Memory {
         TODO: figure this out
 
         */
+
+        int lcdc = this.getByteAt(IORegisters.LCDC);
+
+        // don't compare ly if LCD is OFF
+        if((lcdc & 0x80) != 0x80) {
+            return;
+        }
 
         int lyc = this.getByteAt(IORegisters.LY_COMPARE);
         int ly = this.getByteAt(IORegisters.LY_COORDINATE);

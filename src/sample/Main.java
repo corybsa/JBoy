@@ -3,6 +3,7 @@ package sample;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
+import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
@@ -12,7 +13,9 @@ import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 import jboy.disassembler.Disassembler;
 import jboy.other.GameBoyInfo;
 import jboy.system.LCD;
@@ -64,16 +67,25 @@ public class Main extends Application {
         Scene scene = new Scene(vbox, (LCD.WIDTH * 2), (LCD.HEIGHT * 2) + 29);
 
         primaryStage.setScene(scene);
+        primaryStage.setX((Screen.getPrimary().getBounds().getWidth() / 2) - LCD.WIDTH);
+        primaryStage.setY((Screen.getPrimary().getBounds().getHeight() / 2) - (LCD.HEIGHT * 2));
         primaryStage.show();
         this.gameBoy = new GameBoy();
         this.gameBoy.getLCD().setDrawFunction(this::drawImage);
 
-        // close the debug window if it's open.
         this.stage.setOnCloseRequest(x -> {
+            // close the debug window if it's open.
             if(this.debugWindow != null) {
                 this.debugWindow.close();
             }
+
+            // kill the game thread
+            if(this.gameThread != null) {
+                this.gameThread.interrupt();
+            }
         });
+
+//        this.openDebugWindow();
     }
 
     @Override
@@ -197,10 +209,6 @@ public class Main extends Application {
                 protected Void call() {
                     HashMap<Integer, String> list = disassembler.getDisassemblyList();
 
-                    /*for(var item : list) {
-                        listView.getItems().add(item);
-                    }*/
-
                     list.forEach((index, code) -> {
                         listView.getItems().add(code);
                     });
@@ -216,6 +224,8 @@ public class Main extends Application {
     }
 
     private void openDebugWindow() {
+        final int height = 400;
+        final int width = 1000;
         DebugWindow dbgWindow = new DebugWindow(this.gameBoy);
 
         dbgWindow.createRegisters();
@@ -229,10 +239,21 @@ public class Main extends Application {
         Scene debugScene = new Scene(dbgWindow.getLayout());
         this.debugWindow = new Stage();
 
+        this.debugWindow.setX((Screen.getPrimary().getBounds().getWidth() / 2) - (width / 2f));
+        this.debugWindow.setY((Screen.getPrimary().getBounds().getHeight() / 2) + (LCD.HEIGHT));
+
+        this.debugWindow.setOnCloseRequest(windowEvent -> {
+            this.gameBoy.setIsDebugging(false);
+
+            if(this.gameThread != null) {
+                this.gameThread.interrupt();
+            }
+        });
+
         this.debugWindow.setTitle("Debugger");
         this.debugWindow.setScene(debugScene);
-        this.debugWindow.setHeight(400);
-        this.debugWindow.setWidth(1000);
+        this.debugWindow.setHeight(height);
+        this.debugWindow.setWidth(width);
 
         debugScene.setOnKeyPressed(event -> {
             if(event.getCode() == KeyCode.F7) {

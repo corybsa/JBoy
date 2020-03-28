@@ -3,9 +3,13 @@ package sample;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.Font;
 import jboy.disassembler.Disassembler;
 import jboy.other.*;
 import jboy.system.*;
@@ -74,19 +78,33 @@ class DebugWindow {
     }
 
     void createRegisters() {
-        this.pc = new Label("PC: 0x100");
-        this.sp = new Label("SP: 0xFFFE");
         this.af = new Label("AF: 0x0000");
         this.bc = new Label("BC: 0x0000");
         this.de = new Label("DE: 0x0000");
         this.hl = new Label("HL: 0x0000");
+        this.pc = new Label("PC: 0x0100");
+        this.sp = new Label("SP: 0xFFFE");
         this.interruptFlags = new Label("IF: 0x00");
         this.interruptEnable = new Label("IE: 0x00");
         this.ime = new Label("IME: off");
         this.lcdc = new Label("LCDC: 0x00");
         this.ly = new Label("LY: 0x00");
         this.lcdStat = new Label("STAT: 0x00");
-        this.timer = new Label("Timer: 0xABCC");
+
+        this.af.setFont(Font.font("monospace"));
+        this.af.setMinWidth(80);
+        this.bc.setFont(Font.font("monospace"));
+        this.de.setFont(Font.font("monospace"));
+        this.hl.setFont(Font.font("monospace"));
+        this.pc.setFont(Font.font("monospace"));
+        this.sp.setFont(Font.font("monospace"));
+        this.lcdc.setFont(Font.font("monospace"));
+        this.lcdc.setMinWidth(80);
+        this.lcdStat.setFont(Font.font("monospace"));
+        this.ly.setFont(Font.font("monospace"));
+        this.interruptFlags.setFont(Font.font("monospace"));
+        this.interruptEnable.setFont(Font.font("monospace"));
+        this.ime.setFont(Font.font("monospace"));
 
         VBox vboxCpuRegisters = new VBox(
                 this.af,
@@ -151,6 +169,15 @@ class DebugWindow {
         this.timerTimaClocks = new Label("TIMA Clocks: 0");
         this.timerFrequency = new Label("Freq: 0Hz (0 clocks)");
 
+        this.timerState.setFont(Font.font("monospace"));
+        this.timer.setFont(Font.font("monospace"));
+        this.timerTacState.setFont(Font.font("monospace"));
+        this.timerTMA.setFont(Font.font("monospace"));
+        this.timerTIMA.setFont(Font.font("monospace"));
+        this.timerTimaClocks.setFont(Font.font("monospace"));
+        this.timerFrequency.setFont(Font.font("monospace"));
+        this.timerFrequency.setMinWidth(205);
+
         VBox vboxTimer = new VBox(
                 this.timerState,
                 this.timer,
@@ -180,6 +207,7 @@ class DebugWindow {
 
     void createBreakpointControls() {
         this.breakpoints = new ListView<>();
+        this.breakpoints.setStyle("-fx-font-family: \"monospace\"");
         this.breakpoints.setMaxWidth(298);
         this.breakpoints.setMaxHeight(222);
 
@@ -188,7 +216,7 @@ class DebugWindow {
         this.tfBreakpoint = new TextField();
         this.tfBreakpoint.setOnKeyPressed(keyEvent -> {
             if(keyEvent.getCode() == KeyCode.ENTER) {
-                this.addBreakpoint(this.gameBoy);
+                this.addBreakpoint();
             }
         });
 
@@ -217,6 +245,7 @@ class DebugWindow {
     void createMemoryControls() {
         this.memoryWatch = new ArrayList<>();
         Label lblWatchAddress = new Label("Watch address:");
+        lblWatchAddress.setMinWidth(105);
 
         TextField tfAddressWatch = new TextField();
         tfAddressWatch.setOnKeyPressed(keyEvent -> {
@@ -231,6 +260,7 @@ class DebugWindow {
         hboxWatch.getChildren().addAll(lblWatchAddress, tfAddressWatch);
 
         this.memoryAddresses = new ListView<>();
+        this.memoryAddresses.setStyle("-fx-font-family: \"monospace\"");
 
         Button removeWatch = new Button("Remove watch");
         removeWatch.setOnAction(x -> this.removeWatchAddress(this.memoryAddresses.getSelectionModel().getSelectedIndex()));
@@ -241,6 +271,7 @@ class DebugWindow {
 
     void createDisassembly() {
         this.disassembly = new ListView<>();
+        this.disassembly.setStyle("-fx-font-family: \"monospace\"");
 
         this.mainLayout.getChildren().add(this.disassembly);
     }
@@ -316,32 +347,36 @@ class DebugWindow {
         }
     }
 
-    private void addBreakpoint(GameBoy gameBoy) {
-        String text = tfBreakpoint.getText();
+    private void addBreakpoint() {
+        String text = this.tfBreakpoint.getText();
 
         if(!text.isEmpty() && !text.isBlank()) {
-            gameBoy.addBreakpoint(Integer.parseInt(tfBreakpoint.getText(), 16));
+            this.gameBoy.addBreakpoint(Integer.parseInt(this.tfBreakpoint.getText(), 16));
         }
 
-        tfBreakpoint.setText("");
+        this.tfBreakpoint.setText("");
     }
 
     private void updateDisassembly() {
         int pc = this.gameBoy.getCpu().registers.PC;
-        int position = this.gameBoy.getDisassembler().positions.get(pc);
+        Disassembler disassembler = this.gameBoy.getDisassembler();
 
-        if(this.disassembly.getItems().size() == 0) {
-            Platform.runLater(() -> {
-                HashMap<Integer, String> map = gameBoy.getDisassembly();
+        if(disassembler != null) {
+            int position = disassembler.positions.get(pc);
 
-                map.forEach((index, text) -> disassembly.getItems().add(text));
+            if(this.disassembly.getItems().size() == 0) {
+                Platform.runLater(() -> {
+                    HashMap<Integer, String> disassembly = this.gameBoy.getDisassembly();
 
-                disassembly.getSelectionModel().select(position);
-                disassembly.scrollTo(position - 7);
-            });
-        } else {
-            disassembly.getSelectionModel().select(position);
-            disassembly.scrollTo(position - 7);
+                    disassembly.forEach((index, text) -> this.disassembly.getItems().add(text));
+
+                    this.disassembly.getSelectionModel().select(position);
+                    this.disassembly.scrollTo(position - 7);
+                });
+            } else {
+                this.disassembly.getSelectionModel().select(position);
+                this.disassembly.scrollTo(position - 7);
+            }
         }
     }
 }

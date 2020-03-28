@@ -246,7 +246,8 @@ public class CPU_0x00_0x3F {
 
             cpu.tick();
             cpu.tick();
-            assertEquals(0xFFF8, memory.getByteAt(0xC000), "The memory address pointed to by xx should equal 0xFFF8");
+            assertEquals(0xF8, memory.getByteAt(0xC000), "The memory address pointed to by 0xC000 should equal 0xF8");
+            assertEquals(0xFF, memory.getByteAt(0xC001), "The memory address pointed to by 0xC001 should equal 0xFF");
             assertEquals(0x106, cpu.registers.PC, "PC should equal 0x106");
         }
 

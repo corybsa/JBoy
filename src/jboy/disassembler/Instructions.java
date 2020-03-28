@@ -142,7 +142,7 @@ public final class Instructions {
         GB_8BIT_INSTRUCTIONS.put(0x77, new Instruction(0x77, "ld (hl),a", 0, 8));
         GB_8BIT_INSTRUCTIONS.put(0x78, new Instruction(0x78, "ld a,b", 0, 4));
         GB_8BIT_INSTRUCTIONS.put(0x79, new Instruction(0x79, "ld a,c", 0, 4));
-        GB_8BIT_INSTRUCTIONS.put(0x7A, new Instruction(0x7A, "ld a,c", 0, 4));
+        GB_8BIT_INSTRUCTIONS.put(0x7A, new Instruction(0x7A, "ld a,d", 0, 4));
         GB_8BIT_INSTRUCTIONS.put(0x7B, new Instruction(0x7B, "ld a,e", 0, 4));
         GB_8BIT_INSTRUCTIONS.put(0x7C, new Instruction(0x7C, "ld a,h", 0, 4));
         GB_8BIT_INSTRUCTIONS.put(0x7D, new Instruction(0x7D, "ld a,l", 0, 4));
