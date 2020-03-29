@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class GameBoyTest {
     static GameBoy gameBoy;
 
-    int[] getRom(String filename) {
+    static int[] getRom(String filename) {
         try {
             File file = new File(filename);
 
@@ -36,7 +36,7 @@ public class GameBoyTest {
         return null;
     }
 
-    int getBreakpoint(String target, String filename) {
+    static int getBreakpoint(String target, String filename) {
         try {
             File file = new File(filename);
             int breakpoint = 0x100;
@@ -56,7 +56,7 @@ public class GameBoyTest {
         return -1;
     }
 
-    boolean runTest(String filename) {
+    static boolean runTest(String filename) {
         System.out.print("Running " + filename + " -> ");
 
         filename = filename.substring(0, filename.lastIndexOf('.'));
@@ -95,7 +95,7 @@ public class GameBoyTest {
         }
     }
 
-    boolean runFolder(String folderName) {
+    static boolean runFolder(String folderName) {
         File folder = new File(folderName);
         boolean testStatus = true;
 
@@ -116,125 +116,322 @@ public class GameBoyTest {
         return testStatus;
     }
 
-    @BeforeAll
-    static void testBeforeAll() {
-        gameBoy = new GameBoy();
-        gameBoy.getLCD().setDrawFunction((x) -> null);
-    }
-
-    @BeforeEach
-    void setUp() {
-        gameBoy.reset();
-    }
-
     // **********************
     // ACCEPTANCE
     // **********************
-    @Test
-    void mooneye_acceptance_Tests() {
-        boolean passed = runFolder("resources/roms/tests/mooneye/acceptance");
-        assertTrue(passed);
+    static class MooneyeAcceptanceTest {
+        @BeforeAll
+        static void testBeforeAll() {
+            gameBoy = new GameBoy();
+            gameBoy.getLCD().setDrawFunction((x) -> null);
+        }
+
+        @BeforeEach
+        void setUp() {
+            gameBoy.reset();
+        }
+
+        @Test
+        void mooneye_acceptance_Tests() {
+            boolean passed = runFolder("resources/roms/tests/mooneye/acceptance");
+            assertTrue(passed);
+        }
     }
 
-    @Test
-    void mooneye_acceptance_bits_Tests() {
-        boolean passed = runFolder("resources/roms/tests/mooneye/acceptance/bits");
-        assertTrue(passed);
+    static class MooneyeAcceptanceBitTest {
+        @BeforeAll
+        static void testBeforeAll() {
+            gameBoy = new GameBoy();
+            gameBoy.getLCD().setDrawFunction((x) -> null);
+        }
+
+        @BeforeEach
+        void setUp() {
+            gameBoy.reset();
+        }
+
+        @Test
+        void mooneye_acceptance_Tests() {
+            boolean passed = runFolder("resources/roms/tests/mooneye/acceptance/bits");
+            assertTrue(passed);
+        }
     }
 
-    @Test
-    void mooneye_acceptance_instr_Tests() {
-        boolean passed = runFolder("resources/roms/tests/mooneye/acceptance/instr");
-        assertTrue(passed);
+    static class MooneyeAcceptanceInstrTest {
+        @BeforeAll
+        static void testBeforeAll() {
+            gameBoy = new GameBoy();
+            gameBoy.getLCD().setDrawFunction((x) -> null);
+        }
+
+        @BeforeEach
+        void setUp() {
+            gameBoy.reset();
+        }
+
+        @Test
+        void mooneye_acceptance_Tests() {
+            boolean passed = runFolder("resources/roms/tests/mooneye/acceptance/instr");
+            assertTrue(passed);
+        }
     }
 
-    @Test
-    void mooneye_acceptance_interrupts_Tests() {
-        boolean passed = runFolder("resources/roms/tests/mooneye/acceptance/interrupts");
-        assertTrue(passed);
+    static class MooneyeAcceptanceInterruptsTest {
+        @BeforeAll
+        static void testBeforeAll() {
+            gameBoy = new GameBoy();
+            gameBoy.getLCD().setDrawFunction((x) -> null);
+        }
+
+        @BeforeEach
+        void setUp() {
+            gameBoy.reset();
+        }
+
+        @Test
+        void mooneye_acceptance_Tests() {
+            boolean passed = runFolder("resources/roms/tests/mooneye/acceptance/interrupts");
+            assertTrue(passed);
+        }
     }
 
-    @Test
-    void mooneye_acceptance_oam_dma_Tests() {
-        boolean passed = runFolder("resources/roms/tests/mooneye/acceptance/oam_dma");
-        assertTrue(passed);
+    static class MooneyeAcceptanceOamDmaTest {
+        @BeforeAll
+        static void testBeforeAll() {
+            gameBoy = new GameBoy();
+            gameBoy.getLCD().setDrawFunction((x) -> null);
+        }
+
+        @BeforeEach
+        void setUp() {
+            gameBoy.reset();
+        }
+
+        @Test
+        void mooneye_acceptance_Tests() {
+            boolean passed = runFolder("resources/roms/tests/mooneye/acceptance/oam_dma");
+            assertTrue(passed);
+        }
     }
 
-    @Test
-    void mooneye_acceptance_ppu_Tests() {
-        boolean passed = runFolder("resources/roms/tests/mooneye/acceptance/ppu");
-        assertTrue(passed);
+    static class MooneyeAcceptancePpuTest {
+        @BeforeAll
+        static void testBeforeAll() {
+            gameBoy = new GameBoy();
+            gameBoy.getLCD().setDrawFunction((x) -> null);
+        }
+
+        @BeforeEach
+        void setUp() {
+            gameBoy.reset();
+        }
+
+        @Test
+        void mooneye_acceptance_Tests() {
+            boolean passed = runFolder("resources/roms/tests/mooneye/acceptance/ppu");
+            assertTrue(passed);
+        }
     }
 
-    @Test
-    void mooneye_acceptance_serial_Tests() {
-        boolean passed = runFolder("resources/roms/tests/mooneye/acceptance/serial");
-        assertTrue(passed);
+    static class MooneyeAcceptanceSerialTest {
+        @BeforeAll
+        static void testBeforeAll() {
+            gameBoy = new GameBoy();
+            gameBoy.getLCD().setDrawFunction((x) -> null);
+        }
+
+        @BeforeEach
+        void setUp() {
+            gameBoy.reset();
+        }
+
+        @Test
+        void mooneye_acceptance_Tests() {
+            boolean passed = runFolder("resources/roms/tests/mooneye/acceptance/serial");
+            assertTrue(passed);
+        }
     }
 
-    @Test
-    void mooneye_acceptance_timer_Tests() {
-        boolean passed = runFolder("resources/roms/tests/mooneye/acceptance/timer");
-        assertTrue(passed);
+    static class MooneyeAcceptanceTimerTest {
+        @BeforeAll
+        static void testBeforeAll() {
+            gameBoy = new GameBoy();
+            gameBoy.getLCD().setDrawFunction((x) -> null);
+        }
+
+        @BeforeEach
+        void setUp() {
+            gameBoy.reset();
+        }
+
+        @Test
+        void mooneye_acceptance_Tests() {
+            boolean passed = runFolder("resources/roms/tests/mooneye/acceptance/timer");
+            assertTrue(passed);
+        }
     }
 
     // **********************
     // EMULATOR ONLY
     // **********************
-    @Test
-    void mooneye_emulatorOnly_mbc1_Tests() {
-        boolean passed = runFolder("resources/roms/tests/mooneye/emulator-only/mbc1");
-        assertTrue(passed);
+    static class MooneyeEmulatorOnlyMbc1Test {
+        @BeforeAll
+        static void testBeforeAll() {
+            gameBoy = new GameBoy();
+            gameBoy.getLCD().setDrawFunction((x) -> null);
+        }
+
+        @BeforeEach
+        void setUp() {
+            gameBoy.reset();
+        }
+
+        @Test
+        void mooneye_acceptance_Tests() {
+            boolean passed = runFolder("resources/roms/tests/mooneye/emulator-only/mbc1");
+            assertTrue(passed);
+        }
     }
 
-    @Test
-    void mooneye_emulatorOnly_mbc2_Tests() {
-        boolean passed = runFolder("resources/roms/tests/mooneye/emulator-only/mbc2");
-        assertTrue(passed);
+    static class MooneyeEmulatorOnlyMbc2Test {
+        @BeforeAll
+        static void testBeforeAll() {
+            gameBoy = new GameBoy();
+            gameBoy.getLCD().setDrawFunction((x) -> null);
+        }
+
+        @BeforeEach
+        void setUp() {
+            gameBoy.reset();
+        }
+
+        @Test
+        void mooneye_acceptance_Tests() {
+            boolean passed = runFolder("resources/roms/tests/mooneye/emulator-only/mbc2");
+            assertTrue(passed);
+        }
     }
 
-    @Test
-    void mooneye_emulatorOnly_mbc5_Tests() {
-        boolean passed = runFolder("resources/roms/tests/mooneye/emulator-only/mbc5");
-        assertTrue(passed);
+    static class MooneyeEmulatorOnlyMbc5Test {
+        @BeforeAll
+        static void testBeforeAll() {
+            gameBoy = new GameBoy();
+            gameBoy.getLCD().setDrawFunction((x) -> null);
+        }
+
+        @BeforeEach
+        void setUp() {
+            gameBoy.reset();
+        }
+
+        @Test
+        void mooneye_acceptance_Tests() {
+            boolean passed = runFolder("resources/roms/tests/mooneye/emulator-only/mbc5");
+            assertTrue(passed);
+        }
     }
 
     // **********************
     // MANUAL ONLY
     // **********************
-    @Test
-    void mooneye_manualOnly_Tests() {
-        boolean passed = runFolder("resources/roms/tests/mooneye/manual-only");
-        assertTrue(passed);
+    static class MooneyeManualOnlyTest {
+        @BeforeAll
+        static void testBeforeAll() {
+            gameBoy = new GameBoy();
+            gameBoy.getLCD().setDrawFunction((x) -> null);
+        }
+
+        @BeforeEach
+        void setUp() {
+            gameBoy.reset();
+        }
+
+        @Test
+        void mooneye_acceptance_Tests() {
+            boolean passed = runFolder("resources/roms/tests/mooneye/manual-only");
+            assertTrue(passed);
+        }
     }
 
     // **********************
     // MISC
     // **********************
-    @Test
-    void mooneye_misc_Tests() {
-        boolean passed = runFolder("resources/roms/tests/mooneye/misc");
-        assertTrue(passed);
+    static class MooneyeMiscTest {
+        @BeforeAll
+        static void testBeforeAll() {
+            gameBoy = new GameBoy();
+            gameBoy.getLCD().setDrawFunction((x) -> null);
+        }
+
+        @BeforeEach
+        void setUp() {
+            gameBoy.reset();
+        }
+
+        @Test
+        void mooneye_acceptance_Tests() {
+            boolean passed = runFolder("resources/roms/tests/mooneye/misc");
+            assertTrue(passed);
+        }
     }
 
-    @Test
-    void mooneye_misc_bits_Tests() {
-        boolean passed = runFolder("resources/roms/tests/mooneye/misc/bits");
-        assertTrue(passed);
+    static class MooneyeMiscBitsTest {
+        @BeforeAll
+        static void testBeforeAll() {
+            gameBoy = new GameBoy();
+            gameBoy.getLCD().setDrawFunction((x) -> null);
+        }
+
+        @BeforeEach
+        void setUp() {
+            gameBoy.reset();
+        }
+
+        @Test
+        void mooneye_acceptance_Tests() {
+            boolean passed = runFolder("resources/roms/tests/mooneye/misc/bits");
+            assertTrue(passed);
+        }
     }
 
-    @Test
-    void mooneye_misc_ppu_Tests() {
-        boolean passed = runFolder("resources/roms/tests/mooneye/misc/ppu");
-        assertTrue(passed);
+    static class MooneyeMiscPpuTest {
+        @BeforeAll
+        static void testBeforeAll() {
+            gameBoy = new GameBoy();
+            gameBoy.getLCD().setDrawFunction((x) -> null);
+        }
+
+        @BeforeEach
+        void setUp() {
+            gameBoy.reset();
+        }
+
+        @Test
+        void mooneye_acceptance_Tests() {
+            boolean passed = runFolder("resources/roms/tests/mooneye/misc/ppu");
+            assertTrue(passed);
+        }
     }
 
     // **********************
     // UTILS
     // **********************
-    @Test
-    void mooneye_utils_Tests() {
-        boolean passed = runFolder("resources/roms/tests/mooneye/utils");
-        assertTrue(passed);
+    static class MooneyeUtilsTest {
+        @BeforeAll
+        static void testBeforeAll() {
+            gameBoy = new GameBoy();
+            gameBoy.getLCD().setDrawFunction((x) -> null);
+        }
+
+        @BeforeEach
+        void setUp() {
+            gameBoy.reset();
+        }
+
+        @Test
+        void mooneye_acceptance_Tests() {
+            boolean passed = runFolder("resources/roms/tests/mooneye/utils");
+            assertTrue(passed);
+        }
     }
 }

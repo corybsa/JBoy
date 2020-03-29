@@ -96,7 +96,7 @@ public final class Instructions {
         GB_8BIT_INSTRUCTIONS.put(0x4C, new Instruction(0x4C, "ld c,h", 0, 4));
         GB_8BIT_INSTRUCTIONS.put(0x4D, new Instruction(0x4D, "ld c,l", 0, 4));
         GB_8BIT_INSTRUCTIONS.put(0x4E, new Instruction(0x4E, "ld c,(hl)", 0, 8));
-        GB_8BIT_INSTRUCTIONS.put(0x4F, new Instruction(0x4F, "LC c,a", 0, 4));
+        GB_8BIT_INSTRUCTIONS.put(0x4F, new Instruction(0x4F, "ld c,a", 0, 4));
 
         GB_8BIT_INSTRUCTIONS.put(0x50, new Instruction(0x50, "ld d,b", 0, 4));
         GB_8BIT_INSTRUCTIONS.put(0x51, new Instruction(0x51, "ld d,c", 0, 4));
