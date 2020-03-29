@@ -3,7 +3,6 @@ package sample;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
-import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
@@ -15,11 +14,10 @@ import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
-import javafx.stage.WindowEvent;
-import jboy.disassembler.Disassembler;
-import jboy.other.GameBoyInfo;
-import jboy.system.LCD;
-import jboy.system.GameBoy;
+import goodboy.disassembler.Disassembler;
+import goodboy.other.GameBoyInfo;
+import goodboy.system.LCD;
+import goodboy.system.GameBoy;
 
 import java.io.File;
 import java.io.IOException;
@@ -45,7 +43,7 @@ public class Main extends Application {
     @Override
     public void start(Stage primaryStage) {
         this.stage = primaryStage;
-        primaryStage.setTitle("JBoy");
+        primaryStage.setTitle("GoodBoy");
 
         VBox vbox = new VBox();
         MenuBar menuBar = createMenuBar();

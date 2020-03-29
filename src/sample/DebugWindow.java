@@ -10,9 +10,9 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
-import jboy.disassembler.Disassembler;
-import jboy.other.*;
-import jboy.system.*;
+import goodboy.disassembler.Disassembler;
+import goodboy.other.*;
+import goodboy.system.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
