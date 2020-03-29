@@ -142,6 +142,7 @@ public class GameBoy implements Runnable {
     }
 
     public void reset() {
+        this.rom = null;
         this.cpu.reset();
         this.gpu.reset();
 
